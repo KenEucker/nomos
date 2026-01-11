@@ -1,0 +1,53 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  background: #f6f7fb;
+  color: #1d1f27;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  background: #111827;
+  color: #fff;
+  padding: 20px;
+}
+
+.sidebar a {
+  color: #fff;
+  display: block;
+  margin: 8px 0;
+  text-decoration: none;
+}
+
+.content {
+  flex: 1;
+  padding: 24px;
+}
+
+.resource-form {
+  margin-top: 20px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.resource-form input,
+.resource-form select {
+  display: block;
+  margin: 6px 0 12px;
+  width: 100%;
+  padding: 8px;
+}
+
+.login {
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 24px;
+  background: #fff;
+  border-radius: 8px;
+}
