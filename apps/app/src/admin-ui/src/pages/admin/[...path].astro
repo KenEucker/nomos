@@ -2,9 +2,9 @@
 import Shell from "../../components/Shell.astro";
 import ResourceList from "../../islands/ResourceList.svelte";
 import ResourceForm from "../../islands/ResourceForm.svelte";
-const manifest = await fetch("/admin/manifest").then((res) => res.json()).catch(() => ({ resources: [] }));
+const manifest = await fetch("/admin/api/manifest").then((res) => res.json()).catch(() => ({ resources: [] }));
 const path = Astro.params.path ?? "";
-const resource = manifest.resources?.find((item) => item.route.replace("/admin/", "") === path);
+const resource = manifest.resources?.find((item) => item.route.replace("/admin/api/", "") === path);
 const data = resource ? await fetch(resource.route).then((res) => res.json()).catch(() => ({})) : {};
 export const prerender = false;
 ---

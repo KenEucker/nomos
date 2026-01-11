@@ -2,11 +2,11 @@ export const config = {
   auth: "required",
   permissions: ["admin.read"],
   tags: ["admin"],
-  summary: "Route registry"
+  summary: "Audit log"
 };
 
-import type { Ctx } from "../../../ctx.js";
+import type { Ctx } from "../../../../ctx.js";
 
 export const get = async (ctx: Ctx) => {
-  return ctx.json({ routes: ctx.services.routeRegistry.routes });
+  return ctx.json({ audit: ctx.db.auditLog.slice(-200) });
 };

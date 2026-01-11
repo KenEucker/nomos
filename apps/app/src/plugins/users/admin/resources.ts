@@ -2,7 +2,7 @@ export const resources = [
   {
     name: "users",
     label: "Users",
-    route: "/admin/users",
+    route: "/admin/api/users",
     fields: [
       { name: "id", type: "id" },
       { name: "name", type: "text", required: true },
@@ -13,7 +13,7 @@ export const resources = [
   {
     name: "roles",
     label: "Roles",
-    route: "/admin/roles",
+    route: "/admin/api/roles",
     fields: [
       { name: "name", type: "text", required: true },
       { name: "permissions", type: "select", options: [] }
@@ -22,7 +22,7 @@ export const resources = [
   {
     name: "apiKeys",
     label: "API Keys",
-    route: "/admin/api-keys",
+    route: "/admin/api/api-keys",
     fields: [
       { name: "name", type: "text" },
       { name: "permissions", type: "select", options: [] },

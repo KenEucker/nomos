@@ -5,7 +5,7 @@ export const config = {
   summary: "Diagnostics overview"
 };
 
-import type { Ctx } from "../../../ctx.js";
+import type { Ctx } from "../../../../ctx.js";
 
 export const get = async (ctx: Ctx) => {
   if (!ctx.services.env.DIAGNOSTICS_ENABLED) {

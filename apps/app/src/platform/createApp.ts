@@ -4,7 +4,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import fastify from "fastify";
 import cookie from "@fastify/cookie";
 import formbody from "@fastify/formbody";
-import fastifyStatic from "@fastify/static";
 import middie from "@fastify/middie";
 import { nanoid } from "nanoid";
 import { loadEnv } from "./config/env.js";
@@ -189,20 +188,19 @@ export async function createApp() {
   });
 
   const adminDist = path.join(baseDir, "admin-ui", "dist");
-  const adminClient = path.join(adminDist, "client");
   const adminServer = path.join(adminDist, "server", "entry.mjs");
-  if (fs.existsSync(adminClient)) {
-    await app.register(fastifyStatic, {
-      root: adminClient,
-      prefix: "/admin"
-    });
-  }
   if (fs.existsSync(adminServer)) {
     const astroModule = await import(pathToFileURL(adminServer).href);
     if (astroModule.createMiddleware) {
       await app.register(middie);
       const middleware = astroModule.createMiddleware();
-      app.use("/admin", middleware);
+      app.use("/admin", (req, res, next) => {
+        if (req.url?.startsWith("/admin/api")) {
+          next();
+          return;
+        }
+        middleware(req, res, next);
+      });
     } else {
       const handler = astroModule.handler ?? astroModule.default;
       app.all("/admin", async (req, reply) => {
