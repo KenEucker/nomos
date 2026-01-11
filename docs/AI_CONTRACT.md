@@ -1,0 +1,15 @@
+# AI Contract
+
+This repository is designed to be LLM-legible. Key conventions:
+
+- **File-based routing**: Route modules export handlers/config only. No `app.get()` in route files.
+- **Route registry**: Routes are discovered from `apps/app/src/routes/**` and plugin route folders.
+- **Plugins**: Filesystem-first. Each plugin lives under `apps/app/src/plugins/<name>` and contributes routes, services, events, jobs, and admin resources.
+- **Context (ctx)**: Handlers receive a stable `ctx` object with parsed params/query/body, auth helpers, services, and response helpers.
+- **Validation**: Zod schemas declared in route config. Parsed once in adapter. Validation errors are normalized to `{ error: "validation_error", issues: [...] }`.
+- **Auth**: Core plugin provides API key and session auth. Route config controls auth (`required|optional|none`) plus permissions.
+- **Observability**: Events and listeners are first-class. Request, auth, job, and webhook activity is emitted and audited.
+- **Admin**: Admin UI is an Astro + Svelte app bundled in the same deployable, served from `/admin`.
+- **Diagnostics**: `/health`, `/ready`, `/version` are public. Admin-only diagnostics are gated and disabled in prod unless enabled.
+
+See `apps/app/src/platform` for core registry types and adapters.

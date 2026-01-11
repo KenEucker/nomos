@@ -1,0 +1,65 @@
+import { nanoid } from "nanoid";
+import type { Ctx } from "../ctx.js";
+import type { EventBus } from "../events/bus.js";
+import { MemoryJobDriver } from "./drivers/memoryDriver.js";
+import type { JobDefinition, JobDispatchOptions, JobRun } from "./types.js";
+
+export class JobsRuntime {
+  private jobs = new Map<string, JobDefinition>();
+  private driver = new MemoryJobDriver();
+  private processing = false;
+
+  constructor(private events: EventBus, private ctxFactory: () => Ctx) {}
+
+  register(job: JobDefinition) {
+    const id = job.id ?? nanoid();
+    const entry = { ...job, id };
+    this.jobs.set(id, entry);
+  }
+
+  list() {
+    return Array.from(this.jobs.values());
+  }
+
+  dispatch(jobId: string, payload: any, options: JobDispatchOptions = {}) {
+    const job = this.jobs.get(jobId);
+    if (!job) throw new Error(`Unknown job: ${jobId}`);
+    const run = this.driver.dispatch(jobId, payload, options);
+    this.events.emit("jobs.dispatched", { jobId, runId: run.id });
+    return run;
+  }
+
+  start() {
+    if (this.processing) return;
+    this.processing = true;
+    const loop = async () => {
+      const run = this.driver.next();
+      if (run) {
+        await this.execute(run);
+      }
+      setTimeout(loop, 100);
+    };
+    loop();
+  }
+
+  private async execute(run: JobRun) {
+    const job = this.jobs.get(run.jobId);
+    if (!job) return;
+    run.status = "running";
+    run.startedAt = new Date().toISOString();
+    this.events.emit("jobs.started", { jobId: run.jobId, runId: run.id });
+    const ctx = this.ctxFactory();
+    try {
+      await job.run(ctx, run.payload);
+      run.status = "succeeded";
+      run.finishedAt = new Date().toISOString();
+      this.events.emit("jobs.succeeded", { jobId: run.jobId, runId: run.id });
+    } catch (error) {
+      run.status = "failed";
+      run.error = (error as Error).message;
+      run.finishedAt = new Date().toISOString();
+      this.events.emit("jobs.failed", { jobId: run.jobId, runId: run.id, error: run.error });
+    }
+    ctx.db.jobRuns.push({ ...run });
+  }
+}

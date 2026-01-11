@@ -1,0 +1,21 @@
+---
+import Shell from "../../components/Shell.astro";
+import ResourceList from "../../islands/ResourceList.svelte";
+const manifest = await fetch("/admin/manifest").then((res) => res.json()).catch(() => ({ resources: [] }));
+---
+<Shell title="Admin">
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Admin</h2>
+      <nav>
+        {manifest.nav?.map((item) => (
+          <a href={item.path}>{item.label}</a>
+        ))}
+      </nav>
+    </aside>
+    <main class="content">
+      <h1>Resources</h1>
+      <ResourceList client:load resources={manifest.resources ?? []} />
+    </main>
+  </div>
+</Shell>
