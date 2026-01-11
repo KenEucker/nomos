@@ -8,7 +8,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../.
 const appDir = path.join(rootDir, "apps", "app");
 const envPaths = [path.join(rootDir, ".env"), path.join(appDir, ".env")];
 for (const envPath of envPaths) {
-  dotenv.config({ path: envPath });
+  dotenv.config({ path: envPath, override: true });
 }
 
 const env = loadEnv();
