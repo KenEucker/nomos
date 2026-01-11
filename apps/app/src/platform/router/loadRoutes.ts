@@ -10,7 +10,7 @@ const METHODS = [
   "post",
   "put",
   "patch",
-  "del",
+  "delete",
   "options",
   "head"
 ] as const;
@@ -53,9 +53,10 @@ export async function loadRoutes(
       const routeModule = await importRoute(file);
       const routePath = filePathToRoute(file, source.baseDir);
       for (const method of METHODS) {
-        const handler = routeModule[method];
+        const configMethod = method === "delete" ? "del" : method;
+        const handler = routeModule[configMethod];
         if (!handler) continue;
-        const methodConfigKey = `${method}Config` as keyof RouteModule;
+        const methodConfigKey = `${configMethod}Config` as keyof RouteModule;
         const methodConfig = routeModule[methodConfigKey];
         const config = {
           auth: "required",
@@ -65,7 +66,7 @@ export async function loadRoutes(
         const id = `${source.owner}:${method}:${routePath}`;
         registry.routes.push({
           id,
-          method,
+          method: method === "delete" ? "delete" : method,
           path: routePath,
           owner: source.owner,
           handler,
