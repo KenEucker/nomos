@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Ctx } from "../../../platform/ctx.js";
 import { signJwt } from "../../../platform/auth/jwt.js";
 
@@ -15,7 +16,12 @@ export const config = {
   summary: "Issue a development JWT for Swagger testing",
   description:
     "Development-only endpoint for issuing a JWT when DEV_AUTH_SECRET is provided.",
-  tags: ["auth"]
+  tags: ["auth"],
+  validate: {
+    body: z.object({
+      secret: z.string().min(1)
+    })
+  }
 };
 
 export async function post(ctx: Ctx) {

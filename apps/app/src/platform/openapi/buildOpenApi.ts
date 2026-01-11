@@ -13,6 +13,18 @@ export function buildOpenApi(registry: RouteRegistry) {
         200: { description: "OK" }
       }
     };
+    if (route.config.validate?.body) {
+      operation.requestBody = {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object"
+            }
+          }
+        }
+      };
+    }
     if (route.path.startsWith("/api") && route.config.auth !== "none") {
       operation.security = [{ bearerAuth: [] }];
       operation.responses[401] = { description: "Unauthorized" };
