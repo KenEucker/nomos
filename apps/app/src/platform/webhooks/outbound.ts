@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import type { Logger } from "pino";
 import type { JobsRuntime } from "../jobs/runtime.js";
 import type { EventBus } from "../events/bus.js";
 import type { WebhookDestination, WebhookDelivery } from "./types.js";
@@ -8,7 +9,8 @@ export class WebhookRuntime {
   constructor(
     private jobs: JobsRuntime,
     private events: EventBus,
-    private store: { destinations: Map<string, WebhookDestination>; deliveries: WebhookDelivery[] }
+    private store: { destinations: Map<string, WebhookDestination>; deliveries: WebhookDelivery[] },
+    private log: Logger
   ) {}
 
   listDestinations() {
@@ -32,6 +34,7 @@ export class WebhookRuntime {
         status: "queued",
         createdAt: new Date().toISOString()
       };
+      this.log.debug({ deliveryId: delivery.id, destinationId: destination.id, event }, "Webhook queued.");
       this.store.deliveries.push(delivery);
       this.jobs.dispatch("platform.webhook.delivery", delivery, {
         attempts: destination.retryPolicy?.attempts ?? 3,
@@ -43,6 +46,7 @@ export class WebhookRuntime {
   async deliver(delivery: WebhookDelivery) {
     const destination = this.store.destinations.get(delivery.destinationId);
     if (!destination) return;
+    const log = this.log.child({ deliveryId: delivery.id, destinationId: destination.id });
     const payload = JSON.stringify({ event: delivery.event, payload: delivery.payload });
     const { signature, timestamp } = buildSignature(destination.secret, payload);
     try {
@@ -58,6 +62,7 @@ export class WebhookRuntime {
       });
       delivery.status = response.ok ? "delivered" : "failed";
       delivery.responseStatus = response.status;
+      log.info({ status: delivery.status, responseStatus: response.status }, "Webhook delivered.");
       if (!response.ok) {
         delivery.error = `HTTP ${response.status}`;
       }
@@ -69,6 +74,7 @@ export class WebhookRuntime {
     } catch (error) {
       delivery.status = "failed";
       delivery.error = (error as Error).message;
+      log.error({ err: error }, "Webhook delivery failed.");
       this.events.emit("webhooks.failed", {
         deliveryId: delivery.id,
         destinationId: destination.id,

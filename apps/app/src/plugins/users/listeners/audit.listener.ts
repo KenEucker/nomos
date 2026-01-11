@@ -1,7 +1,7 @@
 export default {
   event: "users.created",
-  handler: async (payload: any, _meta: any) => {
-    console.log("[users] created", payload.id);
+  handler: async (payload: any, meta: any) => {
+    meta?.log?.info({ userId: payload.id }, "User created.");
   },
   mode: "bestEffort"
 };

@@ -1,10 +1,19 @@
 import { z } from "zod";
+import { createBootstrapLogger } from "../logging/logger.js";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(3001),
   DATABASE_URL: z.string().optional().default("memory"),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required").default("dev-secret"),
+  LOG_LEVEL: z.string().default("info"),
+  LOG_PRETTY: z
+    .preprocess((value) => value === "true", z.boolean())
+    .default(false),
+  LOG_ERROR_STACK: z
+    .preprocess((value) => value === "true", z.boolean())
+    .default(false),
+  LOG_DOMAINS: z.string().optional(),
   DIAGNOSTICS_ENABLED: z
     .preprocess((value) => value === "true", z.boolean())
     .default(false),
@@ -16,23 +25,28 @@ const envSchema = z.object({
 export type Env = z.infer<typeof envSchema>;
 
 export function loadEnv(raw = process.env): Env {
+  const log = createBootstrapLogger().child({ domain: "server" });
   const parsed = envSchema.safeParse(raw);
   if (!parsed.success) {
     const errors = parsed.error.flatten().fieldErrors;
-    console.warn(`[env] Invalid environment, using defaults: ${JSON.stringify(errors)}`);
+    log.warn({ errors }, "Invalid environment, using defaults.");
   }
   const env = parsed.success ? parsed.data : envSchema.parse({});
   if (env.NODE_ENV === "production") {
     env.SWAGGER_PUBLIC = raw.SWAGGER_PUBLIC === "true";
     env.DIAGNOSTICS_ENABLED = raw.DIAGNOSTICS_ENABLED === "true";
+    env.LOG_PRETTY = raw.LOG_PRETTY === "true";
+    env.LOG_ERROR_STACK = raw.LOG_ERROR_STACK === "true";
   } else {
     env.SWAGGER_PUBLIC = raw.SWAGGER_PUBLIC ? raw.SWAGGER_PUBLIC === "true" : true;
     env.DIAGNOSTICS_ENABLED = raw.DIAGNOSTICS_ENABLED
       ? raw.DIAGNOSTICS_ENABLED === "true"
       : true;
+    env.LOG_PRETTY = raw.LOG_PRETTY ? raw.LOG_PRETTY === "true" : true;
+    env.LOG_ERROR_STACK = raw.LOG_ERROR_STACK ? raw.LOG_ERROR_STACK === "true" : true;
   }
   if (env.JWT_SECRET === "dev-secret") {
-    console.warn("[env] JWT_SECRET is using a development default.");
+    log.warn("JWT_SECRET is using a development default.");
   }
   return env;
 }

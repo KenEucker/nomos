@@ -1,4 +1,12 @@
-export type EventHandler = (payload: any, meta: { event: string; timestamp: string }) => Promise<void> | void;
+import type { Logger } from "pino";
+
+export type EventMeta = {
+  event: string;
+  timestamp: string;
+  log?: Logger;
+};
+
+export type EventHandler = (payload: any, meta: EventMeta) => Promise<void> | void;
 
 export type EventListener = {
   event: string;
