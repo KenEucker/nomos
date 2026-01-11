@@ -12,13 +12,13 @@ export default {
       owner: "admin"
     }
   ],
-  adminPages: [{ path: "/admin", label: "Dashboard" }],
+  adminPages: [{ path: "/", label: "Dashboard" }],
   nav: [
-    { path: "/admin", label: "Overview" },
-    { path: "/admin/users", label: "Users" },
-    { path: "/admin/api-keys", label: "API Keys" },
-    { path: "/admin/webhooks", label: "Webhooks" },
-    { path: "/admin/jobs", label: "Jobs" },
-    { path: "/admin/diagnostics", label: "Diagnostics" }
+    { path: "/", label: "Overview" },
+    { path: "/users", label: "Users" },
+    { path: "/api-keys", label: "API Keys" },
+    { path: "/webhooks", label: "Webhooks" },
+    { path: "/jobs", label: "Jobs" },
+    { path: "/diagnostics", label: "Diagnostics" }
   ]
 };

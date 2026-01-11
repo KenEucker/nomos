@@ -26,12 +26,69 @@ import { registerDefaultListeners } from "./observability/listeners.js";
 import { resolvePermissions } from "./auth/permissions.js";
 import { findApiKey } from "./auth/apiKeys.js";
 import { createSession, getSession } from "./auth/sessions.js";
+import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logging/logger.js";
 
 export async function createApp() {
   const env = loadEnv();
-  const app = fastify({ logger: true });
+  const app = fastify({
+    logger: createLoggerOptions(env),
+    genReqId: (req) => {
+      return (req.headers["x-request-id"] as string | undefined) ?? nanoid();
+    }
+  });
+  const allowedDomains = parseLogDomains(env.LOG_DOMAINS);
+  const baseLogger = app.log;
+  const serverLog = createDomainLogger(baseLogger, "server", allowedDomains);
+  const pluginsLog = createDomainLogger(baseLogger, "plugins", allowedDomains);
+  const authLog = createDomainLogger(baseLogger, "auth", allowedDomains);
+  const adminLog = createDomainLogger(baseLogger, "admin", allowedDomains);
+  const jobsLog = createDomainLogger(baseLogger, "jobs", allowedDomains);
+  const eventsLog = createDomainLogger(baseLogger, "events", allowedDomains);
+  const webhooksLog = createDomainLogger(baseLogger, "webhooks", allowedDomains);
+  const observabilityLog = createDomainLogger(baseLogger, "observability", allowedDomains);
+  const openApiLog = createDomainLogger(baseLogger, "openapi", allowedDomains);
+  const diagnosticsLog = createDomainLogger(baseLogger, "diagnostics", allowedDomains);
   await app.register(cookie);
   await app.register(formbody);
+
+  serverLog.info(
+    { env: env.NODE_ENV, logLevel: env.LOG_LEVEL, pretty: env.LOG_PRETTY },
+    "Server logger initialized."
+  );
+
+  app.addHook("onRequest", async (req) => {
+    const start = Date.now();
+    (req as any).startTime = start;
+    req.log.debug({ domain: "router", method: req.method, path: req.url }, "Request started.");
+  });
+
+  app.addHook("onResponse", async (req, reply) => {
+    const start = (req as any).startTime as number | undefined;
+    const durationMs = start ? Date.now() - start : undefined;
+    const routeId =
+      (req as any).routeId ??
+      (reply.context?.config as { routeId?: string } | undefined)?.routeId ??
+      "unknown";
+    const authMode = (req as any).authMode ?? "none";
+    req.log.info(
+      { domain: "router", routeId, authMode, statusCode: reply.statusCode, durationMs },
+      "Request completed."
+    );
+  });
+
+  app.setErrorHandler((error, req, reply) => {
+    req.log.error({ err: error }, "Unhandled error.");
+    const isDev = env.NODE_ENV !== "production";
+    const payload: Record<string, unknown> = { error: "internal_error" };
+    if (isDev) {
+      payload.message = error.message;
+      if (env.LOG_ERROR_STACK && error.stack) {
+        payload.stack = error.stack;
+      }
+    }
+    const statusCode = error instanceof HttpError ? error.statusCode : 500;
+    reply.code(statusCode).send(payload);
+  });
 
   const db = {
     users: new Map<string, any>(),
@@ -47,7 +104,7 @@ export async function createApp() {
     jobRuns: []
   };
 
-  const events = new EventBus();
+  const events = new EventBus(eventsLog);
   const hooks = createHookRegistry();
 
   const baseDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -57,6 +114,7 @@ export async function createApp() {
   ];
 
   const plugins = await loadPlugins(baseDir, corePlugins);
+  pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
   for (const perm of plugins.registry.permissions) {
     db.permissions.add(perm);
   }
@@ -84,8 +142,9 @@ export async function createApp() {
   let webhooksRuntime: WebhookRuntime;
 
   const ctxFactory = () => {
+    const reqId = nanoid();
     return {
-      reqId: nanoid(),
+      reqId,
       method: "JOB",
       path: "job",
       params: {},
@@ -99,8 +158,9 @@ export async function createApp() {
       events,
       jobs: jobsRuntime,
       webhooks: webhooksRuntime,
+      log: jobsLog.child({ reqId, method: "JOB", path: "job" }),
       auth: createAuthHelpers({
-        reqId: "job",
+        reqId,
         method: "JOB",
         path: "job",
         params: {},
@@ -126,11 +186,16 @@ export async function createApp() {
     };
   };
 
-  jobsRuntime = new JobsRuntime(events, () => ctxFactory());
-  webhooksRuntime = new WebhookRuntime(jobsRuntime, events, {
-    destinations: db.webhookDestinations,
-    deliveries: db.webhookDeliveries
-  });
+  jobsRuntime = new JobsRuntime(events, () => ctxFactory(), jobsLog);
+  webhooksRuntime = new WebhookRuntime(
+    jobsRuntime,
+    events,
+    {
+      destinations: db.webhookDestinations,
+      deliveries: db.webhookDeliveries
+    },
+    webhooksLog
+  );
 
   const originalEmit = events.emit.bind(events);
   events.emit = async (event: string, payload: any) => {
@@ -160,6 +225,7 @@ export async function createApp() {
   }
 
   registerDefaultListeners(events, db);
+  observabilityLog.info("Default listeners registered.");
   for (const listener of plugins.listeners) {
     events.on(listener.event, listener.handler, { mode: listener.mode });
   }
@@ -168,6 +234,7 @@ export async function createApp() {
   services.routeRegistry = routeRegistry;
 
   const openApi = buildOpenApi(routeRegistry);
+  openApiLog.info("OpenAPI schema built.");
 
   app.get("/openapi.json", async (_req, reply) => {
     if (!env.SWAGGER_PUBLIC && env.NODE_ENV === "production") {
@@ -187,33 +254,6 @@ export async function createApp() {
     reply.type("text/html").send(buildSwaggerUiHtml("/openapi.json"));
   });
 
-  const adminDist = path.join(baseDir, "admin-ui", "dist");
-  const adminServer = path.join(adminDist, "server", "entry.mjs");
-  if (fs.existsSync(adminServer)) {
-    const astroModule = await import(pathToFileURL(adminServer).href);
-    if (astroModule.createMiddleware) {
-      await app.register(middie);
-      const middleware = astroModule.createMiddleware();
-      app.use("/admin", (req, res, next) => {
-        if (req.url?.startsWith("/admin/api")) {
-          next();
-          return;
-        }
-        middleware(req, res, next);
-      });
-    } else {
-      const handler = astroModule.handler ?? astroModule.default;
-      app.all("/admin", async (req, reply) => {
-        reply.hijack();
-        await handler(req.raw, reply.raw);
-      });
-      app.all("/admin/*", async (req, reply) => {
-        reply.hijack();
-        await handler(req.raw, reply.raw);
-      });
-    }
-  }
-
   for (const route of routeRegistry.routes) {
     app.route({
       method: route.method.toUpperCase() as any,
@@ -223,6 +263,7 @@ export async function createApp() {
         const reqId = (req.headers["x-request-id"] as string) ?? nanoid();
         let user = null;
         let apiClient = null;
+        let authMode: "session" | "apiKey" | "none" = "none";
         const isAdminRoute = route.path.startsWith("/admin");
         if (isAdminRoute) {
           const sessionId = req.cookies?.session_id;
@@ -236,6 +277,7 @@ export async function createApp() {
                   roles: userRecord.roles ?? [],
                   permissions: resolvePermissions(userRecord, db.roles)
                 };
+                authMode = "session";
               }
             }
           }
@@ -268,9 +310,13 @@ export async function createApp() {
               permissions: entry.permissions ?? [],
               allowedHosts: entry.allowedHosts ?? []
             };
+            authMode = "apiKey";
             await events.emit("apiKey.used", { apiClientId: entry.id });
           }
         }
+
+        (req as any).routeId = route.id;
+        (req as any).authMode = authMode;
 
         const ctxBase = {
           reqId,
@@ -289,6 +335,15 @@ export async function createApp() {
           webhooks: webhooksRuntime,
           req,
           reply,
+          log: req.log.child({
+            domain: "router",
+            reqId,
+            method: req.method,
+            path: req.url,
+            routeId: route.id,
+            userId: user?.id,
+            apiKeyId: apiClient?.id
+          }),
           json: async (payload: any, statusCode = 200) => jsonResponse(reply, payload, statusCode),
           error: errorResponse
         };
@@ -365,6 +420,7 @@ export async function createApp() {
             reply.send(result);
           }
         } catch (error) {
+          ctx.log.error({ err: error }, "Route handler failed.");
           if (error instanceof HttpError) {
             reply.code(error.statusCode).send({ error: error.message, details: error.details });
           } else {
@@ -380,12 +436,14 @@ export async function createApp() {
     const body = req.body as any;
     const user = Array.from(db.users.values()).find((entry) => entry.email === body?.email);
     if (!user) {
+      authLog.warn({ email: body?.email }, "Login failed.");
       await events.emit("auth.failed", { email: body?.email });
       return reply.code(401).send({ error: "invalid_credentials" });
     }
     const sessionId = createSession(db.sessions, user.id);
     reply.setCookie("session_id", sessionId, { path: "/", httpOnly: true });
     await events.emit("auth.login", { userId: user.id });
+    authLog.info({ userId: user.id }, "Login succeeded.");
     return reply.send({ status: "ok" });
   });
 
@@ -409,6 +467,12 @@ export async function createApp() {
       webhooks: webhooksRuntime,
       req,
       reply,
+      log: req.log.child({
+        domain: "webhooks",
+        reqId: req.id,
+        method: req.method,
+        path: req.url
+      }),
       json: async (payload: any, statusCode = 200) => jsonResponse(reply, payload, statusCode),
       error: errorResponse
     };
@@ -423,6 +487,71 @@ export async function createApp() {
     }
   });
 
+  const adminDist = path.join(baseDir, "admin-ui", "dist");
+  const adminServer = path.join(adminDist, "server", "entry.mjs");
+  if (fs.existsSync(adminServer)) {
+    const astroModule = await import(pathToFileURL(adminServer).href);
+    if (astroModule.createMiddleware) {
+      await app.register(middie);
+      const middleware = astroModule.createMiddleware();
+      const shouldSkipAstro = (url: string | undefined) => {
+        const path = (url ?? "/").split("?")[0] ?? "/";
+        const excludedExact = new Set([
+          "/openapi.json",
+          "/docs",
+          "/health",
+          "/ready",
+          "/version",
+          "/admin/login"
+        ]);
+        if (excludedExact.has(path)) return true;
+        return (
+          path === "/api" ||
+          path.startsWith("/api/") ||
+          path === "/admin/api" ||
+          path.startsWith("/admin/api/") ||
+          path === "/webhooks" ||
+          path.startsWith("/webhooks/")
+        );
+      };
+      adminLog.info(
+        {
+          mount: "/",
+          excluded: [
+            "/openapi.json",
+            "/docs",
+            "/health",
+            "/ready",
+            "/version",
+            "/admin/login",
+            "/api/*",
+            "/admin/api/*",
+            "/webhooks/*"
+          ]
+        },
+        "Mounted Astro middleware."
+      );
+      app.use((req, res, next) => {
+        if (shouldSkipAstro(req.url)) {
+          next();
+          return;
+        }
+        middleware(req, res, next);
+      });
+    } else {
+      const handler = astroModule.handler ?? astroModule.default;
+      adminLog.info({ mount: "/" }, "Mounted Astro handler.");
+      app.all("/", async (req, reply) => {
+        reply.hijack();
+        await handler(req.raw, reply.raw);
+      });
+      app.all("/*", async (req, reply) => {
+        reply.hijack();
+        await handler(req.raw, reply.raw);
+      });
+    }
+  }
+
   const adminUser = {
     id: "admin",
     email: "admin@local",
@@ -431,6 +560,7 @@ export async function createApp() {
   };
   db.users.set(adminUser.id, adminUser);
   db.roles.set("admin", ["admin.read", "admin.diagnostics", "auth.manage", "webhooks.manage", "jobs.manage"]);
+  diagnosticsLog.info("Seeded admin user.");
 
   return app;
 }

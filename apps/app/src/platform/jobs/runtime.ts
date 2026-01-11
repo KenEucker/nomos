@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import type { Logger } from "pino";
 import type { Ctx } from "../ctx.js";
 import type { EventBus } from "../events/bus.js";
 import { MemoryJobDriver } from "./drivers/memoryDriver.js";
@@ -9,7 +10,11 @@ export class JobsRuntime {
   private driver = new MemoryJobDriver();
   private processing = false;
 
-  constructor(private events: EventBus, private ctxFactory: () => Ctx) {}
+  constructor(
+    private events: EventBus,
+    private ctxFactory: () => Ctx,
+    private log: Logger
+  ) {}
 
   register(job: JobDefinition) {
     const id = job.id ?? nanoid();
@@ -25,6 +30,7 @@ export class JobsRuntime {
     const job = this.jobs.get(jobId);
     if (!job) throw new Error(`Unknown job: ${jobId}`);
     const run = this.driver.dispatch(jobId, payload, options);
+    this.log.debug({ jobId, runId: run.id }, "Job dispatched.");
     this.events.emit("jobs.dispatched", { jobId, runId: run.id });
     return run;
   }
@@ -45,19 +51,23 @@ export class JobsRuntime {
   private async execute(run: JobRun) {
     const job = this.jobs.get(run.jobId);
     if (!job) return;
+    const log = this.log.child({ jobId: run.jobId, runId: run.id });
     run.status = "running";
     run.startedAt = new Date().toISOString();
+    log.info("Job started.");
     this.events.emit("jobs.started", { jobId: run.jobId, runId: run.id });
     const ctx = this.ctxFactory();
     try {
       await job.run(ctx, run.payload);
       run.status = "succeeded";
       run.finishedAt = new Date().toISOString();
+      log.info("Job succeeded.");
       this.events.emit("jobs.succeeded", { jobId: run.jobId, runId: run.id });
     } catch (error) {
       run.status = "failed";
       run.error = (error as Error).message;
       run.finishedAt = new Date().toISOString();
+      log.error({ err: error }, "Job failed.");
       this.events.emit("jobs.failed", { jobId: run.jobId, runId: run.id, error: run.error });
     }
     ctx.db.jobRuns.push({ ...run });

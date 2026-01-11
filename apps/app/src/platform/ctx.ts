@@ -1,4 +1,5 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
+import type { Logger } from "pino";
 import type { JobsRuntime } from "./jobs/runtime.js";
 import type { EventBus } from "./events/bus.js";
 import type { WebhookRuntime } from "./webhooks/outbound.js";
@@ -38,6 +39,7 @@ export type Ctx = {
     requirePermission: (permission: string) => void;
     hasPermission: (permission: string) => boolean;
   };
+  log: Logger;
   json: (payload: any, statusCode?: number) => Promise<void>;
   error: (statusCode: number, message: string, details?: unknown) => never;
   req: FastifyRequest;

@@ -7,6 +7,7 @@
     "dev": "npm run build:admin-ui && tsx src/server.ts",
     "build": "npm run build:admin-ui && tsc -p tsconfig.json",
     "build:admin-ui": "npm --prefix src/admin-ui install && npm --prefix src/admin-ui run build",
+    "health-check": "node scripts/health-check.mjs",
     "start": "node dist/server.js"
   },
   "dependencies": {
@@ -14,6 +15,8 @@
     "@fastify/middie": "^8.3.0",
     "fastify": "^5.6.2",
     "@fastify/cookie": "^11.0.2",
+    "pino": "^9.6.0",
+    "pino-pretty": "^11.3.0",
     "zod": "^4.3.5",
     "nanoid": "^5.1.6"
   },

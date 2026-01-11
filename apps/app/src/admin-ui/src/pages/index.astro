@@ -1,6 +1,6 @@
 ---
-import Shell from "../../components/Shell.astro";
-import ResourceList from "../../islands/ResourceList.svelte";
+import Shell from "../components/Shell.astro";
+import ResourceList from "../islands/ResourceList.svelte";
 const manifest = await fetch("/admin/api/manifest").then((res) => res.json()).catch(() => ({ resources: [] }));
 ---
 <Shell title="Admin">

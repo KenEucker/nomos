@@ -1,9 +1,10 @@
+import type { Logger } from "pino";
 import { EventBus } from "./bus.js";
 import { createHookRegistry } from "./hooks.js";
 
-export function createEventSystem() {
+export function createEventSystem(log: Logger) {
   return {
-    bus: new EventBus(),
+    bus: new EventBus(log),
     hooks: createHookRegistry()
   };
 }
