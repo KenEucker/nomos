@@ -1,7 +1,7 @@
 ---
-import Shell from "../../components/Shell.astro";
-import ResourceList from "../../islands/ResourceList.svelte";
-import ResourceForm from "../../islands/ResourceForm.svelte";
+import Shell from "../components/Shell.astro";
+import ResourceList from "../islands/ResourceList.svelte";
+import ResourceForm from "../islands/ResourceForm.svelte";
 const manifest = await fetch("/admin/api/manifest").then((res) => res.json()).catch(() => ({ resources: [] }));
 const path = Astro.params.path ?? "";
 const resource = manifest.resources?.find((item) => item.route.replace("/admin/api/", "") === path);

@@ -187,33 +187,6 @@ export async function createApp() {
     reply.type("text/html").send(buildSwaggerUiHtml("/openapi.json"));
   });
 
-  const adminDist = path.join(baseDir, "admin-ui", "dist");
-  const adminServer = path.join(adminDist, "server", "entry.mjs");
-  if (fs.existsSync(adminServer)) {
-    const astroModule = await import(pathToFileURL(adminServer).href);
-    if (astroModule.createMiddleware) {
-      await app.register(middie);
-      const middleware = astroModule.createMiddleware();
-      app.use("/admin", (req, res, next) => {
-        if (req.url?.startsWith("/admin/api")) {
-          next();
-          return;
-        }
-        middleware(req, res, next);
-      });
-    } else {
-      const handler = astroModule.handler ?? astroModule.default;
-      app.all("/admin", async (req, reply) => {
-        reply.hijack();
-        await handler(req.raw, reply.raw);
-      });
-      app.all("/admin/*", async (req, reply) => {
-        reply.hijack();
-        await handler(req.raw, reply.raw);
-      });
-    }
-  }
-
   for (const route of routeRegistry.routes) {
     app.route({
       method: route.method.toUpperCase() as any,
@@ -422,6 +395,53 @@ export async function createApp() {
       reply.code(500).send({ error: "internal_error" });
     }
   });
+
+  const adminDist = path.join(baseDir, "admin-ui", "dist");
+  const adminServer = path.join(adminDist, "server", "entry.mjs");
+  if (fs.existsSync(adminServer)) {
+    const astroModule = await import(pathToFileURL(adminServer).href);
+    if (astroModule.createMiddleware) {
+      await app.register(middie);
+      const middleware = astroModule.createMiddleware();
+      const shouldSkipAstro = (url: string | undefined) => {
+        const path = (url ?? "/").split("?")[0] ?? "/";
+        const excludedExact = new Set([
+          "/openapi.json",
+          "/docs",
+          "/health",
+          "/ready",
+          "/version",
+          "/admin/login"
+        ]);
+        if (excludedExact.has(path)) return true;
+        return (
+          path === "/api" ||
+          path.startsWith("/api/") ||
+          path === "/admin/api" ||
+          path.startsWith("/admin/api/") ||
+          path === "/webhooks" ||
+          path.startsWith("/webhooks/")
+        );
+      };
+      app.use((req, res, next) => {
+        if (shouldSkipAstro(req.url)) {
+          next();
+          return;
+        }
+        middleware(req, res, next);
+      });
+    } else {
+      const handler = astroModule.handler ?? astroModule.default;
+      app.all("/", async (req, reply) => {
+        reply.hijack();
+        await handler(req.raw, reply.raw);
+      });
+      app.all("/*", async (req, reply) => {
+        reply.hijack();
+        await handler(req.raw, reply.raw);
+      });
+    }
+  }
 
   const adminUser = {
     id: "admin",

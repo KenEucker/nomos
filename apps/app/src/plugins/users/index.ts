@@ -23,7 +23,7 @@ export default {
     users: (db: any, hooks: any, events: any) => createUsersService(db, hooks, events)
   },
   adminResources: resources,
-  nav: [{ path: "/admin/users", label: "Users" }],
+  nav: [{ path: "/users", label: "Users" }],
   listeners: [auditListener],
   jobs: [exampleJob],
   events: ["users.created", "users.updated", "users.deleted", "users.beforeCreate", "users.afterCreate"],
