@@ -3,8 +3,18 @@ import { createBootstrapLogger } from "../logging/logger.js";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.coerce.number().default(3001),
-  DATABASE_URL: z.string().optional().default("memory"),
+  PORT: z.preprocess(
+    (value) => {
+      if (value === 0) return undefined;
+      if (typeof value === "string" && value.trim() === "") return undefined;
+      return value;
+    },
+    z.coerce.number().default(3001)
+  ),
+  DATABASE_URL: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().optional().default("memory")
+  ),
   JWT_SECRET: z
     .preprocess(
       (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
@@ -25,7 +35,10 @@ const envSchema = z.object({
   LOG_ERROR_STACK: z
     .preprocess((value) => value === "true", z.boolean())
     .default(false),
-  LOG_DOMAINS: z.string().optional(),
+  LOG_DOMAINS: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().optional()
+  ),
   DIAGNOSTICS_ENABLED: z
     .preprocess((value) => value === "true", z.boolean())
     .default(false),
