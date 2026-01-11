@@ -38,13 +38,11 @@ export function createBaseLogger(env: Env): Logger {
         }
       }
     : undefined;
-  return pino(
-    {
-      level: env.LOG_LEVEL,
-      base: undefined
-    },
-    transport ? { transport } : undefined
-  );
+  return pino({
+    level: env.LOG_LEVEL,
+    base: undefined,
+    transport
+  });
 }
 
 export function createBootstrapLogger(): Logger {
@@ -53,24 +51,20 @@ export function createBootstrapLogger(): Logger {
     process.env.LOG_PRETTY !== undefined
       ? process.env.LOG_PRETTY === "true"
       : nodeEnv !== "production";
-  return pino(
-    {
-      level: process.env.LOG_LEVEL ?? "info",
-      base: undefined
-    },
-    pretty
+  return pino({
+    level: process.env.LOG_LEVEL ?? "info",
+    base: undefined,
+    transport: pretty
       ? {
-          transport: {
-            target: "pino-pretty",
-            options: {
-              colorize: true,
-              translateTime: "SYS:standard",
-              ignore: "pid,hostname"
-            }
+          target: "pino-pretty",
+          options: {
+            colorize: true,
+            translateTime: "SYS:standard",
+            ignore: "pid,hostname"
           }
         }
       : undefined
-  );
+  });
 }
 
 export function createDomainLogger(base: Logger, domain: LogDomain, allowedDomains: Set<string> | null) {
