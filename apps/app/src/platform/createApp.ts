@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import fastify from "fastify";
 import cookie from "@fastify/cookie";
 import formbody from "@fastify/formbody";
@@ -188,10 +188,24 @@ export async function createApp() {
   });
 
   const adminDist = path.join(baseDir, "admin-ui", "dist");
-  if (fs.existsSync(adminDist)) {
+  const adminClient = path.join(adminDist, "client");
+  const adminServer = path.join(adminDist, "server", "entry.mjs");
+  if (fs.existsSync(adminClient)) {
     await app.register(fastifyStatic, {
-      root: adminDist,
+      root: adminClient,
       prefix: "/admin"
+    });
+  }
+  if (fs.existsSync(adminServer)) {
+    const astroModule = await import(pathToFileURL(adminServer).href);
+    const handler = astroModule.handler ?? astroModule.default;
+    app.all("/admin", async (req, reply) => {
+      reply.hijack();
+      await handler(req.raw, reply.raw);
+    });
+    app.all("/admin/*", async (req, reply) => {
+      reply.hijack();
+      await handler(req.raw, reply.raw);
     });
   }
 
