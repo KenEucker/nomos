@@ -1,0 +1,9 @@
+{
+  "name": "nomos-root",
+  "private": true,
+  "workspaces": ["apps/app", "apps/app/src/admin-ui"],
+  "scripts": {
+    "dev": "npm --prefix apps/app run dev",
+    "build": "npm --prefix apps/app run build"
+  }
+}
