@@ -6,7 +6,12 @@ import { loadEnv } from "./platform/config/env.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const appDir = path.join(rootDir, "apps", "app");
-const envPaths = [path.join(rootDir, ".env"), path.join(appDir, ".env")];
+const cwdDir = process.cwd();
+const envPaths = [
+  path.join(cwdDir, ".env"),
+  path.join(rootDir, ".env"),
+  path.join(appDir, ".env")
+];
 for (const envPath of envPaths) {
   dotenv.config({ path: envPath, override: true });
 }
