@@ -7,7 +7,11 @@ const envSchema = z.object({
   DATABASE_URL: z.string().optional().default("memory"),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required").default("dev-secret"),
   DEV_AUTH_SECRET: z.string().optional(),
-  LOG_LEVEL: z.string().default("info"),
+  LOG_LEVEL: z
+    .preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().default("info")
+    ),
   LOG_PRETTY: z
     .preprocess((value) => value === "true", z.boolean())
     .default(false),
