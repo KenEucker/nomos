@@ -6,6 +6,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
   DATABASE_URL: z.string().optional().default("memory"),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required").default("dev-secret"),
+  DEV_AUTH_SECRET: z.string().optional(),
   LOG_LEVEL: z.string().default("info"),
   LOG_PRETTY: z
     .preprocess((value) => value === "true", z.boolean())
