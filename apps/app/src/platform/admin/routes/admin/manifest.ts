@@ -1,4 +1,4 @@
-import { buildManifest } from "../manifest.js";
+import { buildManifest } from "../../manifest.js";
 import type { Ctx } from "../../../ctx.js";
 
 export const config = {

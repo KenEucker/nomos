@@ -5,6 +5,6 @@ import node from "@astrojs/node";
 export default defineConfig({
   integrations: [svelte()],
   output: "server",
-  adapter: node({ mode: "standalone" }),
+  adapter: node({ mode: "middleware" }),
   base: "/admin"
 });

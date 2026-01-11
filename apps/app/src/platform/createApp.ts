@@ -5,6 +5,7 @@ import fastify from "fastify";
 import cookie from "@fastify/cookie";
 import formbody from "@fastify/formbody";
 import fastifyStatic from "@fastify/static";
+import middie from "@fastify/middie";
 import { nanoid } from "nanoid";
 import { loadEnv } from "./config/env.js";
 import { createAuthHelpers, errorResponse, jsonResponse } from "./ctx.js";
@@ -198,15 +199,21 @@ export async function createApp() {
   }
   if (fs.existsSync(adminServer)) {
     const astroModule = await import(pathToFileURL(adminServer).href);
-    const handler = astroModule.handler ?? astroModule.default;
-    app.all("/admin", async (req, reply) => {
-      reply.hijack();
-      await handler(req.raw, reply.raw);
-    });
-    app.all("/admin/*", async (req, reply) => {
-      reply.hijack();
-      await handler(req.raw, reply.raw);
-    });
+    if (astroModule.createMiddleware) {
+      await app.register(middie);
+      const middleware = astroModule.createMiddleware();
+      app.use("/admin", middleware);
+    } else {
+      const handler = astroModule.handler ?? astroModule.default;
+      app.all("/admin", async (req, reply) => {
+        reply.hijack();
+        await handler(req.raw, reply.raw);
+      });
+      app.all("/admin/*", async (req, reply) => {
+        reply.hijack();
+        await handler(req.raw, reply.raw);
+      });
+    }
   }
 
   for (const route of routeRegistry.routes) {
