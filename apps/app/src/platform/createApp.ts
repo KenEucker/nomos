@@ -26,12 +26,18 @@ import { registerDefaultListeners } from "./observability/listeners.js";
 import { resolvePermissions } from "./auth/permissions.js";
 import { findApiKey } from "./auth/apiKeys.js";
 import { createSession, getSession } from "./auth/sessions.js";
-import { createBaseLogger, createDomainLogger, parseLogDomains } from "./logging/logger.js";
+import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logging/logger.js";
 
 export async function createApp() {
   const env = loadEnv();
+  const app = fastify({
+    logger: createLoggerOptions(env),
+    genReqId: (req) => {
+      return (req.headers["x-request-id"] as string | undefined) ?? nanoid();
+    }
+  });
   const allowedDomains = parseLogDomains(env.LOG_DOMAINS);
-  const baseLogger = createBaseLogger(env);
+  const baseLogger = app.log;
   const serverLog = createDomainLogger(baseLogger, "server", allowedDomains);
   const pluginsLog = createDomainLogger(baseLogger, "plugins", allowedDomains);
   const authLog = createDomainLogger(baseLogger, "auth", allowedDomains);
@@ -42,13 +48,6 @@ export async function createApp() {
   const observabilityLog = createDomainLogger(baseLogger, "observability", allowedDomains);
   const openApiLog = createDomainLogger(baseLogger, "openapi", allowedDomains);
   const diagnosticsLog = createDomainLogger(baseLogger, "diagnostics", allowedDomains);
-
-  const app = fastify({
-    logger: baseLogger,
-    genReqId: (req) => {
-      return (req.headers["x-request-id"] as string | undefined) ?? nanoid();
-    }
-  });
   await app.register(cookie);
   await app.register(formbody);
 

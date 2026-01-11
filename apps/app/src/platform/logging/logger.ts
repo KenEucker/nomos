@@ -27,7 +27,13 @@ export function parseLogDomains(raw?: string): Set<string> | null {
   return domains.length ? new Set(domains) : null;
 }
 
-export function createBaseLogger(env: Env): Logger {
+export function createLoggerOptions(env: Env): {
+  level: string;
+  transport?: {
+    target: string;
+    options: Record<string, unknown>;
+  };
+} {
   const transport = env.LOG_PRETTY
     ? {
         target: "pino-pretty",
@@ -38,11 +44,10 @@ export function createBaseLogger(env: Env): Logger {
         }
       }
     : undefined;
-  return pino({
+  return {
     level: env.LOG_LEVEL,
-    base: undefined,
     transport
-  });
+  };
 }
 
 export function createBootstrapLogger(): Logger {
