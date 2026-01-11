@@ -5,7 +5,11 @@ import { createApp } from "./platform/createApp.js";
 import { loadEnv } from "./platform/config/env.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-dotenv.config({ path: path.join(rootDir, ".env") });
+const appDir = path.join(rootDir, "apps", "app");
+const envPaths = [path.join(rootDir, ".env"), path.join(appDir, ".env")];
+for (const envPath of envPaths) {
+  dotenv.config({ path: envPath });
+}
 
 const env = loadEnv();
 
