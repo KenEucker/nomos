@@ -9,7 +9,7 @@ This repository is designed to be LLM-legible. Key conventions:
 - **Validation**: Zod schemas declared in route config. Parsed once in adapter. Validation errors are normalized to `{ error: "validation_error", issues: [...] }`.
 - **Auth**: Core plugin provides API key and session auth. Route config controls auth (`required|optional|none`) plus permissions.
 - **Observability**: Events and listeners are first-class. Request, auth, job, and webhook activity is emitted and audited.
-- **Admin**: Admin UI is an Astro + Svelte app bundled in the same deployable, served from `/admin`.
+- **Admin**: Admin UI is an Astro + Svelte app bundled in the same deployable, served from `/admin`. Admin JSON endpoints live under `/admin/api`, and the product API is served under `/api`.
 - **Diagnostics**: `/health`, `/ready`, `/version` are public. Admin-only diagnostics are gated and disabled in prod unless enabled.
 
 See `apps/app/src/platform` for core registry types and adapters.
