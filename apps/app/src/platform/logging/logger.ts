@@ -52,12 +52,14 @@ export function createLoggerOptions(env: Env): {
 
 export function createBootstrapLogger(): Logger {
   const nodeEnv = process.env.NODE_ENV ?? "development";
+  const envLogLevel = process.env.LOG_LEVEL;
+  const level = envLogLevel && envLogLevel.trim() !== "" ? envLogLevel : "info";
   const pretty =
     process.env.LOG_PRETTY !== undefined
       ? process.env.LOG_PRETTY === "true"
       : nodeEnv !== "production";
   return pino({
-    level: process.env.LOG_LEVEL ?? "info",
+    level,
     base: undefined,
     transport: pretty
       ? {

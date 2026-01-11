@@ -9,7 +9,11 @@ export function buildSwaggerUiHtml(openApiUrl: string) {
     <div id="swagger-ui"></div>
     <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
     <script>
-      window.ui = SwaggerUIBundle({ url: "${openApiUrl}", dom_id: "#swagger-ui" });
+      window.ui = SwaggerUIBundle({
+        url: "${openApiUrl}",
+        dom_id: "#swagger-ui",
+        persistAuthorization: true
+      });
     </script>
   </body>
 </html>`;

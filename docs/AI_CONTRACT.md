@@ -12,5 +12,6 @@ This repository is designed to be LLM-legible. Key conventions:
 - **Admin**: Admin UI is an Astro + Svelte app bundled in the same deployable, served from `/`. Admin JSON endpoints live under `/admin/api`, and the product API is served under `/api`.
 - **Diagnostics**: `/health`, `/ready`, `/version` are public. Admin-only diagnostics are gated and disabled in prod unless enabled.
 - **Logging**: Use `app.log` or `app.log.child({ domain })` for subsystem logs. Route handlers should use `ctx.log` (includes `reqId`, `routeId`, and auth context). Request IDs are generated per request and emitted in request lifecycle logs. Avoid `console.log`. Use `/admin/api/diagnostics/routes` to inspect registered routes when debugging missing endpoints. Logging env vars: `LOG_LEVEL`, `LOG_PRETTY`, `LOG_DOMAINS`, `LOG_ERROR_STACK`.
+- **Development auth**: In development, `POST /auth/dev/token` can issue JWTs for Swagger testing when `DEV_AUTH_SECRET` is configured. This endpoint is disabled outside development.
 
 See `apps/app/src/platform` for core registry types and adapters.

@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import fastify from "fastify";
+import fastify, { type FastifyRequest } from "fastify";
 import cookie from "@fastify/cookie";
 import formbody from "@fastify/formbody";
 import middie from "@fastify/middie";
@@ -26,6 +26,7 @@ import { registerDefaultListeners } from "./observability/listeners.js";
 import { resolvePermissions } from "./auth/permissions.js";
 import { findApiKey } from "./auth/apiKeys.js";
 import { createSession, getSession } from "./auth/sessions.js";
+import { verifyJwt } from "./auth/jwt.js";
 import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logging/logger.js";
 
 export async function createApp() {
@@ -236,6 +237,15 @@ export async function createApp() {
   const openApi = buildOpenApi(routeRegistry);
   openApiLog.info("OpenAPI schema built.");
 
+  const canAccessDocs = (req: FastifyRequest) => {
+    if (env.NODE_ENV !== "production" || env.SWAGGER_PUBLIC) {
+      return true;
+    }
+    const sessionId = req.cookies?.session_id;
+    const session = sessionId ? getSession(db.sessions, sessionId) : null;
+    return Boolean(session);
+  };
+
   app.get("/openapi.json", async (_req, reply) => {
     if (!env.SWAGGER_PUBLIC && env.NODE_ENV === "production") {
       return reply.code(403).send({ error: "forbidden" });
@@ -244,12 +254,19 @@ export async function createApp() {
   });
 
   app.get("/docs", async (req, reply) => {
-    if (env.NODE_ENV === "production" && !env.SWAGGER_PUBLIC) {
-      const sessionId = req.cookies?.session_id;
-      const session = sessionId ? getSession(db.sessions, sessionId) : null;
-      if (!session) {
-        return reply.code(403).send({ error: "forbidden" });
-      }
+    if (!canAccessDocs(req)) {
+      return reply.code(403).send({ error: "forbidden" });
+    }
+    reply.type("text/html").send(buildSwaggerUiHtml("/openapi.json"));
+  });
+
+  app.get("/api", async (_req, reply) => {
+    reply.redirect("/api/docs", 302);
+  });
+
+  app.get("/api/docs", async (req, reply) => {
+    if (!canAccessDocs(req)) {
+      return reply.code(403).send({ error: "forbidden" });
     }
     reply.type("text/html").send(buildSwaggerUiHtml("/openapi.json"));
   });
@@ -263,7 +280,7 @@ export async function createApp() {
         const reqId = (req.headers["x-request-id"] as string) ?? nanoid();
         let user = null;
         let apiClient = null;
-        let authMode: "session" | "apiKey" | "none" = "none";
+        let authMode: "session" | "apiKey" | "jwt" | "none" = "none";
         const isAdminRoute = route.path.startsWith("/admin");
         if (isAdminRoute) {
           const sessionId = req.cookies?.session_id;
@@ -282,12 +299,12 @@ export async function createApp() {
             }
           }
         } else {
-          const apiKey =
-            (req.headers["x-api-key"] as string | undefined) ??
-            (typeof req.headers.authorization === "string"
-              ? req.headers.authorization.replace("Bearer ", "")
-              : undefined);
-          if (apiKey) {
+          const apiKeyHeader = req.headers["x-api-key"] as string | undefined;
+          const authHeader = typeof req.headers.authorization === "string"
+            ? req.headers.authorization
+            : undefined;
+          const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+          const authenticateApiKey = async (apiKey: string) => {
             const entry = findApiKey(db.apiKeys, apiKey);
             if (!entry) {
               await events.emit("apiKey.denied", { reason: "invalid" });
@@ -312,6 +329,30 @@ export async function createApp() {
             };
             authMode = "apiKey";
             await events.emit("apiKey.used", { apiClientId: entry.id });
+          };
+
+          if (apiKeyHeader) {
+            await authenticateApiKey(apiKeyHeader);
+          } else if (bearerToken) {
+            const looksLikeJwt = bearerToken.split(".").length === 3;
+            if (looksLikeJwt) {
+              const payload = verifyJwt(bearerToken, env.JWT_SECRET);
+              if (!payload?.sub) {
+                throw new HttpError(401, "Invalid token");
+              }
+              const userRecord = db.users.get(payload.sub);
+              if (!userRecord) {
+                throw new HttpError(401, "Invalid token");
+              }
+              user = {
+                id: userRecord.id,
+                roles: userRecord.roles ?? [],
+                permissions: resolvePermissions(userRecord, db.roles)
+              };
+              authMode = "jwt";
+            } else {
+              await authenticateApiKey(bearerToken);
+            }
           }
         }
 
