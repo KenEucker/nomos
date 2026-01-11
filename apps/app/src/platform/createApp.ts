@@ -261,7 +261,7 @@ export async function createApp() {
   });
 
   app.get("/api", async (_req, reply) => {
-    reply.redirect(302, "/api/docs");
+    reply.redirect("/api/docs", 302);
   });
 
   app.get("/api/docs", async (req, reply) => {
