@@ -41,7 +41,7 @@
             {error}
           </div>
         {/if}
-        <Button className="w-full" on:click|preventDefault={submit} disabled={loading}>
+        <Button className="w-full" on:click={submit} disabled={loading}>
           {loading ? "Signing in..." : "Sign in"}
         </Button>
       </div>
