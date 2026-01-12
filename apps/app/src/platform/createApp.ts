@@ -33,31 +33,6 @@ import { getPrismaClient } from "./db/prisma.js";
 export async function createApp() {
   const env = loadEnv();
 
-  if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === "") {
-    process.env.DATABASE_URL = env.DATABASE_URL;
-  }
-
-  // Only normalize sqlite "file:" URLs
-  if (process.env.DATABASE_URL?.startsWith("file:")) {
-    const raw = process.env.DATABASE_URL.slice("file:".length);
-
-    // Keep already-absolute paths as-is
-    if (path.isAbsolute(raw)) {
-      fs.mkdirSync(path.dirname(raw), { recursive: true });
-      process.env.DATABASE_URL = `file:${raw}`;
-      return;
-    }
-
-    // Resolve RELATIVE TO THE PRISMA SCHEMA DIRECTORY, not process.cwd()
-    const schemaPath = path.resolve("prisma/schema.prisma"); // cwd here is apps/app
-    const schemaDir = path.dirname(schemaPath);
-
-    const absolutePath = path.resolve(schemaDir, raw);
-
-    fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
-    process.env.DATABASE_URL = `file:${absolutePath}`;
-  }
-  
   const contentTypeForPath = (filePath: string) => {
     const ext = path.extname(filePath);
     switch (ext) {
@@ -80,12 +55,14 @@ export async function createApp() {
         return "application/octet-stream";
     }
   };
+
   const app = fastify({
     logger: createLoggerOptions(env),
     genReqId: (req) => {
       return (req.headers["x-request-id"] as string | undefined) ?? nanoid();
     }
   });
+
   const allowedDomains = parseLogDomains(env.LOG_DOMAINS);
   const baseLogger = app.log;
   const serverLog = createDomainLogger(baseLogger, "server", allowedDomains);
@@ -96,8 +73,11 @@ export async function createApp() {
   const webhooksLog = createDomainLogger(baseLogger, "webhooks", allowedDomains);
   const observabilityLog = createDomainLogger(baseLogger, "observability", allowedDomains);
   const openApiLog = createDomainLogger(baseLogger, "openapi", allowedDomains);
+
+  // Prisma singleton handles DATABASE_URL normalization and adapter wiring (Prisma 7).
   const prisma = getPrismaClient();
   await prisma.$connect();
+
   await app.register(cookie);
   await app.register(formbody);
 
@@ -132,6 +112,7 @@ export async function createApp() {
     const err = error instanceof Error ? error : new Error("Unknown error");
     req.log.error({ err }, "Unhandled error.");
     const requestId = req.id;
+
     if (error instanceof HttpError) {
       reply.code(error.statusCode).send({
         ok: false,
@@ -143,6 +124,7 @@ export async function createApp() {
       });
       return;
     }
+
     const isDev = env.NODE_ENV !== "production";
     const details: Record<string, unknown> = { requestId };
     if (isDev) {
@@ -151,6 +133,7 @@ export async function createApp() {
         details.stack = err.stack;
       }
     }
+
     reply.code(500).send({
       ok: false,
       error: {
@@ -174,6 +157,7 @@ export async function createApp() {
     jobs: new Map<string, any>(),
     jobRuns: []
   };
+
   const storage = new LocalStorageProvider(path.join(process.cwd(), ".local-uploads"));
 
   const events = new EventBus(eventsLog);
@@ -183,13 +167,16 @@ export async function createApp() {
   const baseDir = fs.existsSync(path.join(sourceDir, "admin-ui"))
     ? sourceDir
     : path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+
   const corePlugins: string[] = [];
 
   const plugins = await loadPlugins(baseDir, corePlugins);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
+
   for (const perm of plugins.registry.permissions) {
     db.permissions.add(perm);
   }
+
   const middlewareRegistry = createMiddlewareRegistry();
   middlewareRegistry.set("requestContext", requestContext);
   middlewareRegistry.set("audit", audit);
@@ -269,7 +256,7 @@ export async function createApp() {
   }
   jobsRuntime.register({
     id: "platform.webhook.delivery",
-    run: async (ctx, payload) => {
+    run: async (_ctx, payload) => {
       await webhooksRuntime.deliver(payload);
     }
   });
@@ -284,6 +271,7 @@ export async function createApp() {
 
   registerDefaultListeners(events, db);
   observabilityLog.info("Default listeners registered.");
+
   for (const listener of plugins.listeners) {
     events.on(listener.event, listener.handler, { mode: listener.mode });
   }
@@ -338,6 +326,7 @@ export async function createApp() {
         let user = null;
         let apiClient: ApiClient | null = null;
         let authMode: "session" | "none" = "none";
+
         const sessionId = req.cookies?.session_id;
         if (sessionId) {
           const session = await getSession(prisma, sessionId);
@@ -393,6 +382,7 @@ export async function createApp() {
             jsonResponse(reply, payload, statusCode, meta),
           error: errorResponse
         };
+
         const ctx = { ...ctxBase, auth: createAuthHelpers(ctxBase) };
 
         try {
@@ -447,7 +437,9 @@ export async function createApp() {
           }
 
           const middlewareEntries = ["requestContext", "audit", ...(route.config.middleware ?? [])];
-          const middlewares = middlewareEntries.map((entry) => resolveMiddleware(middlewareRegistry, entry));
+          const middlewares = middlewareEntries.map((entry) =>
+            resolveMiddleware(middlewareRegistry, entry)
+          );
 
           let index = -1;
           const runner = async () => {
@@ -499,6 +491,7 @@ export async function createApp() {
     const provider = (req.params as { provider?: string }).provider;
     const handler = provider ? plugins.registry.inboundWebhooks.get(provider) : undefined;
     if (!handler) return reply.code(404).send({ error: "not_found" });
+
     const ctxBase = {
       reqId: nanoid(),
       method: req.method,
@@ -526,13 +519,15 @@ export async function createApp() {
       json: async (payload: any, statusCode = 200) => jsonResponse(reply, payload, statusCode),
       error: errorResponse
     };
+
     const ctx = { ...ctxBase, auth: createAuthHelpers(ctxBase) };
+
     try {
       const result = await handler(ctx);
       if (!reply.sent && result !== undefined) {
         reply.send(result);
       }
-    } catch (error) {
+    } catch (_error) {
       reply.code(500).send({ error: "internal_error" });
     }
   });
@@ -541,6 +536,7 @@ export async function createApp() {
   const adminServer = path.join(adminDist, "server", "entry.mjs");
   const adminClient = path.join(adminDist, "client");
   const adminAstroClient = path.join(adminClient, "_astro");
+
   if (fs.existsSync(adminAstroClient)) {
     app.get("/_astro/*", async (req, reply) => {
       const assetPath = (req.params as { "*": string })["*"] ?? "";
@@ -555,37 +551,27 @@ export async function createApp() {
       return reply.send(fs.createReadStream(resolved));
     });
   }
+
   if (fs.existsSync(adminServer)) {
     const astroModule = await import(pathToFileURL(adminServer).href);
     if (astroModule.createMiddleware) {
       await app.register(middie);
       const middleware = astroModule.createMiddleware();
       const shouldSkipAstro = (url: string | undefined) => {
-        const path = (url ?? "/").split("?")[0] ?? "/";
+        const p = (url ?? "/").split("?")[0] ?? "/";
         const excludedExact = new Set(["/openapi.json", "/docs", "/health", "/ready", "/version"]);
-        if (excludedExact.has(path)) return true;
-        return (
-          path === "/api" ||
-          path.startsWith("/api/") ||
-          path === "/webhooks" ||
-          path.startsWith("/webhooks/")
-        );
+        if (excludedExact.has(p)) return true;
+        return p === "/api" || p.startsWith("/api/") || p === "/webhooks" || p.startsWith("/webhooks/");
       };
+
       adminLog.info(
         {
           mount: "/",
-          excluded: [
-            "/openapi.json",
-            "/docs",
-            "/health",
-            "/ready",
-            "/version",
-            "/api/*",
-            "/webhooks/*"
-          ]
+          excluded: ["/openapi.json", "/docs", "/health", "/ready", "/version", "/api/*", "/webhooks/*"]
         },
         "Mounted Astro middleware."
       );
+
       app.use((req: IncomingMessage, res: ServerResponse, next: (err?: Error) => void) => {
         if (shouldSkipAstro(req.url)) {
           next();

@@ -1,7 +1,7 @@
-import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
+import { getPrismaClient } from "../src/platform/db/prisma"
 
-const prisma = new PrismaClient()
+const prisma = getPrismaClient()
 
 async function main() {
   // ---------------------------------------------------------------------------
@@ -235,5 +235,7 @@ main()
     process.exit(1)
   })
   .finally(async () => {
+    // If you prefer, you can omit disconnecting so the singleton can be reused,
+    // but for a one-shot seed process this is fine.
     await prisma.$disconnect()
   })
