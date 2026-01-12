@@ -310,6 +310,10 @@ export async function createApp() {
     reply.redirect("/api/docs", 302);
   });
 
+  app.get("/api/", async (_req, reply) => {
+    reply.redirect("/api/docs", 302);
+  });
+
   app.get("/api/docs", async (req, reply) => {
     if (!(await canAccessDocs(req))) {
       return reply.code(403).send({ error: "forbidden" });
