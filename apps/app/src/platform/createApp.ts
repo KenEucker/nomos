@@ -41,6 +41,28 @@ export async function createApp() {
     fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
     process.env.DATABASE_URL = `file:${absolutePath}`;
   }
+  const contentTypeForPath = (filePath: string) => {
+    const ext = path.extname(filePath);
+    switch (ext) {
+      case ".js":
+        return "text/javascript";
+      case ".css":
+        return "text/css";
+      case ".map":
+        return "application/json";
+      case ".svg":
+        return "image/svg+xml";
+      case ".png":
+        return "image/png";
+      case ".jpg":
+      case ".jpeg":
+        return "image/jpeg";
+      case ".webp":
+        return "image/webp";
+      default:
+        return "application/octet-stream";
+    }
+  };
   const app = fastify({
     logger: createLoggerOptions(env),
     genReqId: (req) => {
@@ -497,6 +519,21 @@ export async function createApp() {
 
   const adminDist = path.join(baseDir, "admin-ui", "dist");
   const adminServer = path.join(adminDist, "server", "entry.mjs");
+  const adminClient = path.join(adminDist, "client");
+  if (fs.existsSync(adminClient)) {
+    app.get("/_astro/*", async (req, reply) => {
+      const assetPath = (req.params as { "*": string })["*"] ?? "";
+      const resolved = path.normalize(path.join(adminClient, assetPath));
+      if (!resolved.startsWith(adminClient)) {
+        return reply.code(400).send({ error: "invalid_path" });
+      }
+      if (!fs.existsSync(resolved) || fs.statSync(resolved).isDirectory()) {
+        return reply.code(404).send({ error: "not_found" });
+      }
+      reply.type(contentTypeForPath(resolved));
+      return reply.send(fs.createReadStream(resolved));
+    });
+  }
   if (fs.existsSync(adminServer)) {
     const astroModule = await import(pathToFileURL(adminServer).href);
     if (astroModule.createMiddleware) {
