@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "npm run build:admin-ui && tsx src/server.ts",
     "build": "npm run build:admin-ui && tsc -p tsconfig.json",
     "build:admin-ui": "npm --prefix src/admin-ui install && npm --prefix src/admin-ui run build",
