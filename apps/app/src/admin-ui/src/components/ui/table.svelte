@@ -1,6 +1,7 @@
 <script lang="ts">
   import { cn } from "../../lib/utils";
-  export let className = "";
+
+  let { className = "" } = $props<{ className?: string }>();
 </script>
 
 <div class="w-full overflow-auto">

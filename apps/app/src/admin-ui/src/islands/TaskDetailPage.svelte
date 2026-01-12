@@ -9,7 +9,7 @@
   import { apiDelete, apiGet, apiPatch, apiPost } from "../lib/api";
   import { session, hasRole, type SessionUser } from "../lib/session";
 
-  export let taskId = "";
+  let { taskId = "" } = $props<{ taskId?: string }>();
   let task: any = null;
   let comments: Array<any> = [];
   let attachments: Array<any> = [];

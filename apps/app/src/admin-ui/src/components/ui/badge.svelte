@@ -1,7 +1,10 @@
 <script lang="ts">
   import { cn } from "../../lib/utils";
-  export let variant: "default" | "secondary" | "success" = "default";
-  export let className = "";
+
+  let { variant = "default", className = "" } = $props<{
+    variant?: "default" | "secondary" | "success";
+    className?: string;
+  }>();
 </script>
 
 <span

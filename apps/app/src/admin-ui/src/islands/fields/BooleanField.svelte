@@ -1,6 +1,5 @@
 <script>
-  export let label;
-  export let value = false;
+  let { label, value = $bindable(false) } = $props();
 </script>
 
 <label>

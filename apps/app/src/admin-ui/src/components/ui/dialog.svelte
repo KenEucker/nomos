@@ -1,8 +1,15 @@
 <script lang="ts">
   import { cn } from "../../lib/utils";
-  export let open = false;
-  export let onClose: (() => void) | undefined;
-  export let className = "";
+
+  let {
+    open = $bindable(false),
+    onClose,
+    className = ""
+  } = $props<{
+    open?: boolean;
+    onClose?: () => void;
+    className?: string;
+  }>();
 
   const close = () => {
     onClose?.();

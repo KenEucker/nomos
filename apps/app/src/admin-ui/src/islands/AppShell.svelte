@@ -4,7 +4,7 @@
   import { apiPost } from "../lib/api";
   import Button from "../components/ui/button.svelte";
 
-  export let title = "Dashboard";
+  let { title = "Dashboard" } = $props<{ title?: string }>();
   let user: SessionUser | null = null;
   let loading = true;
   let currentPath = "";

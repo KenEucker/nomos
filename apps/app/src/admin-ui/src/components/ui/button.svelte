@@ -1,8 +1,16 @@
 <script lang="ts">
   import { cn } from "../../lib/utils";
-  export let variant: "default" | "secondary" | "ghost" | "outline" | "destructive" = "default";
-  export let size: "default" | "sm" | "lg" = "default";
-  export let className = "";
+
+  let {
+    variant = "default",
+    size = "default",
+    className = "",
+    ...restProps
+  } = $props<{
+    variant?: "default" | "secondary" | "ghost" | "outline" | "destructive";
+    size?: "default" | "sm" | "lg";
+    className?: string;
+  }>();
 </script>
 
 <button
@@ -22,7 +30,7 @@
     },
     className
   )}
-  {...$$restProps}
+  {...restProps}
 >
   <slot />
 </button>

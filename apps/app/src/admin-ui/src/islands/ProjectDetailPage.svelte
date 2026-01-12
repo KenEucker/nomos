@@ -9,7 +9,7 @@
   import { apiGet, apiPost } from "../lib/api";
   import { session, hasRole, type SessionUser } from "../lib/session";
 
-  export let projectId = "";
+  let { projectId = "" } = $props<{ projectId?: string }>();
   let project: any = null;
   let tasks: Array<any> = [];
   let loading = true;

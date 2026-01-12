@@ -5,8 +5,7 @@
   import BooleanField from "./fields/BooleanField.svelte";
   import DateTimeField from "./fields/DateTimeField.svelte";
 
-  export let field;
-  export let value;
+  let { field, value = $bindable() } = $props();
 </script>
 
 {#if field.type === "email"}

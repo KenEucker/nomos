@@ -1,7 +1,5 @@
 <script>
-  export let label;
-  export let value = "";
-  export let options = [];
+  let { label, value = $bindable(""), options = [] } = $props();
 </script>
 
 <label>{label}</label>

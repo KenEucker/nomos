@@ -1,6 +1,7 @@
 <script>
   import FieldRenderer from "./FieldRenderer.svelte";
-  export let resource;
+
+  let { resource } = $props();
 
   let formData = {};
 
