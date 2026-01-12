@@ -1,7 +1,12 @@
 <script lang="ts">
   import { cn } from "../../lib/utils";
-  export let variant: "default" | "secondary" | "success" = "default";
-  export let className = "";
+  import type { Snippet } from "../../lib/utils";
+
+  let { variant = "default", className = "", children } = $props<{
+    variant?: "default" | "secondary" | "success";
+    className?: string;
+    children?: Snippet;
+  }>();
 </script>
 
 <span
@@ -15,5 +20,5 @@
     className
   )}
   >
-  <slot />
+  {@render children?.()}
 </span>

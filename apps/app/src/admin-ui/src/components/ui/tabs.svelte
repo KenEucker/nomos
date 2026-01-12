@@ -1,9 +1,17 @@
 <script lang="ts">
   import { cn } from "../../lib/utils";
-  export let tabs: Array<{ id: string; label: string }> = [];
-  export let active = "";
-  export let className = "";
-  export let onChange: ((id: string) => void) | undefined;
+
+  let {
+    tabs = [],
+    active = "",
+    className = "",
+    onChange
+  } = $props<{
+    tabs?: Array<{ id: string; label: string }>;
+    active?: string;
+    className?: string;
+    onChange?: (id: string) => void;
+  }>();
 </script>
 
 <div class={cn("space-y-4", className)}>
@@ -16,7 +24,7 @@
             ? "bg-slate-100 text-slate-900"
             : "text-slate-300 hover:text-slate-100"
         )}
-        on:click={() => onChange?.(tab.id)}
+        onclick={() => onChange?.(tab.id)}
       >
         {tab.label}
       </button>

@@ -9,7 +9,7 @@
   import { apiGet, apiPost } from "../lib/api";
   import { session, hasRole, type SessionUser } from "../lib/session";
 
-  export let projectId = "";
+  let { projectId = "" } = $props<{ projectId?: string }>();
   let project: any = null;
   let tasks: Array<any> = [];
   let loading = true;
@@ -59,7 +59,7 @@
     <div class="mt-6 flex items-center justify-between">
       <h3 class="text-lg font-semibold">Tasks</h3>
       {#if hasRole(user, "editor") || hasRole(user, "admin")}
-        <Button on:click={() => (showCreate = true)}>Add task</Button>
+        <Button onclick={() => (showCreate = true)}>Add task</Button>
       {/if}
     </div>
     <div class="mt-4">
@@ -96,8 +96,8 @@
         <Input placeholder="Description" bind:value={description} />
       </div>
       <div class="flex justify-end gap-2">
-        <Button variant="ghost" on:click={() => (showCreate = false)}>Cancel</Button>
-        <Button on:click={createTask} disabled={!title}>Create</Button>
+        <Button variant="ghost" onclick={() => (showCreate = false)}>Cancel</Button>
+        <Button onclick={createTask} disabled={!title}>Create</Button>
       </div>
     </div>
   </Dialog>

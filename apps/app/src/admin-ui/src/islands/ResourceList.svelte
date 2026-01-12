@@ -1,6 +1,5 @@
 <script>
-  export let resources = [];
-  export let data = {};
+  let { resources = [], data = {} } = $props();
 </script>
 
 <div class="resource-list">

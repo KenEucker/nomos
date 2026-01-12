@@ -1,35 +1,41 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import type { Snippet } from "../lib/utils";
   import { session, loadSession, hasRole, type SessionUser } from "../lib/session";
   import { apiPost } from "../lib/api";
   import Button from "../components/ui/button.svelte";
 
-  export let title = "Dashboard";
-  let user: SessionUser | null = null;
-  let loading = true;
-  let currentPath = "";
+  type Props = { title?: string; children?: Snippet };
+  let { title = "Dashboard", children }: Props = $props();
 
-  const unsubscribe = session.subscribe((value) => {
-    user = value;
-  });
-
-  onMount(async () => {
-    try {
-      currentPath = window.location.pathname;
-      await loadSession();
-    } catch {
-      window.location.href = "/login";
-    } finally {
-      loading = false;
-    }
-    return () => unsubscribe();
-  });
+  let user = $state<SessionUser | null>(null);
+  let loading = $state(true);
+  let currentPath = $state("");
 
   const navItems = [
     { label: "Dashboard", path: "/" },
     { label: "Projects", path: "/projects" },
     { label: "Users", path: "/users", role: "admin" }
   ];
+
+  onMount(() => {
+    const unsubscribe = session.subscribe((value) => {
+      user = value;
+    });
+
+     (async () => {
+      try {
+        currentPath = window.location.pathname;
+        await loadSession();
+      } catch {
+        window.location.href = "/login";
+      } finally {
+        loading = false;
+      }
+    })();
+
+    return () => unsubscribe();
+  });
 
   const handleLogout = async () => {
     try {
@@ -69,15 +75,17 @@
           {/each}
         </nav>
       </aside>
+
       <main class="flex-1 p-8">
         <div class="mb-6 flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-semibold">{title}</h1>
             <p class="text-sm text-slate-400">Signed in as {user?.name}</p>
           </div>
-          <Button variant="outline" on:click={handleLogout}>Log out</Button>
+          <Button variant="outline" onclick={handleLogout}>Log out</Button>
         </div>
-        <slot />
+
+        {@render children?.()}
       </main>
     </div>
   </div>

@@ -1,10 +1,12 @@
 <script>
   import FieldRenderer from "./FieldRenderer.svelte";
-  export let resource;
+
+  let { resource } = $props();
 
   let formData = {};
 
-  const submit = async () => {
+  const submit = async (e) => {
+    e.preventDefault();
     await fetch(resource.route, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -14,7 +16,7 @@
 </script>
 
 {#if resource}
-  <form class="resource-form" on:submit|preventDefault={submit}>
+  <form class="resource-form" onsubmit={submit}>
     <h3>Create {resource.label}</h3>
     {#each resource.fields as field}
       <FieldRenderer {field} bind:value={formData[field.name]} />

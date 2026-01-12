@@ -48,9 +48,9 @@
 <AppShell title="Projects">
   <div class="mb-4 flex flex-wrap items-center gap-3">
     <Input className="max-w-sm" placeholder="Search projects" bind:value={search} />
-    <Button variant="secondary" on:click={loadProjects}>Search</Button>
+    <Button variant="secondary" onclick={loadProjects}>Search</Button>
     {#if hasRole(user, "editor") || hasRole(user, "admin")}
-      <Button on:click={() => (showCreate = true)}>New project</Button>
+      <Button onclick={() => (showCreate = true)}>New project</Button>
     {/if}
   </div>
 
@@ -81,8 +81,8 @@
     <div class="mt-4 flex items-center justify-between text-sm text-slate-400">
       <div>Page {page} of {Math.max(1, Math.ceil(total / pageSize))}</div>
       <div class="space-x-2">
-        <Button variant="ghost" size="sm" on:click={() => { if (page > 1) { page -= 1; loadProjects(); } }}>Prev</Button>
-        <Button variant="ghost" size="sm" on:click={() => { if (page < Math.ceil(total / pageSize)) { page += 1; loadProjects(); } }}>Next</Button>
+        <Button variant="ghost" size="sm" onclick={() => { if (page > 1) { page -= 1; loadProjects(); } }}>Prev</Button>
+        <Button variant="ghost" size="sm" onclick={() => { if (page < Math.ceil(total / pageSize)) { page += 1; loadProjects(); } }}>Next</Button>
       </div>
     </div>
   {/if}
@@ -98,8 +98,8 @@
         <Input placeholder="Description" bind:value={description} />
       </div>
       <div class="flex justify-end gap-2">
-        <Button variant="ghost" on:click={() => (showCreate = false)}>Cancel</Button>
-        <Button on:click={createProject} disabled={!name}>Create</Button>
+        <Button variant="ghost" onclick={() => (showCreate = false)}>Cancel</Button>
+        <Button onclick={createProject} disabled={!name}>Create</Button>
       </div>
     </div>
   </Dialog>

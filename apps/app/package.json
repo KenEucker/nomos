@@ -9,8 +9,8 @@
     "build": "npm run build:admin-ui && tsc -p tsconfig.json",
     "build:admin-ui": "npm --prefix src/admin-ui install && npm --prefix src/admin-ui run build",
     "health-check": "node scripts/health-check.mjs",
-    "prisma:migrate": "prisma migrate dev --name init",
-    "prisma:seed": "prisma db seed",
+    "prisma:migrate": "dotenv -e ../../.env -- prisma migrate dev --name init",
+    "prisma:seed": "dotenv -e ../../.env -- prisma db seed",
     "start": "node dist/server.js"
   },
   "dependencies": {
@@ -29,6 +29,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.11.19",
+    "dotenv-cli": "^11.0.0",
     "prisma": "^6.14.0",
     "tsx": "^4.7.0",
     "typescript": "^5.4.5"
