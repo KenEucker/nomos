@@ -336,7 +336,7 @@ export async function createApp() {
             path: req.url,
             routeId: route.id,
             userId: user?.id,
-            apiKeyId: apiClient?.id
+            apiKeyId: (apiClient as ApiClient | null)?.id
           }),
           json: async (payload: any, statusCode = 200, meta?: Record<string, any>) =>
             jsonResponse(reply, payload, statusCode, meta),
