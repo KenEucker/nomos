@@ -162,7 +162,10 @@ export async function createApp() {
   const events = new EventBus(eventsLog);
   const hooks = createHookRegistry();
 
-  const baseDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const sourceDir = path.join(process.cwd(), "src");
+  const baseDir = fs.existsSync(path.join(sourceDir, "admin-ui"))
+    ? sourceDir
+    : path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
   const corePlugins: string[] = [];
 
   const plugins = await loadPlugins(baseDir, corePlugins);
