@@ -31,7 +31,7 @@
   >
     <div
       class={cn(
-        "max-h-[90vh] w-full overflow-y-auto rounded-t-xl border border-slate-800 bg-slate-950 p-4 shadow-xl sm:max-w-lg sm:rounded-lg sm:p-6",
+        "max-h-[90vh] w-full overflow-y-auto rounded-t-xl border border-slate-200 bg-white p-4 shadow-xl sm:max-w-lg sm:rounded-lg sm:p-6 dark:border-slate-800 dark:bg-slate-950",
         className
       )}
       onclick={(e) => e.stopPropagation()}

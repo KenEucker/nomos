@@ -13,9 +13,9 @@
   class={cn(
     "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold",
     {
-      "bg-slate-800 text-slate-100": variant === "default",
-      "bg-slate-700 text-slate-200": variant === "secondary",
-      "bg-emerald-500/20 text-emerald-200": variant === "success"
+      "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-100": variant === "default",
+      "bg-slate-300 text-slate-700 dark:bg-slate-700 dark:text-slate-200": variant === "secondary",
+      "bg-emerald-500/20 text-emerald-700 dark:text-emerald-200": variant === "success"
     },
     className
   )}
