@@ -4,26 +4,36 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "npm run build:admin-ui && tsx src/server.ts",
     "build": "npm run build:admin-ui && tsc -p tsconfig.json",
     "build:admin-ui": "npm --prefix src/admin-ui install && npm --prefix src/admin-ui run build",
     "health-check": "node scripts/health-check.mjs",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:seed": "prisma db seed",
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "@fastify/formbody": "^8.0.2",
     "@fastify/middie": "^8.3.0",
+    "@prisma/client": "^6.14.0",
+    "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
     "fastify": "^5.6.2",
-    "@fastify/cookie": "^11.0.2",
+    "nanoid": "^5.1.6",
     "pino": "^9.6.0",
     "pino-pretty": "^11.3.0",
-    "zod": "^4.3.5",
-    "nanoid": "^5.1.6"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.11.19",
+    "prisma": "^6.14.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.4.5",
-    "@types/node": "^20.11.19"
+    "typescript": "^5.4.5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

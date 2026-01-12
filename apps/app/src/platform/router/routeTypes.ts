@@ -16,6 +16,10 @@ export type RouteConfig = {
   summary?: string;
   description?: string;
   deprecated?: boolean;
+  openapi?: {
+    operation?: Record<string, any>;
+    components?: Record<string, any>;
+  };
 };
 
 export type RouteModule = {

@@ -4,6 +4,7 @@ import type { JobsRuntime } from "./jobs/runtime.js";
 import type { EventBus } from "./events/bus.js";
 import type { WebhookRuntime } from "./webhooks/outbound.js";
 import type { ServicesRegistry } from "./plugins/registry.js";
+import type { PrismaClient } from "@prisma/client";
 import { HttpError } from "./errors.js";
 
 export type UserIdentity = {
@@ -30,6 +31,7 @@ export type Ctx = {
   user: UserIdentity | null;
   apiClient: ApiClient | null;
   db: InMemoryStore;
+  prisma: PrismaClient;
   services: ServicesRegistry;
   events: EventBus;
   jobs: JobsRuntime;
@@ -40,8 +42,8 @@ export type Ctx = {
     hasPermission: (permission: string) => boolean;
   };
   log: Logger;
-  json: (payload: any, statusCode?: number) => Promise<void>;
-  error: (statusCode: number, message: string, details?: unknown) => never;
+  json: (payload: any, statusCode?: number, meta?: Record<string, any>) => Promise<void>;
+  error: (statusCode: number, code: string, message: string, details?: unknown) => never;
   req: FastifyRequest;
   reply: FastifyReply;
 };
@@ -66,7 +68,7 @@ export function createAuthHelpers(ctx: Omit<Ctx, "auth">): Ctx["auth"] {
   return {
     requireUser: () => {
       if (!ctx.user) {
-        throw new HttpError(401, "Authentication required");
+        throw new HttpError(401, "unauthorized", "Authentication required");
       }
       return ctx.user;
     },
@@ -74,7 +76,7 @@ export function createAuthHelpers(ctx: Omit<Ctx, "auth">): Ctx["auth"] {
       const has = ctx.user?.permissions.includes(permission) ||
         ctx.apiClient?.permissions.includes(permission);
       if (!has) {
-        throw new HttpError(403, "Missing permission", { permission });
+        throw new HttpError(403, "forbidden", "Missing permission", { permission });
       }
     },
     hasPermission: (permission: string) => {
@@ -87,10 +89,22 @@ export function createAuthHelpers(ctx: Omit<Ctx, "auth">): Ctx["auth"] {
   };
 }
 
-export function jsonResponse(reply: FastifyReply, payload: any, statusCode = 200) {
-  reply.code(statusCode).send(payload);
+export function jsonResponse(
+  reply: FastifyReply,
+  payload: any,
+  statusCode = 200,
+  meta?: Record<string, any>
+) {
+  const response: Record<string, any> = { ok: true, data: payload };
+  if (meta) response.meta = meta;
+  reply.code(statusCode).send(response);
 }
 
-export function errorResponse(statusCode: number, message: string, details?: unknown): never {
-  throw new HttpError(statusCode, message, details);
+export function errorResponse(
+  statusCode: number,
+  code: string,
+  message: string,
+  details?: unknown
+): never {
+  throw new HttpError(statusCode, code, message, details);
 }

@@ -10,7 +10,7 @@ export const config = {
 
 export const get = async (ctx: Ctx) => {
   const user = ctx.services.users.get(ctx.params.id);
-  if (!user) return ctx.error(404, "Not found");
+  if (!user) return ctx.error(404, "not_found", "Not found");
   return ctx.json(user);
 };
 
@@ -28,7 +28,7 @@ export const patchConfig = {
 
 export const patch = async (ctx: Ctx) => {
   const user = await ctx.services.users.update(ctx.params.id, ctx.body);
-  if (!user) return ctx.error(404, "Not found");
+  if (!user) return ctx.error(404, "not_found", "Not found");
   return ctx.json(user);
 };
 
@@ -40,6 +40,6 @@ export const delConfig = {
 
 export const del = async (ctx: Ctx) => {
   const user = await ctx.services.users.remove(ctx.params.id);
-  if (!user) return ctx.error(404, "Not found");
+  if (!user) return ctx.error(404, "not_found", "Not found");
   return ctx.json({ status: "deleted" });
 };
