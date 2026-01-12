@@ -15,7 +15,15 @@
   const navItems = [
     { label: "Dashboard", path: "/" },
     { label: "Projects", path: "/projects" },
-    { label: "Users", path: "/users", role: "admin" }
+    { label: "Users", path: "/users", role: "admin" },
+    { label: "API Keys", path: "/api-keys", role: "admin" },
+    { label: "Webhooks", path: "/webhooks", role: "admin" },
+    { label: "Jobs", path: "/jobs", role: "admin" },
+    { label: "Audit Log", path: "/audit", role: "admin" },
+    { label: "Errors", path: "/errors", role: "admin" },
+    { label: "Routes", path: "/routes", role: "admin" },
+    { label: "Diagnostics", path: "/diagnostics", role: "admin" },
+    { label: "API Docs", path: "/docs" }
   ];
 
   onMount(() => {
