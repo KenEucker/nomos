@@ -1,9 +1,9 @@
-import type { Logger } from "pino";
+import type { AppLogger } from "../logging/logger.js";
 
 export type EventMeta = {
   event: string;
   timestamp: string;
-  log?: Logger;
+  log?: AppLogger;
 };
 
 export type EventHandler = (payload: any, meta: EventMeta) => Promise<void> | void;

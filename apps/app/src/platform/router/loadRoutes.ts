@@ -58,7 +58,7 @@ export async function loadRoutes(
         if (!handler) continue;
         const methodConfigKey = `${configMethod}Config` as keyof RouteModule;
         const methodConfig = routeModule[methodConfigKey];
-        const config = {
+        const config: RouteDefinition["config"] = {
           auth: "required",
           ...(routeModule.config ?? {}),
           ...(methodConfig ?? {})

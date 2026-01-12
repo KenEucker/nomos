@@ -1,10 +1,10 @@
-import type { Logger } from "pino";
 import type { EventHandler, EventListener } from "./types.js";
+import type { AppLogger } from "../logging/logger.js";
 
 export class EventBus {
   private listeners = new Map<string, EventListener[]>();
 
-  constructor(private log: Logger) {}
+  constructor(private log: AppLogger) {}
 
   on(event: string, handler: EventHandler, options?: { mode?: "bestEffort" | "failFast" }) {
     const entry = { event, handler, mode: options?.mode ?? "bestEffort" };

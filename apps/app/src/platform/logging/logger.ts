@@ -1,6 +1,15 @@
 import pino from "pino";
-import type { Logger } from "pino";
 import type { Env } from "../config/env.js";
+
+export type LogFn = (...args: any[]) => void;
+export type AppLogger = {
+  child: (bindings: Record<string, any>) => AppLogger;
+  level: string;
+  debug: LogFn;
+  info: LogFn;
+  warn: LogFn;
+  error: LogFn;
+};
 
 export const LOG_DOMAINS = [
   "server",
@@ -50,7 +59,7 @@ export function createLoggerOptions(env: Env): {
   };
 }
 
-export function createBootstrapLogger(): Logger {
+export function createBootstrapLogger(): AppLogger {
   const nodeEnv = process.env.NODE_ENV ?? "development";
   const envLogLevel = process.env.LOG_LEVEL;
   const level = envLogLevel && envLogLevel.trim() !== "" ? envLogLevel : "info";
@@ -74,7 +83,11 @@ export function createBootstrapLogger(): Logger {
   });
 }
 
-export function createDomainLogger(base: Logger, domain: LogDomain, allowedDomains: Set<string> | null) {
+export function createDomainLogger(
+  base: AppLogger,
+  domain: LogDomain,
+  allowedDomains: Set<string> | null
+) {
   const logger = base.child({ domain });
   if (allowedDomains && !allowedDomains.has(domain)) {
     logger.level = "silent";

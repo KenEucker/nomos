@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import fastify, { type FastifyRequest } from "fastify";
 import cookie from "@fastify/cookie";
@@ -8,6 +9,7 @@ import middie from "@fastify/middie";
 import { nanoid } from "nanoid";
 import { loadEnv } from "./config/env.js";
 import { createAuthHelpers, errorResponse, jsonResponse } from "./ctx.js";
+import type { ApiClient, InMemoryStore } from "./ctx.js";
 import { HttpError } from "./errors.js";
 import { createMiddlewareRegistry, resolveMiddleware } from "./middleware/registry.js";
 import { audit } from "./middleware/builtins/audit.js";
@@ -30,6 +32,37 @@ import { getPrismaClient } from "./db/prisma.js";
 
 export async function createApp() {
   const env = loadEnv();
+  if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === "") {
+    process.env.DATABASE_URL = env.DATABASE_URL;
+  }
+  if (process.env.DATABASE_URL?.startsWith("file:")) {
+    const dbUrl = process.env.DATABASE_URL.slice("file:".length);
+    const absolutePath = path.resolve(dbUrl);
+    fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
+    process.env.DATABASE_URL = `file:${absolutePath}`;
+  }
+  const contentTypeForPath = (filePath: string) => {
+    const ext = path.extname(filePath);
+    switch (ext) {
+      case ".js":
+        return "text/javascript";
+      case ".css":
+        return "text/css";
+      case ".map":
+        return "application/json";
+      case ".svg":
+        return "image/svg+xml";
+      case ".png":
+        return "image/png";
+      case ".jpg":
+      case ".jpeg":
+        return "image/jpeg";
+      case ".webp":
+        return "image/webp";
+      default:
+        return "application/octet-stream";
+    }
+  };
   const app = fastify({
     logger: createLoggerOptions(env),
     genReqId: (req) => {
@@ -68,7 +101,7 @@ export async function createApp() {
     const durationMs = start ? Date.now() - start : undefined;
     const routeId =
       (req as any).routeId ??
-      (reply.context?.config as { routeId?: string } | undefined)?.routeId ??
+      (reply.routeOptions?.config as { routeId?: string } | undefined)?.routeId ??
       "unknown";
     const authMode = (req as any).authMode ?? "none";
     const userId = (req as any).userId;
@@ -79,7 +112,8 @@ export async function createApp() {
   });
 
   app.setErrorHandler((error, req, reply) => {
-    req.log.error({ err: error }, "Unhandled error.");
+    const err = error instanceof Error ? error : new Error("Unknown error");
+    req.log.error({ err }, "Unhandled error.");
     const requestId = req.id;
     if (error instanceof HttpError) {
       reply.code(error.statusCode).send({
@@ -95,9 +129,9 @@ export async function createApp() {
     const isDev = env.NODE_ENV !== "production";
     const details: Record<string, unknown> = { requestId };
     if (isDev) {
-      details.message = error.message;
-      if (env.LOG_ERROR_STACK && error.stack) {
-        details.stack = error.stack;
+      details.message = err.message;
+      if (env.LOG_ERROR_STACK && err.stack) {
+        details.stack = err.stack;
       }
     }
     reply.code(500).send({
@@ -110,7 +144,7 @@ export async function createApp() {
     });
   });
 
-  const db = {
+  const db: InMemoryStore = {
     users: new Map<string, any>(),
     roles: new Map<string, any>(),
     permissions: new Set<string>(),
@@ -128,7 +162,10 @@ export async function createApp() {
   const events = new EventBus(eventsLog);
   const hooks = createHookRegistry();
 
-  const baseDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const sourceDir = path.join(process.cwd(), "src");
+  const baseDir = fs.existsSync(path.join(sourceDir, "admin-ui"))
+    ? sourceDir
+    : path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
   const corePlugins: string[] = [];
 
   const plugins = await loadPlugins(baseDir, corePlugins);
@@ -162,7 +199,7 @@ export async function createApp() {
 
   const ctxFactory = () => {
     const reqId = nanoid();
-    return {
+    const ctxBase = {
       reqId,
       method: "JOB",
       path: "job",
@@ -176,33 +213,17 @@ export async function createApp() {
       prisma,
       services,
       events,
-      jobs: jobsRuntime,
-      webhooks: webhooksRuntime,
+      jobs: jobsRuntime!,
+      webhooks: webhooksRuntime!,
       log: jobsLog.child({ reqId, method: "JOB", path: "job" }),
-      auth: createAuthHelpers({
-        reqId,
-        method: "JOB",
-        path: "job",
-        params: {},
-        query: {},
-        body: {},
-        headers: {},
-        user: null,
-        apiClient: null,
-        db,
-        services,
-        events,
-        jobs: undefined as any,
-        webhooks: undefined as any,
-        req: undefined as any,
-        reply: undefined as any,
-        json: async () => undefined,
-        error: errorResponse
-      }),
       json: async () => undefined,
       error: errorResponse,
       req: undefined as any,
       reply: undefined as any
+    };
+    return {
+      ...ctxBase,
+      auth: createAuthHelpers(ctxBase)
     };
   };
 
@@ -298,7 +319,7 @@ export async function createApp() {
       handler: async (req, reply) => {
         const reqId = (req.headers["x-request-id"] as string) ?? req.id ?? nanoid();
         let user = null;
-        let apiClient = null;
+        let apiClient: ApiClient | null = null;
         let authMode: "session" | "none" = "none";
         const sessionId = req.cookies?.session_id;
         if (sessionId) {
@@ -349,7 +370,7 @@ export async function createApp() {
             path: req.url,
             routeId: route.id,
             userId: user?.id,
-            apiKeyId: apiClient?.id
+            apiKeyId: (apiClient as ApiClient | null)?.id
           }),
           json: async (payload: any, statusCode = 200, meta?: Record<string, any>) =>
             jsonResponse(reply, payload, statusCode, meta),
@@ -358,24 +379,24 @@ export async function createApp() {
         const ctx = { ...ctxBase, auth: createAuthHelpers(ctxBase) };
 
         try {
-        if (route.config.auth === "required" && !ctx.user && !ctx.apiClient) {
-          throw new HttpError(401, "unauthorized", "Authentication required");
-        }
+          if (route.config.auth === "required" && !ctx.user && !ctx.apiClient) {
+            throw new HttpError(401, "unauthorized", "Authentication required");
+          }
 
-        if (route.config.permissions?.length) {
-          const hasAll = route.config.permissions.every((perm) => ctx.auth.hasPermission(perm));
-          if (!hasAll) throw new HttpError(403, "forbidden", "Missing permissions");
-        }
+          if (route.config.permissions?.length) {
+            const hasAll = route.config.permissions.every((perm) => ctx.auth.hasPermission(perm));
+            if (!hasAll) throw new HttpError(403, "forbidden", "Missing permissions");
+          }
 
-        if (route.config.permissionsAny?.length) {
-          const hasAny = route.config.permissionsAny.some((perm) => ctx.auth.hasPermission(perm));
-          if (!hasAny) throw new HttpError(403, "forbidden", "Missing permissions");
-        }
+          if (route.config.permissionsAny?.length) {
+            const hasAny = route.config.permissionsAny.some((perm) => ctx.auth.hasPermission(perm));
+            if (!hasAny) throw new HttpError(403, "forbidden", "Missing permissions");
+          }
 
-        if (route.config.roles?.length && ctx.user) {
-          const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
-          if (!hasRole) throw new HttpError(403, "forbidden", "Missing role");
-        }
+          if (route.config.roles?.length && ctx.user) {
+            const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
+            if (!hasRole) throw new HttpError(403, "forbidden", "Missing role");
+          }
 
           if (route.config.validate) {
             const { params, query, body } = route.config.validate;
@@ -434,7 +455,8 @@ export async function createApp() {
             reply.send(result);
           }
         } catch (error) {
-          ctx.log.error({ err: error }, "Route handler failed.");
+          const err = error instanceof Error ? error : new Error("Unknown error");
+          ctx.log.error({ err }, "Route handler failed.");
           if (error instanceof HttpError) {
             reply.code(error.statusCode).send({
               ok: false,
@@ -449,7 +471,7 @@ export async function createApp() {
               ok: false,
               error: { code: "internal_error", message: "Unexpected error", details: { requestId: req.id } }
             });
-            db.errors.push({ timestamp: new Date().toISOString(), error: (error as Error).message });
+            db.errors.push({ timestamp: new Date().toISOString(), error: err.message });
           }
         }
       }
@@ -457,7 +479,8 @@ export async function createApp() {
   }
 
   app.post("/webhooks/:provider", async (req, reply) => {
-    const handler = plugins.registry.inboundWebhooks.get(req.params.provider as string);
+    const provider = (req.params as { provider?: string }).provider;
+    const handler = provider ? plugins.registry.inboundWebhooks.get(provider) : undefined;
     if (!handler) return reply.code(404).send({ error: "not_found" });
     const ctxBase = {
       reqId: nanoid(),
@@ -499,6 +522,22 @@ export async function createApp() {
 
   const adminDist = path.join(baseDir, "admin-ui", "dist");
   const adminServer = path.join(adminDist, "server", "entry.mjs");
+  const adminClient = path.join(adminDist, "client");
+  const adminAstroClient = path.join(adminClient, "_astro");
+  if (fs.existsSync(adminAstroClient)) {
+    app.get("/_astro/*", async (req, reply) => {
+      const assetPath = (req.params as { "*": string })["*"] ?? "";
+      const resolved = path.normalize(path.join(adminAstroClient, assetPath));
+      if (!resolved.startsWith(adminAstroClient)) {
+        return reply.code(400).send({ error: "invalid_path" });
+      }
+      if (!fs.existsSync(resolved) || fs.statSync(resolved).isDirectory()) {
+        return reply.code(404).send({ error: "not_found" });
+      }
+      reply.type(contentTypeForPath(resolved));
+      return reply.send(fs.createReadStream(resolved));
+    });
+  }
   if (fs.existsSync(adminServer)) {
     const astroModule = await import(pathToFileURL(adminServer).href);
     if (astroModule.createMiddleware) {
@@ -530,7 +569,7 @@ export async function createApp() {
         },
         "Mounted Astro middleware."
       );
-      app.use((req, res, next) => {
+      app.use((req: IncomingMessage, res: ServerResponse, next: (err?: Error) => void) => {
         if (shouldSkipAstro(req.url)) {
           next();
           return;

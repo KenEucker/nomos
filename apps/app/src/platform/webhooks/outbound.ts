@@ -1,16 +1,16 @@
 import { nanoid } from "nanoid";
-import type { Logger } from "pino";
 import type { JobsRuntime } from "../jobs/runtime.js";
 import type { EventBus } from "../events/bus.js";
 import type { WebhookDestination, WebhookDelivery } from "./types.js";
 import { buildSignature } from "./signing.js";
+import type { AppLogger } from "../logging/logger.js";
 
 export class WebhookRuntime {
   constructor(
     private jobs: JobsRuntime,
     private events: EventBus,
     private store: { destinations: Map<string, WebhookDestination>; deliveries: WebhookDelivery[] },
-    private log: Logger
+    private log: AppLogger
   ) {}
 
   listDestinations() {
