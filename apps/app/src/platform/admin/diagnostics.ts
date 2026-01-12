@@ -1,6 +1,6 @@
-import type { RouteRegistry } from "../router/registry.js";
-import type { EventBus } from "../events/bus.js";
-import type { JobsRuntime } from "../jobs/runtime.js";
+import type { RouteRegistry } from "../router/registry";
+import type { EventBus } from "../events/bus";
+import type { JobsRuntime } from "../jobs/runtime";
 
 export function buildDiagnostics(routeRegistry: RouteRegistry, bus: EventBus, jobs: JobsRuntime) {
   return {

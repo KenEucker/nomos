@@ -1,9 +1,9 @@
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import type { Ctx } from "../../../platform/ctx.js";
-import { HttpError } from "../../../platform/errors.js";
-import { modelSchemas, okResponse } from "../_openapi.js";
-import { serializeUser } from "../_serializers.js";
+import type { Ctx } from "../../../platform/ctx";
+import { HttpError } from "../../../platform/errors";
+import { modelSchemas, okResponse } from "../_openapi";
+import { serializeUser } from "../_serializers";
 
 const paramsSchema = z.object({ id: z.string() });
 

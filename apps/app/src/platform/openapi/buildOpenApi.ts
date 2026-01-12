@@ -1,4 +1,4 @@
-import type { RouteRegistry } from "../router/registry.js";
+import type { RouteRegistry } from "../router/registry";
 
 const baseComponents = {
   securitySchemes: {

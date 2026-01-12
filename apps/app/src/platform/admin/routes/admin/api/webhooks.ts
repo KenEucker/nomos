@@ -5,7 +5,7 @@ export const config = {
   summary: "Webhook destinations"
 };
 
-import type { Ctx } from "../../../../ctx.js";
+import type { Ctx } from "../../../../ctx";
 
 export const get = async (ctx: Ctx) => {
   return ctx.json({ destinations: ctx.webhooks.listDestinations(), deliveries: ctx.db.webhookDeliveries });

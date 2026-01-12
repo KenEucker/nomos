@@ -1,4 +1,4 @@
-import type { Ctx } from "../ctx.js";
+import type { Ctx } from "../ctx";
 
 export type JobDefinition = {
   id?: string;

@@ -1,9 +1,9 @@
 import { nanoid } from "nanoid";
-import type { JobsRuntime } from "../jobs/runtime.js";
-import type { EventBus } from "../events/bus.js";
-import type { WebhookDestination, WebhookDelivery } from "./types.js";
-import { buildSignature } from "./signing.js";
-import type { AppLogger } from "../logging/logger.js";
+import type { JobsRuntime } from "../jobs/runtime";
+import type { EventBus } from "../events/bus";
+import type { WebhookDestination, WebhookDelivery } from "./types";
+import { buildSignature } from "./signing";
+import type { AppLogger } from "../logging/logger";
 
 export class WebhookRuntime {
   constructor(

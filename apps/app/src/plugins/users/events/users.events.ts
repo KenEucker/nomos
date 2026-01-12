@@ -1,4 +1,4 @@
-import { registerHook } from "../../../platform/events/hooks.js";
+import { registerHook } from "../../../platform/events/hooks";
 
 export function registerUserHooks(hooks: any, events: any) {
   registerHook(hooks, "beforeCreate", "users", async (payload: any) => {

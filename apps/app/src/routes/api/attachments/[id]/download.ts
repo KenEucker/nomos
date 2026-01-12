@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { Ctx } from "../../../../platform/ctx.js";
-import { HttpError } from "../../../../platform/errors.js";
+import type { Ctx } from "../../../../platform/ctx";
+import { HttpError } from "../../../../platform/errors";
 
 const paramsSchema = z.object({ id: z.string() });
 

@@ -1,5 +1,5 @@
 import type { ZodSchema } from "zod";
-import type { Handler } from "../ctx.js";
+import type { Handler } from "../ctx";
 
 export type RouteConfig = {
   auth?: "required" | "optional" | "none";

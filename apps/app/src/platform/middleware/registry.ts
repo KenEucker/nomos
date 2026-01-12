@@ -1,4 +1,4 @@
-import type { Middleware } from "./types.js";
+import type { Middleware } from "./types";
 
 export type MiddlewareRegistry = Map<string, (...args: any[]) => Middleware>;
 

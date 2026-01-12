@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { hashValue, compareHash } from "./hashing.js";
+import { hashValue, compareHash } from "./hashing";
 
 export function createApiKey(store: Map<string, any>, payload: any) {
   const token = nanoid(32);

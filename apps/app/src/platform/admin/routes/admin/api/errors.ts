@@ -5,7 +5,7 @@ export const config = {
   summary: "Recent errors"
 };
 
-import type { Ctx } from "../../../../ctx.js";
+import type { Ctx } from "../../../../ctx";
 
 export const get = async (ctx: Ctx) => {
   return ctx.json({ errors: ctx.db.errors.slice(-200) });

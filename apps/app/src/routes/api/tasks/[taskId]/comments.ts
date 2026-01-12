@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { Ctx } from "../../../../platform/ctx.js";
-import { HttpError } from "../../../../platform/errors.js";
-import { modelSchemas, okResponse } from "../../_openapi.js";
-import { serializeComment } from "../../_serializers.js";
+import type { Ctx } from "../../../../platform/ctx";
+import { HttpError } from "../../../../platform/errors";
+import { modelSchemas, okResponse } from "../../_openapi";
+import { serializeComment } from "../../_serializers";
 
 const paramsSchema = z.object({ taskId: z.string() });
 const createSchema = z.object({ body: z.string().min(1) });

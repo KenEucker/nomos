@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import type { JobDispatchOptions, JobRun } from "../types.js";
+import type { JobDispatchOptions, JobRun } from "../types";
 
 export class MemoryJobDriver {
   queue: JobRun[] = [];

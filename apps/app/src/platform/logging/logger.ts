@@ -1,5 +1,5 @@
 import pino from "pino";
-import type { Env } from "../config/env.js";
+import type { Env } from "../config/env";
 
 export type LogFn = (...args: any[]) => void;
 export type AppLogger = {

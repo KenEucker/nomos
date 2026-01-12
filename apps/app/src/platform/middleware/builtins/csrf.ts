@@ -1,4 +1,4 @@
-import type { Middleware } from "../types.js";
+import type { Middleware } from "../types";
 
 export function csrf(): Middleware {
   return async (_ctx, next) => {

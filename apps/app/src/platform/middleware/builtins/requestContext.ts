@@ -1,4 +1,4 @@
-import type { Middleware } from "../types.js";
+import type { Middleware } from "../types";
 
 export function requestContext(): Middleware {
   return async (ctx, next) => {

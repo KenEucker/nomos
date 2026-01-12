@@ -1,4 +1,4 @@
-import type { HookHandler } from "./types.js";
+import type { HookHandler } from "./types";
 
 export type HookRegistry = {
   beforeCreate: Map<string, HookHandler[]>;

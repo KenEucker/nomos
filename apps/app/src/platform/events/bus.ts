@@ -1,5 +1,5 @@
-import type { EventHandler, EventListener } from "./types.js";
-import type { AppLogger } from "../logging/logger.js";
+import type { EventHandler, EventListener } from "./types";
+import type { AppLogger } from "../logging/logger";
 
 export class EventBus {
   private listeners = new Map<string, EventListener[]>();

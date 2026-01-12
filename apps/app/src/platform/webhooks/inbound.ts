@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type { Handler } from "../ctx.js";
+import type { Handler } from "../ctx";
 
 const processed = new Set<string>();
 

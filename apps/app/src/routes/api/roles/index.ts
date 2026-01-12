@@ -1,5 +1,5 @@
-import type { Ctx } from "../../../platform/ctx.js";
-import { modelSchemas, okResponse } from "../_openapi.js";
+import type { Ctx } from "../../../platform/ctx";
+import { modelSchemas, okResponse } from "../_openapi";
 
 export const config = {
   auth: "required",

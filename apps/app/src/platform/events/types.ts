@@ -1,4 +1,4 @@
-import type { AppLogger } from "../logging/logger.js";
+import type { AppLogger } from "../logging/logger";
 
 export type EventMeta = {
   event: string;

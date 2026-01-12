@@ -1,5 +1,5 @@
-import type { Middleware } from "../types.js";
-import { HttpError } from "../../errors.js";
+import type { Middleware } from "../types";
+import { HttpError } from "../../errors";
 
 const buckets = new Map<string, { count: number; resetAt: number }>();
 

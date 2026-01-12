@@ -1,3 +1,3 @@
-import { createApp } from "./platform/createApp.js";
+import { createApp } from "./platform/createApp";
 
 export { createApp };

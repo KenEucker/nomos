@@ -1,10 +1,10 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createUsersService } from "./services/users.service.js";
-import { resources } from "./admin/resources.js";
-import auditListener from "./listeners/audit.listener.js";
-import { registerUserHooks } from "./events/users.events.js";
-import exampleJob from "./jobs/exampleUserSync.job.js";
+import { createUsersService } from "./services/users.service";
+import { resources } from "./admin/resources";
+import auditListener from "./listeners/audit.listener";
+import { registerUserHooks } from "./events/users.events";
+import exampleJob from "./jobs/exampleUserSync.job";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { runHooks } from "../../../platform/events/hooks.js";
+import { runHooks } from "../../../platform/events/hooks";
 
 export function createUsersService(db: any, hooks: any, events: any) {
   return {

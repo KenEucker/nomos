@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { Ctx } from "../../../platform/ctx.js";
-import { HttpError } from "../../../platform/errors.js";
-import { modelSchemas, okResponse } from "../_openapi.js";
-import { serializeProject } from "../_serializers.js";
+import type { Ctx } from "../../../platform/ctx";
+import { HttpError } from "../../../platform/errors";
+import { modelSchemas, okResponse } from "../_openapi";
+import { serializeProject } from "../_serializers";
 
 const paramsSchema = z.object({ id: z.string() });
 const patchSchema = z.object({

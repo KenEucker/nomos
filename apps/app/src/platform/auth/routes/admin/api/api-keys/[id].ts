@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Ctx } from "../../../../../ctx.js";
+import type { Ctx } from "../../../../../ctx";
 
 export const config = {
   auth: "required",

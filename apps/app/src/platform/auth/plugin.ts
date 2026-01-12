@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createApiKey, rotateApiKey, revokeApiKey, findApiKey } from "./apiKeys.js";
+import { createApiKey, rotateApiKey, revokeApiKey, findApiKey } from "./apiKeys";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

@@ -1,4 +1,4 @@
-import type { Handler } from "../ctx.js";
+import type { Handler } from "../ctx";
 
 export type PluginRoute = {
   baseDir: string;

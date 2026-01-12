@@ -1,9 +1,9 @@
 import { nanoid } from "nanoid";
-import type { Ctx } from "../ctx.js";
-import type { EventBus } from "../events/bus.js";
-import type { AppLogger } from "../logging/logger.js";
-import { MemoryJobDriver } from "./drivers/memoryDriver.js";
-import type { JobDefinition, JobDispatchOptions, JobRun } from "./types.js";
+import type { Ctx } from "../ctx";
+import type { EventBus } from "../events/bus";
+import type { AppLogger } from "../logging/logger";
+import { MemoryJobDriver } from "./drivers/memoryDriver";
+import type { JobDefinition, JobDispatchOptions, JobRun } from "./types";
 
 export class JobsRuntime {
   private jobs = new Map<string, JobDefinition>();

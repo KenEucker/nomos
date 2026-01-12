@@ -4,7 +4,7 @@ export const config = {
   summary: "Version info"
 };
 
-import type { Ctx } from "../platform/ctx.js";
+import type { Ctx } from "../platform/ctx";
 
 export const get = async (ctx: Ctx) => {
   return ctx.json({

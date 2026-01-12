@@ -4,7 +4,7 @@ export const config = {
   summary: "Readiness check"
 };
 
-import type { Ctx } from "../platform/ctx.js";
+import type { Ctx } from "../platform/ctx";
 
 export const get = async (ctx: Ctx) => {
   return ctx.json({

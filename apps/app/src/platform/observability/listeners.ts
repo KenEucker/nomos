@@ -1,6 +1,6 @@
-import type { EventBus } from "../events/bus.js";
-import { recordAudit } from "./auditLog.js";
-import { metrics } from "./metrics.js";
+import type { EventBus } from "../events/bus";
+import { recordAudit } from "./auditLog";
+import { metrics } from "./metrics";
 
 export function registerDefaultListeners(bus: EventBus, store: { auditLog: any[]; errors: any[] }) {
   bus.on("http.request.completed", (payload: any) => {

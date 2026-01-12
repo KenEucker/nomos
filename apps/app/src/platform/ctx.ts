@@ -1,11 +1,11 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import type { JobsRuntime } from "./jobs/runtime.js";
-import type { EventBus } from "./events/bus.js";
-import type { WebhookRuntime } from "./webhooks/outbound.js";
-import type { ServicesRegistry } from "./plugins/registry.js";
+import type { JobsRuntime } from "./jobs/runtime";
+import type { EventBus } from "./events/bus";
+import type { WebhookRuntime } from "./webhooks/outbound";
+import type { ServicesRegistry } from "./plugins/registry";
 import type { PrismaClient } from "@prisma/client";
-import { HttpError } from "./errors.js";
-import type { AppLogger } from "./logging/logger.js";
+import { HttpError } from "./errors";
+import type { AppLogger } from "./logging/logger";
 
 export type UserIdentity = {
   id: string;

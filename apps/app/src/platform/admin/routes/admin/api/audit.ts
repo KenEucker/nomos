@@ -5,7 +5,7 @@ export const config = {
   summary: "Audit log"
 };
 
-import type { Ctx } from "../../../../ctx.js";
+import type { Ctx } from "../../../../ctx";
 
 export const get = async (ctx: Ctx) => {
   return ctx.json({ audit: ctx.db.auditLog.slice(-200) });

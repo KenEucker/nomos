@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { filePathToRoute } from "./pathMapping.js";
-import type { RouteDefinition, RouteModule } from "./routeTypes.js";
-import { createRouteRegistry } from "./registry.js";
+import { filePathToRoute } from "./pathMapping";
+import type { RouteDefinition, RouteModule } from "./routeTypes";
+import { createRouteRegistry } from "./registry";
 
 const METHODS = [
   "get",

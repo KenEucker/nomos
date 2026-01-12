@@ -4,7 +4,7 @@ import path from "node:path"
 import { PrismaClient } from "@prisma/client"
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3"
 
-import { loadEnv } from "../config/env.js";
+import { loadEnv } from "../config/env";
 
 let prisma: PrismaClient | undefined
 

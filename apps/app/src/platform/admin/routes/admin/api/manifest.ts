@@ -1,5 +1,5 @@
-import { buildManifest } from "../../../manifest.js";
-import type { Ctx } from "../../../../ctx.js";
+import { buildManifest } from "../../../manifest";
+import type { Ctx } from "../../../../ctx";
 
 export const config = {
   auth: "required",

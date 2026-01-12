@@ -1,6 +1,6 @@
-import type { Ctx } from "../../../platform/ctx.js";
-import { revokeSession } from "../../../platform/auth/sessions.js";
-import { okResponse } from "../_openapi.js";
+import type { Ctx } from "../../../platform/ctx";
+import { revokeSession } from "../../../platform/auth/sessions";
+import { okResponse } from "../_openapi";
 
 export const config = {
   auth: "required",

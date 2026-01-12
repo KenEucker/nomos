@@ -1,6 +1,6 @@
-import type { AppLogger } from "../logging/logger.js";
-import { EventBus } from "./bus.js";
-import { createHookRegistry } from "./hooks.js";
+import type { AppLogger } from "../logging/logger";
+import { EventBus } from "./bus";
+import { createHookRegistry } from "./hooks";
 
 export function createEventSystem(log: AppLogger) {
   return {

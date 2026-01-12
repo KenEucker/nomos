@@ -1,9 +1,9 @@
 import { z } from "zod";
-import type { Ctx } from "../../../platform/ctx.js";
-import { paginationQuery } from "../../../platform/validation.js";
-import { HttpError } from "../../../platform/errors.js";
-import { modelSchemas, okResponse } from "../_openapi.js";
-import { serializeTask } from "../_serializers.js";
+import type { Ctx } from "../../../platform/ctx";
+import { paginationQuery } from "../../../platform/validation";
+import { HttpError } from "../../../platform/errors";
+import { modelSchemas, okResponse } from "../_openapi";
+import { serializeTask } from "../_serializers";
 
 const querySchema = paginationQuery.extend({
   projectId: z.string().optional(),

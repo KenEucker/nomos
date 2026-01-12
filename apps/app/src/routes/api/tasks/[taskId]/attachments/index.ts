@@ -1,7 +1,7 @@
 import { z } from "zod";
-import type { Ctx } from "../../../../../platform/ctx.js";
-import { modelSchemas, okResponse } from "../../../_openapi.js";
-import { serializeAttachment } from "../../../_serializers.js";
+import type { Ctx } from "../../../../../platform/ctx";
+import { modelSchemas, okResponse } from "../../../_openapi";
+import { serializeAttachment } from "../../../_serializers";
 
 const paramsSchema = z.object({ taskId: z.string() });
 

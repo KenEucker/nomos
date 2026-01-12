@@ -1,4 +1,4 @@
-import type { PluginRegistry } from "../plugins/registry.js";
+import type { PluginRegistry } from "../plugins/registry";
 
 export function buildManifest(registry: PluginRegistry) {
   return {

@@ -5,7 +5,7 @@ export const config = {
   summary: "Route registry"
 };
 
-import type { Ctx } from "../../../../ctx.js";
+import type { Ctx } from "../../../../ctx";
 
 export const get = async (ctx: Ctx) => {
   return ctx.json({ routes: ctx.services.routeRegistry.routes });

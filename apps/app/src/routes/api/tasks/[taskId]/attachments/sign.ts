@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { nanoid } from "nanoid";
-import type { Ctx } from "../../../../../platform/ctx.js";
-import { HttpError } from "../../../../../platform/errors.js";
-import { okResponse } from "../../../_openapi.js";
+import type { Ctx } from "../../../../../platform/ctx";
+import { HttpError } from "../../../../../platform/errors";
+import { okResponse } from "../../../_openapi";
 
 const paramsSchema = z.object({ taskId: z.string() });
 const bodySchema = z.object({
