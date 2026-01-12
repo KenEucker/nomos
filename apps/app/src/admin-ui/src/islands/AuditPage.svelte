@@ -93,7 +93,7 @@
       .reverse()
   );
 
-  onMount(async () => {
+  onMount(() => {
     const check = setInterval(async () => {
       if (!user) return;
       clearInterval(check);
@@ -112,11 +112,11 @@
 
 <AppShell title="Audit Log">
   <!-- Filters -->
-  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
+  <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:flex-wrap">
     <div class="flex flex-1 gap-2">
       <Input className="flex-1 sm:max-w-xs" placeholder="Search..." bind:value={search} />
       <select
-        class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 min-w-0"
+        class="min-w-0 px-3 py-2 text-sm border rounded bg-slate-900 border-slate-700 text-slate-100"
         bind:value={eventFilter}
       >
         <option value="">All events</option>
@@ -134,30 +134,30 @@
   {#if loading}
     <div class="flex items-center justify-center py-12 text-slate-400">
       <div class="flex flex-col items-center gap-2">
-        <div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200"></div>
+        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-600 border-t-slate-200"></div>
         <span>Loading audit log...</span>
       </div>
     </div>
   {:else if filteredAudit.length === 0}
     <Card>
-      <div class="text-center py-8 text-slate-400">
+      <div class="py-8 text-center text-slate-400">
         No audit entries found.
       </div>
     </Card>
   {:else}
-    <div class="text-xs text-slate-500 mb-2">Showing {filteredAudit.length} entries</div>
+    <div class="mb-2 text-xs text-slate-500">Showing {filteredAudit.length} entries</div>
 
     <!-- Mobile: Card layout -->
     <div class="space-y-3 sm:hidden">
       {#each filteredAudit as entry, i}
-        <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
+        <div class="p-4 border rounded-lg border-slate-800 bg-slate-900/40">
           <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0 flex-1">
+            <div class="flex-1 min-w-0">
               <Badge variant="secondary">{entry.event}</Badge>
               <div class="mt-1 text-xs text-slate-500">{formatDate(entry.timestamp)}</div>
             </div>
           </div>
-          <div class="mt-2 text-xs text-slate-400 space-y-1">
+          <div class="mt-2 space-y-1 text-xs text-slate-400">
             {#if entry.userId}
               <div><span class="text-slate-500">User:</span> {entry.userId.slice(0, 12)}...</div>
             {:else if entry.apiKeyId}
@@ -176,7 +176,7 @@
                 {expandedRow === i ? "Hide details" : "Show details"}
               </Button>
               {#if expandedRow === i}
-                <pre class="mt-2 text-xs text-slate-400 overflow-auto max-h-32 bg-slate-900 p-2 rounded">{JSON.stringify(entry.details, null, 2)}</pre>
+                <pre class="p-2 mt-2 overflow-auto text-xs rounded text-slate-400 max-h-32 bg-slate-900">{JSON.stringify(entry.details, null, 2)}</pre>
               {/if}
             </div>
           {/if}
@@ -185,15 +185,15 @@
     </div>
 
     <!-- Desktop: Table layout -->
-    <div class="hidden rounded-lg border border-slate-800 bg-slate-900/40 sm:block">
+    <div class="hidden border rounded-lg border-slate-800 bg-slate-900/40 sm:block">
       <Table>
-        <thead class="text-left text-xs uppercase text-slate-400">
+        <thead class="text-xs text-left uppercase text-slate-400">
           <tr>
             <th class="px-4 py-3">Timestamp</th>
             <th class="px-4 py-3">Event</th>
-            <th class="px-4 py-3 hidden md:table-cell">User / Key</th>
-            <th class="px-4 py-3 hidden lg:table-cell">Resource</th>
-            <th class="px-4 py-3 hidden lg:table-cell">Action</th>
+            <th class="hidden px-4 py-3 md:table-cell">User / Key</th>
+            <th class="hidden px-4 py-3 lg:table-cell">Resource</th>
+            <th class="hidden px-4 py-3 lg:table-cell">Action</th>
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
@@ -206,7 +206,7 @@
               <td class="px-4 py-3">
                 <Badge variant="secondary">{entry.event}</Badge>
               </td>
-              <td class="px-4 py-3 text-xs text-slate-400 font-mono hidden md:table-cell">
+              <td class="hidden px-4 py-3 font-mono text-xs text-slate-400 md:table-cell">
                 {#if entry.userId}
                   {entry.userId.slice(0, 8)}...
                 {:else if entry.apiKeyId}
@@ -215,8 +215,8 @@
                   -
                 {/if}
               </td>
-              <td class="px-4 py-3 text-slate-400 hidden lg:table-cell">{entry.resource ?? "-"}</td>
-              <td class="px-4 py-3 text-slate-400 hidden lg:table-cell">{entry.action ?? "-"}</td>
+              <td class="hidden px-4 py-3 text-slate-400 lg:table-cell">{entry.resource ?? "-"}</td>
+              <td class="hidden px-4 py-3 text-slate-400 lg:table-cell">{entry.action ?? "-"}</td>
               <td class="px-4 py-3">
                 {#if entry.details}
                   <Button variant="ghost" size="sm" onclick={() => toggleRow(i)}>
@@ -227,8 +227,8 @@
             </tr>
             {#if expandedRow === i && entry.details}
               <tr class="border-t border-slate-800 bg-slate-900/50">
-                <td colspan="6" class="py-3 px-4">
-                  <pre class="text-xs text-slate-400 overflow-auto max-h-48">{JSON.stringify(entry.details, null, 2)}</pre>
+                <td colspan="6" class="px-4 py-3">
+                  <pre class="overflow-auto text-xs text-slate-400 max-h-48">{JSON.stringify(entry.details, null, 2)}</pre>
                 </td>
               </tr>
             {/if}

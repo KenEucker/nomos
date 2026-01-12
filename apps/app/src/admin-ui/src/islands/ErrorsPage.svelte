@@ -74,7 +74,7 @@
     }))
   );
 
-  onMount(async () => {
+  onMount(() => {
     const check = setInterval(async () => {
       if (!user) return;
       clearInterval(check);
@@ -92,9 +92,9 @@
 </script>
 
 <AppShell title="Errors">
-  <div class="mb-4 flex items-center gap-3 flex-wrap">
+  <div class="flex flex-wrap items-center gap-3 mb-4">
     <select
-      class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100"
+      class="px-3 py-2 text-sm border rounded bg-slate-900 border-slate-700 text-slate-100"
       bind:value={typeFilter}
     >
       <option value="">All types</option>
@@ -106,7 +106,7 @@
   </div>
 
   {#if errorCounts.length > 0}
-    <div class="flex gap-2 mb-4 flex-wrap">
+    <div class="flex flex-wrap gap-2 mb-4">
       {#each errorCounts as { type, count }}
         <div class="bg-slate-900/50 border border-slate-800 rounded px-3 py-1.5 text-sm">
           <span class="text-slate-400">{type}:</span>
@@ -120,14 +120,14 @@
     <div class="text-slate-400">Loading errors...</div>
   {:else if filteredErrors.length === 0}
     <Card>
-      <div class="text-center py-8 text-slate-400">
+      <div class="py-8 text-center text-slate-400">
         No errors found. That's good!
       </div>
     </Card>
   {:else}
-    <div class="text-xs text-slate-500 mb-2">Showing {filteredErrors.length} errors</div>
+    <div class="mb-2 text-xs text-slate-500">Showing {filteredErrors.length} errors</div>
     <Table>
-      <thead class="text-left text-xs uppercase text-slate-400">
+      <thead class="text-xs text-left uppercase text-slate-400">
         <tr>
           <th class="pb-2">Timestamp</th>
           <th class="pb-2">Type</th>
@@ -145,10 +145,10 @@
             <td class="py-3">
               <Badge variant="secondary">{getErrorType(entry)}</Badge>
             </td>
-            <td class="py-3 text-red-400 max-w-md truncate">
+            <td class="max-w-md py-3 text-red-400 truncate">
               {entry.error}
             </td>
-            <td class="py-3 text-xs text-slate-400 font-mono">
+            <td class="py-3 font-mono text-xs text-slate-400">
               {entry.source ?? entry.routeId ?? "-"}
             </td>
             <td class="py-3">
@@ -161,8 +161,8 @@
           </tr>
           {#if expandedRow === i && entry.stack}
             <tr class="border-t border-slate-800 bg-slate-900/50">
-              <td colspan="5" class="py-3 px-4">
-                <pre class="text-xs text-slate-400 overflow-auto max-h-64 whitespace-pre-wrap">{entry.stack}</pre>
+              <td colspan="5" class="px-4 py-3">
+                <pre class="overflow-auto text-xs whitespace-pre-wrap text-slate-400 max-h-64">{entry.stack}</pre>
               </td>
             </tr>
           {/if}

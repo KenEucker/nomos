@@ -86,7 +86,7 @@
     }, {} as Record<string, RouteEntry[]>)
   );
 
-  onMount(async () => {
+  onMount(() => {
     const check = setInterval(async () => {
       if (!user) return;
       clearInterval(check);
@@ -104,10 +104,10 @@
 </script>
 
 <AppShell title="Routes">
-  <div class="mb-4 flex items-center gap-3 flex-wrap">
+  <div class="flex flex-wrap items-center gap-3 mb-4">
     <Input className="max-w-sm" placeholder="Search routes..." bind:value={search} />
     <select
-      class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100"
+      class="px-3 py-2 text-sm border rounded bg-slate-900 border-slate-700 text-slate-100"
       bind:value={methodFilter}
     >
       <option value="">All methods</option>
@@ -116,7 +116,7 @@
       {/each}
     </select>
     <select
-      class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100"
+      class="px-3 py-2 text-sm border rounded bg-slate-900 border-slate-700 text-slate-100"
       bind:value={ownerFilter}
     >
       <option value="">All owners</option>
@@ -131,25 +131,25 @@
     <div class="text-slate-400">Loading routes...</div>
   {:else if filteredRoutes.length === 0}
     <Card>
-      <div class="text-center py-8 text-slate-400">
+      <div class="py-8 text-center text-slate-400">
         No routes found.
       </div>
     </Card>
   {:else}
-    <div class="text-xs text-slate-500 mb-4">
+    <div class="mb-4 text-xs text-slate-500">
       {filteredRoutes.length} routes across {Object.keys(groupedRoutes).length} owners
     </div>
 
     {#each Object.entries(groupedRoutes) as [owner, ownerRoutes]}
       <div class="mb-6">
-        <h3 class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+        <h3 class="flex items-center gap-2 mb-2 text-sm font-semibold text-slate-300">
           <Badge variant="secondary">{owner}</Badge>
           <span class="text-slate-500">{ownerRoutes.length} routes</span>
         </h3>
         <Table>
-          <thead class="text-left text-xs uppercase text-slate-400">
+          <thead class="text-xs text-left uppercase text-slate-400">
             <tr>
-              <th class="pb-2 w-20">Method</th>
+              <th class="w-20 pb-2">Method</th>
               <th class="pb-2">Path</th>
               <th class="pb-2">Auth</th>
               <th class="pb-2">Permissions</th>
@@ -187,7 +187,7 @@
                 <td class="py-2 text-xs text-slate-400">
                   {(route.config.middleware ?? []).join(", ") || "-"}
                 </td>
-                <td class="py-2 text-xs text-slate-400 max-w-xs truncate">
+                <td class="max-w-xs py-2 text-xs truncate text-slate-400">
                   {route.config.summary ?? "-"}
                 </td>
               </tr>

@@ -122,7 +122,7 @@
     }
   };
 
-  onMount(async () => {
+  onMount(() => {
     const check = setInterval(async () => {
       if (!user) return;
       clearInterval(check);
@@ -142,7 +142,7 @@
 
 <AppShell title="Jobs">
   <!-- Controls -->
-  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
     <Tabs tabs={[
       { id: "jobs", label: "Jobs" },
       { id: "runs", label: "Runs" }
@@ -165,14 +165,14 @@
   {#if loading}
     <div class="flex items-center justify-center py-12 text-slate-400">
       <div class="flex flex-col items-center gap-2">
-        <div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200"></div>
+        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-600 border-t-slate-200"></div>
         <span>Loading jobs...</span>
       </div>
     </div>
   {:else if activeTab === "jobs"}
     {#if jobs.length === 0}
       <Card>
-        <div class="text-center py-8 text-slate-400">
+        <div class="py-8 text-center text-slate-400">
           No jobs registered.
         </div>
       </Card>
@@ -180,17 +180,17 @@
       <!-- Mobile: Card layout -->
       <div class="space-y-3 sm:hidden">
         {#each jobs as job}
-          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
+          <div class="p-4 border rounded-lg border-slate-800 bg-slate-900/40">
             <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0 flex-1">
-                <div class="font-mono text-sm text-slate-100 truncate">{job.id}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-mono text-sm truncate text-slate-100">{job.id}</div>
                 <div class="mt-1 text-xs text-slate-500">Queue: {job.queue ?? "default"}</div>
               </div>
               <Button variant="outline" size="sm" onclick={() => openTrigger(job.id)}>
                 Trigger
               </Button>
             </div>
-            <div class="mt-2 flex flex-wrap gap-2 text-xs text-slate-400">
+            <div class="flex flex-wrap gap-2 mt-2 text-xs text-slate-400">
               <span>Concurrency: {job.concurrency ?? 1}</span>
               <span>Retries: {job.retries ?? 0}</span>
               {#if job.schedule}
@@ -202,15 +202,15 @@
       </div>
 
       <!-- Desktop: Table layout -->
-      <div class="hidden rounded-lg border border-slate-800 bg-slate-900/40 sm:block">
+      <div class="hidden border rounded-lg border-slate-800 bg-slate-900/40 sm:block">
         <Table>
-          <thead class="text-left text-xs uppercase text-slate-400">
+          <thead class="text-xs text-left uppercase text-slate-400">
             <tr>
               <th class="px-4 py-3">Job ID</th>
               <th class="px-4 py-3">Queue</th>
-              <th class="px-4 py-3 hidden md:table-cell">Concurrency</th>
-              <th class="px-4 py-3 hidden md:table-cell">Retries</th>
-              <th class="px-4 py-3 hidden lg:table-cell">Schedule</th>
+              <th class="hidden px-4 py-3 md:table-cell">Concurrency</th>
+              <th class="hidden px-4 py-3 md:table-cell">Retries</th>
+              <th class="hidden px-4 py-3 lg:table-cell">Schedule</th>
               <th class="px-4 py-3">Actions</th>
             </tr>
           </thead>
@@ -219,9 +219,9 @@
               <tr class="border-t border-slate-800 hover:bg-slate-800/30">
                 <td class="px-4 py-3 font-mono text-slate-100">{job.id}</td>
                 <td class="px-4 py-3 text-slate-400">{job.queue ?? "default"}</td>
-                <td class="px-4 py-3 text-slate-400 hidden md:table-cell">{job.concurrency ?? 1}</td>
-                <td class="px-4 py-3 text-slate-400 hidden md:table-cell">{job.retries ?? 0}</td>
-                <td class="px-4 py-3 text-xs text-slate-400 font-mono hidden lg:table-cell">{job.schedule ?? "-"}</td>
+                <td class="hidden px-4 py-3 text-slate-400 md:table-cell">{job.concurrency ?? 1}</td>
+                <td class="hidden px-4 py-3 text-slate-400 md:table-cell">{job.retries ?? 0}</td>
+                <td class="hidden px-4 py-3 font-mono text-xs text-slate-400 lg:table-cell">{job.schedule ?? "-"}</td>
                 <td class="px-4 py-3">
                   <Button variant="ghost" size="sm" onclick={() => openTrigger(job.id)}>
                     Trigger
@@ -236,7 +236,7 @@
   {:else}
     {#if runs.length === 0}
       <Card>
-        <div class="text-center py-8 text-slate-400">
+        <div class="py-8 text-center text-slate-400">
           No job runs yet.
         </div>
       </Card>
@@ -244,15 +244,15 @@
       <!-- Mobile: Card layout -->
       <div class="space-y-3 sm:hidden">
         {#each runs.slice(-50).reverse() as run}
-          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
+          <div class="p-4 border rounded-lg border-slate-800 bg-slate-900/40">
             <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0 flex-1">
-                <div class="font-mono text-sm text-slate-100 truncate">{run.jobId}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-mono text-sm truncate text-slate-100">{run.jobId}</div>
                 <div class="mt-1 text-xs text-slate-500">{formatDate(run.startedAt)}</div>
               </div>
               <Badge variant={getStatusColor(run.status)}>{run.status}</Badge>
             </div>
-            <div class="mt-2 flex items-center justify-between">
+            <div class="flex items-center justify-between mt-2">
               <span class="text-xs text-slate-400">Duration: {getDuration(run)}</span>
               {#if run.status === "failed"}
                 <Button variant="outline" size="sm" onclick={() => retryJob(run)}>
@@ -268,15 +268,15 @@
       </div>
 
       <!-- Desktop: Table layout -->
-      <div class="hidden rounded-lg border border-slate-800 bg-slate-900/40 sm:block">
+      <div class="hidden border rounded-lg border-slate-800 bg-slate-900/40 sm:block">
         <Table>
-          <thead class="text-left text-xs uppercase text-slate-400">
+          <thead class="text-xs text-left uppercase text-slate-400">
             <tr>
               <th class="px-4 py-3">Job ID</th>
               <th class="px-4 py-3">Status</th>
               <th class="px-4 py-3">Started</th>
-              <th class="px-4 py-3 hidden md:table-cell">Duration</th>
-              <th class="px-4 py-3 hidden lg:table-cell">Error</th>
+              <th class="hidden px-4 py-3 md:table-cell">Duration</th>
+              <th class="hidden px-4 py-3 lg:table-cell">Error</th>
               <th class="px-4 py-3">Actions</th>
             </tr>
           </thead>
@@ -288,8 +288,8 @@
                   <Badge variant={getStatusColor(run.status)}>{run.status}</Badge>
                 </td>
                 <td class="px-4 py-3 text-xs text-slate-400">{formatDate(run.startedAt)}</td>
-                <td class="px-4 py-3 text-slate-400 hidden md:table-cell">{getDuration(run)}</td>
-                <td class="px-4 py-3 text-xs text-red-400 max-w-xs truncate hidden lg:table-cell">
+                <td class="hidden px-4 py-3 text-slate-400 md:table-cell">{getDuration(run)}</td>
+                <td class="hidden max-w-xs px-4 py-3 text-xs text-red-400 truncate lg:table-cell">
                   {run.error ?? "-"}
                 </td>
                 <td class="px-4 py-3">
@@ -312,16 +312,16 @@
       <h2 class="text-lg font-semibold">Trigger Job</h2>
       <div class="space-y-3">
         <div>
-          <label for="job-id" class="block text-sm text-slate-400 mb-1">Job ID</label>
-          <div id="job-id" class="font-mono text-sm bg-slate-900 border border-slate-700 rounded p-2 truncate">
+          <label for="job-id" class="block mb-1 text-sm text-slate-400">Job ID</label>
+          <div id="job-id" class="p-2 font-mono text-sm truncate border rounded bg-slate-900 border-slate-700">
             {selectedJobId}
           </div>
         </div>
         <div>
-          <label for="job-payload" class="block text-sm text-slate-400 mb-1">Payload (JSON)</label>
+          <label for="job-payload" class="block mb-1 text-sm text-slate-400">Payload (JSON)</label>
           <textarea
             id="job-payload"
-            class="w-full h-32 bg-slate-900 border border-slate-700 rounded p-2 font-mono text-sm text-slate-100 resize-none"
+            class="w-full h-32 p-2 font-mono text-sm border rounded resize-none bg-slate-900 border-slate-700 text-slate-100"
             bind:value={triggerPayload}
           ></textarea>
         </div>
