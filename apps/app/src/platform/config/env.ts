@@ -13,7 +13,7 @@ const envSchema = z.object({
   ),
   DATABASE_URL: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-    z.string().optional().default("memory")
+    z.string().optional().default("file:./prisma/dev.db")
   ),
   JWT_SECRET: z
     .preprocess(

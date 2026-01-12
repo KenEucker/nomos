@@ -26,5 +26,5 @@ export const patch = async (ctx: Ctx) => {
     const entry = ctx.services.auth.revokeApiKey(id);
     return ctx.json(entry ?? { error: "not_found" }, entry ? 200 : 404);
   }
-  return ctx.error(400, "Invalid action");
+  return ctx.error(400, "invalid_request", "Invalid action");
 };

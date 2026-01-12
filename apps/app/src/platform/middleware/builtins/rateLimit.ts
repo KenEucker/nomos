@@ -17,7 +17,7 @@ export function rateLimit(limit = "60", windowMs = "60000"): Middleware {
     bucket.count += 1;
     buckets.set(ip, bucket);
     if (bucket.count > max) {
-      throw new HttpError(429, "Rate limit exceeded");
+      throw new HttpError(429, "rate_limited", "Rate limit exceeded");
     }
     await next();
   };

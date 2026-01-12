@@ -1,15 +1,7 @@
 ---
-import Shell from "../components/Shell.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import LoginForm from "../islands/LoginForm.svelte";
 ---
-<Shell title="Login">
-  <div class="login">
-    <h1>Admin Login</h1>
-    <form method="post" action="/admin/login">
-      <label>Email</label>
-      <input type="email" name="email" required />
-      <label>Password</label>
-      <input type="password" name="password" required />
-      <button type="submit">Login</button>
-    </form>
-  </div>
-</Shell>
+<BaseLayout title="Login">
+  <LoginForm client:load />
+</BaseLayout>

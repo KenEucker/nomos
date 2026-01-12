@@ -23,11 +23,10 @@ import { createHookRegistry } from "./events/hooks.js";
 import { JobsRuntime } from "./jobs/runtime.js";
 import { WebhookRuntime } from "./webhooks/outbound.js";
 import { registerDefaultListeners } from "./observability/listeners.js";
-import { resolvePermissions } from "./auth/permissions.js";
-import { findApiKey } from "./auth/apiKeys.js";
-import { createSession, getSession } from "./auth/sessions.js";
-import { verifyJwt } from "./auth/jwt.js";
+import { LocalStorageProvider } from "./storage/local.js";
+import { getSession } from "./auth/sessions.js";
 import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logging/logger.js";
+import { getPrismaClient } from "./db/prisma.js";
 
 export async function createApp() {
   const env = loadEnv();
@@ -41,14 +40,14 @@ export async function createApp() {
   const baseLogger = app.log;
   const serverLog = createDomainLogger(baseLogger, "server", allowedDomains);
   const pluginsLog = createDomainLogger(baseLogger, "plugins", allowedDomains);
-  const authLog = createDomainLogger(baseLogger, "auth", allowedDomains);
   const adminLog = createDomainLogger(baseLogger, "admin", allowedDomains);
   const jobsLog = createDomainLogger(baseLogger, "jobs", allowedDomains);
   const eventsLog = createDomainLogger(baseLogger, "events", allowedDomains);
   const webhooksLog = createDomainLogger(baseLogger, "webhooks", allowedDomains);
   const observabilityLog = createDomainLogger(baseLogger, "observability", allowedDomains);
   const openApiLog = createDomainLogger(baseLogger, "openapi", allowedDomains);
-  const diagnosticsLog = createDomainLogger(baseLogger, "diagnostics", allowedDomains);
+  const prisma = getPrismaClient();
+  await prisma.$connect();
   await app.register(cookie);
   await app.register(formbody);
 
@@ -57,9 +56,10 @@ export async function createApp() {
     "Server logger initialized."
   );
 
-  app.addHook("onRequest", async (req) => {
+  app.addHook("onRequest", async (req, reply) => {
     const start = Date.now();
     (req as any).startTime = start;
+    reply.header("x-request-id", req.id);
     req.log.debug({ domain: "router", method: req.method, path: req.url }, "Request started.");
   });
 
@@ -71,24 +71,43 @@ export async function createApp() {
       (reply.context?.config as { routeId?: string } | undefined)?.routeId ??
       "unknown";
     const authMode = (req as any).authMode ?? "none";
+    const userId = (req as any).userId;
     req.log.info(
-      { domain: "router", routeId, authMode, statusCode: reply.statusCode, durationMs },
+      { domain: "router", routeId, authMode, statusCode: reply.statusCode, durationMs, userId },
       "Request completed."
     );
   });
 
   app.setErrorHandler((error, req, reply) => {
     req.log.error({ err: error }, "Unhandled error.");
+    const requestId = req.id;
+    if (error instanceof HttpError) {
+      reply.code(error.statusCode).send({
+        ok: false,
+        error: {
+          code: error.code,
+          message: error.message,
+          details: { ...(error.details ? { info: error.details } : {}), requestId }
+        }
+      });
+      return;
+    }
     const isDev = env.NODE_ENV !== "production";
-    const payload: Record<string, unknown> = { error: "internal_error" };
+    const details: Record<string, unknown> = { requestId };
     if (isDev) {
-      payload.message = error.message;
+      details.message = error.message;
       if (env.LOG_ERROR_STACK && error.stack) {
-        payload.stack = error.stack;
+        details.stack = error.stack;
       }
     }
-    const statusCode = error instanceof HttpError ? error.statusCode : 500;
-    reply.code(statusCode).send(payload);
+    reply.code(500).send({
+      ok: false,
+      error: {
+        code: "internal_error",
+        message: "Unexpected error",
+        details
+      }
+    });
   });
 
   const db = {
@@ -104,15 +123,13 @@ export async function createApp() {
     jobs: new Map<string, any>(),
     jobRuns: []
   };
+  const storage = new LocalStorageProvider(path.join(process.cwd(), ".local-uploads"));
 
   const events = new EventBus(eventsLog);
   const hooks = createHookRegistry();
 
   const baseDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const corePlugins = [
-    path.join(path.dirname(fileURLToPath(import.meta.url)), "auth", "plugin.ts"),
-    path.join(path.dirname(fileURLToPath(import.meta.url)), "admin", "plugin.ts")
-  ];
+  const corePlugins: string[] = [];
 
   const plugins = await loadPlugins(baseDir, corePlugins);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
@@ -132,7 +149,8 @@ export async function createApp() {
     env,
     pluginRegistry: plugins.registry,
     eventsRegistry: events,
-    hooksRegistry: hooks
+    hooksRegistry: hooks,
+    storage
   };
 
   for (const [name, service] of Object.entries(plugins.registry.services)) {
@@ -155,6 +173,7 @@ export async function createApp() {
       user: null,
       apiClient: null,
       db,
+      prisma,
       services,
       events,
       jobs: jobsRuntime,
@@ -231,18 +250,18 @@ export async function createApp() {
     events.on(listener.event, listener.handler, { mode: listener.mode });
   }
 
-  const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
+  const routeRegistry = await loadRoutes(baseDir, []);
   services.routeRegistry = routeRegistry;
 
   const openApi = buildOpenApi(routeRegistry);
   openApiLog.info("OpenAPI schema built.");
 
-  const canAccessDocs = (req: FastifyRequest) => {
+  const canAccessDocs = async (req: FastifyRequest) => {
     if (env.NODE_ENV !== "production" || env.SWAGGER_PUBLIC) {
       return true;
     }
     const sessionId = req.cookies?.session_id;
-    const session = sessionId ? getSession(db.sessions, sessionId) : null;
+    const session = sessionId ? await getSession(prisma, sessionId) : null;
     return Boolean(session);
   };
 
@@ -254,7 +273,7 @@ export async function createApp() {
   });
 
   app.get("/docs", async (req, reply) => {
-    if (!canAccessDocs(req)) {
+    if (!(await canAccessDocs(req))) {
       return reply.code(403).send({ error: "forbidden" });
     }
     reply.type("text/html").send(buildSwaggerUiHtml("/openapi.json"));
@@ -265,7 +284,7 @@ export async function createApp() {
   });
 
   app.get("/api/docs", async (req, reply) => {
-    if (!canAccessDocs(req)) {
+    if (!(await canAccessDocs(req))) {
       return reply.code(403).send({ error: "forbidden" });
     }
     reply.type("text/html").send(buildSwaggerUiHtml("/openapi.json"));
@@ -277,87 +296,33 @@ export async function createApp() {
       url: route.path,
       config: { routeId: route.id },
       handler: async (req, reply) => {
-        const reqId = (req.headers["x-request-id"] as string) ?? nanoid();
+        const reqId = (req.headers["x-request-id"] as string) ?? req.id ?? nanoid();
         let user = null;
         let apiClient = null;
-        let authMode: "session" | "apiKey" | "jwt" | "none" = "none";
-        const isAdminRoute = route.path.startsWith("/admin");
-        if (isAdminRoute) {
-          const sessionId = req.cookies?.session_id;
-          if (sessionId) {
-            const session = getSession(db.sessions, sessionId);
-            if (session) {
-              const userRecord = db.users.get(session.userId);
-              if (userRecord) {
-                user = {
-                  id: userRecord.id,
-                  roles: userRecord.roles ?? [],
-                  permissions: resolvePermissions(userRecord, db.roles)
-                };
-                authMode = "session";
-              }
-            }
-          }
-        } else {
-          const apiKeyHeader = req.headers["x-api-key"] as string | undefined;
-          const authHeader = typeof req.headers.authorization === "string"
-            ? req.headers.authorization
-            : undefined;
-          const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
-          const authenticateApiKey = async (apiKey: string) => {
-            const entry = findApiKey(db.apiKeys, apiKey);
-            if (!entry) {
-              await events.emit("apiKey.denied", { reason: "invalid" });
-              throw new HttpError(403, "Invalid API key");
-            }
-            const host = (req.headers.host as string | undefined) ?? "";
-            const origin = (req.headers.origin as string | undefined) ?? "";
-            if (entry.allowedHosts?.length) {
-              const allowed = entry.allowedHosts.some((allowedHost: string) =>
-                host.includes(allowedHost) || origin.includes(allowedHost)
-              );
-              if (!allowed) {
-                await events.emit("apiKey.denied", { reason: "host_not_allowed" });
-                throw new HttpError(403, "Host not allowed");
-              }
-            }
-            apiClient = {
-              id: entry.id,
-              name: entry.name,
-              permissions: entry.permissions ?? [],
-              allowedHosts: entry.allowedHosts ?? []
-            };
-            authMode = "apiKey";
-            await events.emit("apiKey.used", { apiClientId: entry.id });
-          };
-
-          if (apiKeyHeader) {
-            await authenticateApiKey(apiKeyHeader);
-          } else if (bearerToken) {
-            const looksLikeJwt = bearerToken.split(".").length === 3;
-            if (looksLikeJwt) {
-              const payload = verifyJwt(bearerToken, env.JWT_SECRET);
-              if (!payload?.sub) {
-                throw new HttpError(401, "Invalid token");
-              }
-              const userRecord = db.users.get(payload.sub);
-              if (!userRecord) {
-                throw new HttpError(401, "Invalid token");
-              }
+        let authMode: "session" | "none" = "none";
+        const sessionId = req.cookies?.session_id;
+        if (sessionId) {
+          const session = await getSession(prisma, sessionId);
+          if (session) {
+            const userRecord = await prisma.user.findUnique({
+              where: { id: session.userId },
+              include: { roles: { include: { role: true } } }
+            });
+            if (userRecord) {
+              const roles = userRecord.roles.map((entry) => entry.role.key);
               user = {
                 id: userRecord.id,
-                roles: userRecord.roles ?? [],
-                permissions: resolvePermissions(userRecord, db.roles)
+                roles,
+                permissions: []
               };
-              authMode = "jwt";
-            } else {
-              await authenticateApiKey(bearerToken);
+              authMode = "session";
             }
           }
         }
 
         (req as any).routeId = route.id;
         (req as any).authMode = authMode;
+        (req as any).userId = user?.id;
 
         const ctxBase = {
           reqId,
@@ -370,6 +335,7 @@ export async function createApp() {
           user,
           apiClient,
           db,
+          prisma,
           services,
           events,
           jobs: jobsRuntime,
@@ -385,51 +351,58 @@ export async function createApp() {
             userId: user?.id,
             apiKeyId: apiClient?.id
           }),
-          json: async (payload: any, statusCode = 200) => jsonResponse(reply, payload, statusCode),
+          json: async (payload: any, statusCode = 200, meta?: Record<string, any>) =>
+            jsonResponse(reply, payload, statusCode, meta),
           error: errorResponse
         };
         const ctx = { ...ctxBase, auth: createAuthHelpers(ctxBase) };
 
         try {
-          if (route.config.auth === "required" && !ctx.user && !ctx.apiClient) {
-            throw new HttpError(401, "Authentication required");
-          }
+        if (route.config.auth === "required" && !ctx.user && !ctx.apiClient) {
+          throw new HttpError(401, "unauthorized", "Authentication required");
+        }
 
-          if (route.config.permissions?.length) {
-            const hasAll = route.config.permissions.every((perm) => ctx.auth.hasPermission(perm));
-            if (!hasAll) throw new HttpError(403, "Missing permissions");
-          }
+        if (route.config.permissions?.length) {
+          const hasAll = route.config.permissions.every((perm) => ctx.auth.hasPermission(perm));
+          if (!hasAll) throw new HttpError(403, "forbidden", "Missing permissions");
+        }
 
-          if (route.config.permissionsAny?.length) {
-            const hasAny = route.config.permissionsAny.some((perm) => ctx.auth.hasPermission(perm));
-            if (!hasAny) throw new HttpError(403, "Missing permissions");
-          }
+        if (route.config.permissionsAny?.length) {
+          const hasAny = route.config.permissionsAny.some((perm) => ctx.auth.hasPermission(perm));
+          if (!hasAny) throw new HttpError(403, "forbidden", "Missing permissions");
+        }
 
-          if (route.config.roles?.length && ctx.user) {
-            const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
-            if (!hasRole) throw new HttpError(403, "Missing role");
-          }
+        if (route.config.roles?.length && ctx.user) {
+          const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
+          if (!hasRole) throw new HttpError(403, "forbidden", "Missing role");
+        }
 
           if (route.config.validate) {
             const { params, query, body } = route.config.validate;
             if (params) {
               const parsed = params.safeParse(ctx.params);
               if (!parsed.success) {
-                return reply.code(400).send({ error: "validation_error", issues: parsed.error.issues });
+                throw new HttpError(400, "validation_error", "Validation failed", {
+                  issues: parsed.error.issues
+                });
               }
               ctx.params = parsed.data;
             }
             if (query) {
               const parsed = query.safeParse(ctx.query);
               if (!parsed.success) {
-                return reply.code(400).send({ error: "validation_error", issues: parsed.error.issues });
+                throw new HttpError(400, "validation_error", "Validation failed", {
+                  issues: parsed.error.issues
+                });
               }
               ctx.query = parsed.data;
             }
             if (body) {
               const parsed = body.safeParse(ctx.body);
               if (!parsed.success) {
-                return reply.code(400).send({ error: "validation_error", issues: parsed.error.issues });
+                throw new HttpError(400, "validation_error", "Validation failed", {
+                  issues: parsed.error.issues
+                });
               }
               ctx.body = parsed.data;
             }
@@ -463,30 +436,25 @@ export async function createApp() {
         } catch (error) {
           ctx.log.error({ err: error }, "Route handler failed.");
           if (error instanceof HttpError) {
-            reply.code(error.statusCode).send({ error: error.message, details: error.details });
+            reply.code(error.statusCode).send({
+              ok: false,
+              error: {
+                code: error.code,
+                message: error.message,
+                details: { ...(error.details ? { info: error.details } : {}), requestId: req.id }
+              }
+            });
           } else {
-            reply.code(500).send({ error: "internal_error" });
+            reply.code(500).send({
+              ok: false,
+              error: { code: "internal_error", message: "Unexpected error", details: { requestId: req.id } }
+            });
             db.errors.push({ timestamp: new Date().toISOString(), error: (error as Error).message });
           }
         }
       }
     });
   }
-
-  app.post("/admin/login", async (req, reply) => {
-    const body = req.body as any;
-    const user = Array.from(db.users.values()).find((entry) => entry.email === body?.email);
-    if (!user) {
-      authLog.warn({ email: body?.email }, "Login failed.");
-      await events.emit("auth.failed", { email: body?.email });
-      return reply.code(401).send({ error: "invalid_credentials" });
-    }
-    const sessionId = createSession(db.sessions, user.id);
-    reply.setCookie("session_id", sessionId, { path: "/", httpOnly: true });
-    await events.emit("auth.login", { userId: user.id });
-    authLog.info({ userId: user.id }, "Login succeeded.");
-    return reply.send({ status: "ok" });
-  });
 
   app.post("/webhooks/:provider", async (req, reply) => {
     const handler = plugins.registry.inboundWebhooks.get(req.params.provider as string);
@@ -502,6 +470,7 @@ export async function createApp() {
       user: null,
       apiClient: null,
       db,
+      prisma,
       services,
       events,
       jobs: jobsRuntime,
@@ -537,20 +506,11 @@ export async function createApp() {
       const middleware = astroModule.createMiddleware();
       const shouldSkipAstro = (url: string | undefined) => {
         const path = (url ?? "/").split("?")[0] ?? "/";
-        const excludedExact = new Set([
-          "/openapi.json",
-          "/docs",
-          "/health",
-          "/ready",
-          "/version",
-          "/admin/login"
-        ]);
+        const excludedExact = new Set(["/openapi.json", "/docs", "/health", "/ready", "/version"]);
         if (excludedExact.has(path)) return true;
         return (
           path === "/api" ||
           path.startsWith("/api/") ||
-          path === "/admin/api" ||
-          path.startsWith("/admin/api/") ||
           path === "/webhooks" ||
           path.startsWith("/webhooks/")
         );
@@ -564,9 +524,7 @@ export async function createApp() {
             "/health",
             "/ready",
             "/version",
-            "/admin/login",
             "/api/*",
-            "/admin/api/*",
             "/webhooks/*"
           ]
         },
@@ -592,16 +550,6 @@ export async function createApp() {
       });
     }
   }
-
-  const adminUser = {
-    id: "admin",
-    email: "admin@local",
-    name: "Admin",
-    roles: ["admin"]
-  };
-  db.users.set(adminUser.id, adminUser);
-  db.roles.set("admin", ["admin.read", "admin.diagnostics", "auth.manage", "webhooks.manage", "jobs.manage"]);
-  diagnosticsLog.info("Seeded admin user.");
 
   return app;
 }

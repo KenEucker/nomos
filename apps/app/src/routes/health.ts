@@ -7,5 +7,5 @@ export const config = {
 import type { Ctx } from "../platform/ctx.js";
 
 export const get = async (ctx: Ctx) => {
-  return ctx.json({ ok: true });
+  return ctx.json({ status: "ok" });
 };
