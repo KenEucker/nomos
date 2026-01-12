@@ -109,17 +109,17 @@
           <Badge variant={task.status === "done" ? "success" : "secondary"}>{task.status}</Badge>
         </div>
         <div class="mt-4 space-y-3">
-          <label class="text-xs text-slate-400">Title</label>
+          <label for="title" class="text-xs text-slate-400">Title</label>
           <Input bind:value={task.title} disabled={!hasRole(user, "editor") && !hasRole(user, "admin")} />
-          <label class="text-xs text-slate-400">Description</label>
+          <label for="description" class="text-xs text-slate-400">Description</label>
           <Input bind:value={task.description} disabled={!hasRole(user, "editor") && !hasRole(user, "admin")} />
-          <label class="text-xs text-slate-400">Status</label>
+          <label for="status" class="text-xs text-slate-400">Status</label>
           <Input bind:value={task.status} disabled={!hasRole(user, "editor") && !hasRole(user, "admin")} />
-          <label class="text-xs text-slate-400">Assigned user ID</label>
+          <label for="assignedToUserId" class="text-xs text-slate-400">Assigned user ID</label>
           <Input bind:value={task.assignedToUserId} disabled={!hasRole(user, "editor") && !hasRole(user, "admin")} />
           {#if hasRole(user, "editor") || hasRole(user, "admin")}
             <div class="flex items-center gap-3">
-              <Button on:click={updateTask}>Save</Button>
+              <Button onclick={updateTask}>Save</Button>
               <span class="text-xs text-slate-400">{saveState}</span>
             </div>
           {/if}
@@ -153,7 +153,7 @@
                 <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
                   <span>Author: {comment.authorUserId}</span>
                   {#if hasRole(user, "admin") || comment.authorUserId === user?.id}
-                    <Button variant="ghost" size="sm" on:click={() => deleteComment(comment.id)}>Delete</Button>
+                    <Button variant="ghost" size="sm" onclick={() => deleteComment(comment.id)}>Delete</Button>
                   {/if}
                 </div>
               </div>
@@ -161,7 +161,7 @@
             {#if hasRole(user, "editor") || hasRole(user, "admin")}
               <div class="space-y-2">
                 <Input placeholder="Add a comment" bind:value={newComment} />
-                <Button on:click={addComment} disabled={!newComment}>Add comment</Button>
+                <Button onclick={addComment} disabled={!newComment}>Add comment</Button>
               </div>
             {/if}
           </div>
@@ -186,7 +186,7 @@
                     <td class="py-3 text-slate-400">{attachment.sizeBytes} bytes</td>
                     <td class="py-3">
                       {#if hasRole(user, "editor") || hasRole(user, "admin")}
-                        <Button variant="ghost" size="sm" on:click={() => deleteAttachment(attachment.id)}>
+                        <Button variant="ghost" size="sm" onclick={() => deleteAttachment(attachment.id)}>
                           Delete
                         </Button>
                       {/if}
@@ -197,8 +197,8 @@
             </Table>
             {#if hasRole(user, "editor") || hasRole(user, "admin")}
               <div>
-                <label class="text-xs text-slate-400">Upload attachment</label>
-                <Input type="file" on:change={uploadAttachment} />
+                <label for="attachment" class="text-xs text-slate-400">Upload attachment</label>
+                <Input type="file" onchange={uploadAttachment} />
               </div>
             {/if}
           </div>

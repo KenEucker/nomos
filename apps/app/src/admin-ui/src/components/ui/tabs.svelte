@@ -24,7 +24,7 @@
             ? "bg-slate-100 text-slate-900"
             : "text-slate-300 hover:text-slate-100"
         )}
-        on:click={() => onChange?.(tab.id)}
+        onclick={() => onChange?.(tab.id)}
       >
         {tab.label}
       </button>

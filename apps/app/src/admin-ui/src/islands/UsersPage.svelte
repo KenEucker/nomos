@@ -80,7 +80,7 @@
 <AppShell title="Users">
   <div class="mb-4 flex items-center gap-3">
     <Input className="max-w-sm" placeholder="Search users" bind:value={search} />
-    <Button variant="secondary" on:click={loadUsers}>Search</Button>
+    <Button variant="secondary" onclick={loadUsers}>Search</Button>
   </div>
 
   {#if loading}
@@ -109,7 +109,7 @@
               </div>
             </td>
             <td class="py-3">
-              <Button variant="ghost" size="sm" on:click={() => openRoles(entry)}>
+              <Button variant="ghost" size="sm" onclick={() => openRoles(entry)}>
                 Edit roles
               </Button>
             </td>
@@ -127,15 +127,15 @@
           <Button
             variant={selectedRoles.includes(role.key) ? "secondary" : "outline"}
             size="sm"
-            on:click={() => toggleRole(role.key)}
+            onclick={() => toggleRole(role.key)}
           >
             {role.name}
           </Button>
         {/each}
       </div>
       <div class="flex justify-end gap-2">
-        <Button variant="ghost" on:click={() => (showRoles = false)}>Cancel</Button>
-        <Button on:click={saveRoles}>Save</Button>
+        <Button variant="ghost" onclick={() => (showRoles = false)}>Cancel</Button>
+        <Button onclick={saveRoles}>Save</Button>
       </div>
     </div>
   </Dialog>

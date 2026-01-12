@@ -1,22 +1,31 @@
 <script lang="ts">
   import { cn } from "../../lib/utils";
+  import type { Snippet } from "../../lib/utils";
 
-  let { className = "" } = $props<{ className?: string }>();
-  const slots = $slots();
+  type Props = {
+    className?: string;
+    header?: Snippet;
+    footer?: Snippet;
+    children?: Snippet;
+  };
+
+  let { className = "", header, footer, children }: Props = $props();
 </script>
 
 <div class={cn("rounded-lg border border-slate-800 bg-slate-950 text-slate-100 shadow-sm", className)}>
   <div class="p-4">
-    {#if slots.header}
+    {#if header}
       <div class="mb-3">
-        <slot name="header" />
+        {@render header()}
       </div>
     {/if}
-    <slot />
+
+    {@render children?.()}
   </div>
-  {#if slots.footer}
+
+  {#if footer}
     <div class="border-t border-slate-800 p-4">
-      <slot name="footer" />
+      {@render footer()}
     </div>
   {/if}
 </div>
