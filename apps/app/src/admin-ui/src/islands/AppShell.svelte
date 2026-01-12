@@ -4,6 +4,7 @@
   import { session, loadSession, hasRole, type SessionUser } from "../lib/session";
   import { apiPost } from "../lib/api";
   import Button from "../components/ui/button.svelte";
+  import ThemeToggle from "../components/ui/theme-toggle.svelte";
 
   type Props = { title?: string; children?: Snippet };
   let { title = "Dashboard", children }: Props = $props();
@@ -96,19 +97,19 @@
 </script>
 
 {#if loading}
-  <div class="flex min-h-screen items-center justify-center bg-slate-950 text-slate-200">
+  <div class="flex min-h-screen items-center justify-center bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-200">
     <div class="flex flex-col items-center gap-2">
-      <div class="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200"></div>
+      <div class="h-8 w-8 animate-spin rounded-full border-2 border-slate-400 border-t-slate-700 dark:border-slate-600 dark:border-t-slate-200"></div>
       <span>Loading...</span>
     </div>
   </div>
 {:else}
-  <div class="min-h-screen bg-slate-950 text-slate-100">
+  <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
     <!-- Mobile header -->
-    <header class="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-slate-800 bg-slate-900/95 px-4 backdrop-blur lg:hidden">
+    <header class="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-slate-200 bg-white/95 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-md p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+        class="inline-flex items-center justify-center rounded-md p-2 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
         onclick={toggleMobileMenu}
         aria-label="Toggle menu"
       >
@@ -121,7 +122,7 @@
       </div>
       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-md p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+        class="inline-flex items-center justify-center rounded-md p-2 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
         onclick={handleLogout}
         aria-label="Log out"
       >
@@ -146,15 +147,15 @@
     <!-- Mobile sidebar -->
     <aside
       class={
-        "fixed inset-y-0 left-0 z-50 w-64 transform border-r border-slate-800 bg-slate-900 transition-transform duration-200 ease-in-out lg:hidden " +
+        "fixed inset-y-0 left-0 z-50 w-64 transform border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out dark:border-slate-800 dark:bg-slate-900 lg:hidden " +
         (mobileMenuOpen ? "translate-x-0" : "-translate-x-full")
       }
     >
-      <div class="flex h-14 items-center justify-between border-b border-slate-800 px-4">
+      <div class="flex h-14 items-center justify-between border-b border-slate-200 px-4 dark:border-slate-800">
         <span class="text-lg font-semibold">Nomos Admin</span>
         <button
           type="button"
-          class="rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+          class="rounded-md p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
           onclick={closeMobileMenu}
           aria-label="Close menu"
         >
@@ -163,9 +164,9 @@
           </svg>
         </button>
       </div>
-      <div class="p-4">
-        <div class="mb-4 text-sm text-slate-400">{user?.email}</div>
-        <nav class="space-y-1">
+      <div class="flex h-[calc(100%-3.5rem)] flex-col p-4">
+        <div class="mb-4 text-sm text-slate-500 dark:text-slate-400">{user?.email}</div>
+        <nav class="flex-1 space-y-1">
           {#each navItems as item}
             {#if !item.role || hasRole(user, item.role)}
               <a
@@ -174,8 +175,8 @@
                 class={
                   "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition " +
                   (currentPath === item.path
-                    ? "bg-slate-800 text-white"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white")
+                    ? "bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-white"
+                    : "text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white")
                 }
               >
                 <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,6 +187,9 @@
             {/if}
           {/each}
         </nav>
+        <div class="border-t border-slate-200 pt-4 dark:border-slate-800">
+          <ThemeToggle collapsed={false} />
+        </div>
       </div>
     </aside>
 
@@ -193,18 +197,18 @@
       <!-- Desktop sidebar -->
       <aside
         class={
-          "hidden border-r border-slate-800 bg-slate-900/40 transition-all duration-200 lg:block " +
+          "hidden border-r border-slate-200 bg-slate-50/40 transition-all duration-200 dark:border-slate-800 dark:bg-slate-900/40 lg:block " +
           (sidebarCollapsed ? "w-16" : "w-64")
         }
       >
         <div class="sticky top-0 flex h-full flex-col">
           <!-- Logo/Brand -->
           <div class={
-            "flex h-14 items-center border-b border-slate-800 " +
+            "flex h-14 items-center border-b border-slate-200 dark:border-slate-800 " +
             (sidebarCollapsed ? "justify-center px-2" : "px-4")
           }>
             {#if sidebarCollapsed}
-              <span class="text-xl font-bold text-slate-100">N</span>
+              <span class="text-xl font-bold text-slate-900 dark:text-slate-100">N</span>
             {:else}
               <span class="text-lg font-semibold">Nomos Admin</span>
             {/if}
@@ -212,8 +216,8 @@
 
           <!-- User info -->
           {#if !sidebarCollapsed}
-            <div class="border-b border-slate-800 px-4 py-3">
-              <div class="truncate text-sm text-slate-400">{user?.email}</div>
+            <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+              <div class="truncate text-sm text-slate-500 dark:text-slate-400">{user?.email}</div>
             </div>
           {/if}
 
@@ -227,8 +231,8 @@
                     "group flex items-center rounded-md text-sm font-medium transition " +
                     (sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5") + " " +
                     (currentPath === item.path
-                      ? "bg-slate-800 text-white"
-                      : "text-slate-300 hover:bg-slate-800 hover:text-white")
+                      ? "bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-white"
+                      : "text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white")
                   }
                   title={sidebarCollapsed ? item.label : ""}
                 >
@@ -243,13 +247,14 @@
             {/each}
           </nav>
 
-          <!-- Collapse toggle & Logout -->
-          <div class="border-t border-slate-800 p-2">
+          <!-- Theme toggle, Collapse toggle & Logout -->
+          <div class="border-t border-slate-200 p-2 dark:border-slate-800">
+            <ThemeToggle collapsed={sidebarCollapsed} />
             <button
               type="button"
               onclick={toggleSidebar}
               class={
-                "flex w-full items-center rounded-md text-sm font-medium text-slate-400 transition hover:bg-slate-800 hover:text-white " +
+                "flex w-full items-center rounded-md text-sm font-medium text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white " +
                 (sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5")
               }
               title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -265,7 +270,7 @@
               type="button"
               onclick={handleLogout}
               class={
-                "flex w-full items-center rounded-md text-sm font-medium text-slate-400 transition hover:bg-slate-800 hover:text-white " +
+                "flex w-full items-center rounded-md text-sm font-medium text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white " +
                 (sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5")
               }
               title={sidebarCollapsed ? "Log out" : ""}
@@ -287,7 +292,7 @@
           <!-- Page header -->
           <div class="mb-6">
             <h1 class="text-xl font-semibold sm:text-2xl">{title}</h1>
-            <p class="text-sm text-slate-400">Signed in as {user?.name}</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Signed in as {user?.name}</p>
           </div>
 
           <!-- Page content -->

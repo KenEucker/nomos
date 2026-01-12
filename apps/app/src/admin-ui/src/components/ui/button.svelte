@@ -21,12 +21,12 @@
 
 <button
   class={cn(
-    "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-slate-950",
+    "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-white dark:ring-offset-slate-950",
     {
-      "bg-slate-100 text-slate-900 hover:bg-slate-200": variant === "default",
-      "bg-slate-800 text-slate-100 hover:bg-slate-700": variant === "secondary",
-      "border border-slate-700 text-slate-100 hover:bg-slate-900": variant === "outline",
-      "text-slate-100 hover:bg-slate-800": variant === "ghost",
+      "bg-slate-900 text-slate-100 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200": variant === "default",
+      "bg-slate-200 text-slate-900 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700": variant === "secondary",
+      "border border-slate-300 text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-900": variant === "outline",
+      "text-slate-900 hover:bg-slate-200 dark:text-slate-100 dark:hover:bg-slate-800": variant === "ghost",
       "bg-red-500 text-white hover:bg-red-600": variant === "destructive"
     },
     {
