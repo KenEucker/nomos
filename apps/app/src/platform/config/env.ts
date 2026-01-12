@@ -44,7 +44,15 @@ const envSchema = z.object({
     .default(false),
   SWAGGER_PUBLIC: z
     .preprocess((value) => value === "true", z.boolean())
-    .default(true)
+    .default(true),
+  ASTRO_DEV_PORT: z.preprocess(
+    (value) => {
+      if (value === undefined || value === null) return undefined;
+      if (typeof value === "string" && value.trim() === "") return undefined;
+      return value;
+    },
+    z.coerce.number().optional()
+  )
 });
 
 export type Env = z.infer<typeof envSchema>;

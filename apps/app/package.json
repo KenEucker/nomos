@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "postinstall": "prisma generate",
-    "dev": "npm --prefix src/admin-ui install && concurrently -k -n \"astro,server\" -c \"magenta,cyan\" \"npm run dev:admin-ui\" \"npm run dev:server\"",
-    "dev:server": "ASTRO_DEV_PORT=4321 tsx watch src/server.ts",
-    "dev:admin-ui": "npm --prefix src/admin-ui run dev",
+    "dev": "npm --prefix src/admin-ui install && ASTRO_DEV_PORT=${ASTRO_DEV_PORT:-4321} concurrently -k -n \"astro,server\" -c \"magenta,cyan\" \"npm run dev:admin-ui\" \"npm run dev:server\"",
+    "dev:server": "tsx watch src/server.ts",
+    "dev:admin-ui": "npm --prefix src/admin-ui run dev -- --port ${ASTRO_DEV_PORT:-4321}",
     "build": "npm run build:admin-ui && tsc -p tsconfig.json",
     "build:admin-ui": "npm --prefix src/admin-ui install && npm --prefix src/admin-ui run build",
     "health-check": "node scripts/health-check.mjs",

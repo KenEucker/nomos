@@ -533,7 +533,7 @@ export async function createApp() {
     }
   });
 
-  const astroDevPort = process.env.ASTRO_DEV_PORT;
+  const astroDevPort = env.ASTRO_DEV_PORT;
 
   const shouldSkipAstro = (url: string | undefined) => {
     const p = (url ?? "/").split("?")[0] ?? "/";
@@ -563,7 +563,7 @@ export async function createApp() {
       const proxyReq = http.request(
         {
           hostname: "localhost",
-          port: parseInt(astroDevPort, 10),
+          port: astroDevPort,
           path: req.url,
           method: req.method,
           headers: {
