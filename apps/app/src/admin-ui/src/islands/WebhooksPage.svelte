@@ -49,7 +49,7 @@
   const loadWebhooks = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ destinations: WebhookDestination[]; deliveries: WebhookDelivery[] }>("/admin/api/webhooks");
+      const response = await apiGet<{ destinations: WebhookDestination[]; deliveries: WebhookDelivery[] }>("/admin/api/hooks");
       destinations = response.data?.destinations ?? [];
       deliveries = response.data?.deliveries ?? [];
     } catch (e) {
@@ -69,7 +69,7 @@
           delayMs: parseInt(newRetryDelay) || 1000
         }
       };
-      await apiPost("/admin/api/webhooks", body);
+      await apiPost("/admin/api/hooks", body);
       showCreate = false;
       newUrl = "";
       newEvents = "";
@@ -116,7 +116,7 @@
 </script>
 
 <AppShell title="Webhooks">
-  <div class="mb-4 flex items-center justify-between">
+  <div class="flex items-center justify-between mb-4">
     <Tabs tabs={[
       { id: "destinations", label: "Destinations" },
       { id: "deliveries", label: "Delivery Log" }
@@ -129,13 +129,13 @@
   {:else if activeTab === "destinations"}
     {#if destinations.length === 0}
       <Card>
-        <div class="text-center py-8 text-slate-400">
+        <div class="py-8 text-center text-slate-400">
           No webhook destinations configured.
         </div>
       </Card>
     {:else}
       <Table>
-        <thead class="text-left text-xs uppercase text-slate-400">
+        <thead class="text-xs text-left uppercase text-slate-400">
           <tr>
             <th class="pb-2">URL</th>
             <th class="pb-2">Events</th>
@@ -148,7 +148,7 @@
           {#each destinations as dest}
             <tr class="border-t border-slate-800">
               <td class="py-3">
-                <div class="font-mono text-sm text-slate-100 max-w-xs truncate">{dest.url}</div>
+                <div class="max-w-xs font-mono text-sm truncate text-slate-100">{dest.url}</div>
                 <div class="text-xs text-slate-500">{dest.id.slice(0, 8)}...</div>
               </td>
               <td class="py-3">
@@ -178,13 +178,13 @@
   {:else}
     {#if deliveries.length === 0}
       <Card>
-        <div class="text-center py-8 text-slate-400">
+        <div class="py-8 text-center text-slate-400">
           No webhook deliveries yet.
         </div>
       </Card>
     {:else}
       <Table>
-        <thead class="text-left text-xs uppercase text-slate-400">
+        <thead class="text-xs text-left uppercase text-slate-400">
           <tr>
             <th class="pb-2">Event</th>
             <th class="pb-2">Destination</th>
@@ -199,7 +199,7 @@
               <td class="py-3">
                 <Badge variant="secondary">{delivery.event}</Badge>
               </td>
-              <td class="py-3 text-xs text-slate-400 font-mono">
+              <td class="py-3 font-mono text-xs text-slate-400">
                 {delivery.destinationId.slice(0, 8)}...
               </td>
               <td class="py-3">
@@ -221,24 +221,24 @@
       <h2 class="text-lg font-semibold">Add Webhook Destination</h2>
       <div class="space-y-3">
         <div>
-          <label class="block text-sm text-slate-400 mb-1">URL *</label>
+          <label class="block mb-1 text-sm text-slate-400">URL *</label>
           <Input placeholder="https://example.com/webhook" bind:value={newUrl} />
         </div>
         <div>
-          <label class="block text-sm text-slate-400 mb-1">Events (comma-separated) *</label>
+          <label class="block mb-1 text-sm text-slate-400">Events (comma-separated) *</label>
           <Input placeholder="users.created, tasks.updated" bind:value={newEvents} />
         </div>
         <div>
-          <label class="block text-sm text-slate-400 mb-1">Secret (for HMAC signing)</label>
+          <label class="block mb-1 text-sm text-slate-400">Secret (for HMAC signing)</label>
           <Input type="password" placeholder="Optional secret" bind:value={newSecret} />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-sm text-slate-400 mb-1">Retry Attempts</label>
+            <label class="block mb-1 text-sm text-slate-400">Retry Attempts</label>
             <Input type="text" bind:value={newRetryAttempts} />
           </div>
           <div>
-            <label class="block text-sm text-slate-400 mb-1">Retry Delay (ms)</label>
+            <label class="block mb-1 text-sm text-slate-400">Retry Delay (ms)</label>
             <Input type="text" bind:value={newRetryDelay} />
           </div>
         </div>
