@@ -523,11 +523,12 @@ export async function createApp() {
   const adminDist = path.join(baseDir, "admin-ui", "dist");
   const adminServer = path.join(adminDist, "server", "entry.mjs");
   const adminClient = path.join(adminDist, "client");
-  if (fs.existsSync(adminClient)) {
+  const adminAstroClient = path.join(adminClient, "_astro");
+  if (fs.existsSync(adminAstroClient)) {
     app.get("/_astro/*", async (req, reply) => {
       const assetPath = (req.params as { "*": string })["*"] ?? "";
-      const resolved = path.normalize(path.join(adminClient, assetPath));
-      if (!resolved.startsWith(adminClient)) {
+      const resolved = path.normalize(path.join(adminAstroClient, assetPath));
+      if (!resolved.startsWith(adminAstroClient)) {
         return reply.code(400).send({ error: "invalid_path" });
       }
       if (!fs.existsSync(resolved) || fs.statSync(resolved).isDirectory()) {
