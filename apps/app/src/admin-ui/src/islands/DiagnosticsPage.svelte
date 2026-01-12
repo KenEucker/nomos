@@ -114,7 +114,7 @@
     }
   };
 
-  onMount(async () => {
+  onMount(() => {
     const check = setInterval(async () => {
       if (!user) return;
       clearInterval(check);
@@ -133,7 +133,7 @@
 </script>
 
 <AppShell title="Diagnostics">
-  <div class="mb-4 flex items-center justify-between">
+  <div class="flex items-center justify-between mb-4">
     <Tabs tabs={[
       { id: "overview", label: "Overview" },
       { id: "routes", label: "Routes" },
@@ -152,43 +152,43 @@
     <div class="text-slate-400">Loading diagnostics...</div>
   {:else if error}
     <Card>
-      <div class="text-center py-8">
-        <div class="text-red-400 mb-2">{error}</div>
+      <div class="py-8 text-center">
+        <div class="mb-2 text-red-400">{error}</div>
         <Button variant="outline" size="sm" onclick={loadDiagnostics}>Retry</Button>
       </div>
     </Card>
   {:else if activeTab === "overview"}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-4">
       <Card>
-        <div class="text-center py-4">
+        <div class="py-4 text-center">
           <div class="flex items-center justify-center gap-2 mb-2">
             <div class={"w-3 h-3 rounded-full " + getStatusColor(overview?.status ?? "unknown")}></div>
             <span class="text-sm text-slate-400">Status</span>
           </div>
-          <div class="text-2xl font-semibold text-slate-100 capitalize">
+          <div class="text-2xl font-semibold capitalize text-slate-100">
             {overview?.status ?? "Unknown"}
           </div>
         </div>
       </Card>
       <Card>
-        <div class="text-center py-4">
-          <div class="text-sm text-slate-400 mb-2">Total Routes</div>
+        <div class="py-4 text-center">
+          <div class="mb-2 text-sm text-slate-400">Total Routes</div>
           <div class="text-2xl font-semibold text-slate-100">
             {overview?.routes ?? 0}
           </div>
         </div>
       </Card>
       <Card>
-        <div class="text-center py-4">
-          <div class="text-sm text-slate-400 mb-2">Registered Jobs</div>
+        <div class="py-4 text-center">
+          <div class="mb-2 text-sm text-slate-400">Registered Jobs</div>
           <div class="text-2xl font-semibold text-slate-100">
             {overview?.jobs ?? 0}
           </div>
         </div>
       </Card>
       <Card>
-        <div class="text-center py-4">
-          <div class="text-sm text-slate-400 mb-2">Event Types</div>
+        <div class="py-4 text-center">
+          <div class="mb-2 text-sm text-slate-400">Event Types</div>
           <div class="text-2xl font-semibold text-slate-100">
             {overview?.events?.length ?? 0}
           </div>
@@ -198,7 +198,7 @@
 
     {#if overview?.events?.length}
       <Card>
-        <h3 class="text-sm font-semibold text-slate-300 mb-3">Registered Events</h3>
+        <h3 class="mb-3 text-sm font-semibold text-slate-300">Registered Events</h3>
         <div class="flex flex-wrap gap-2">
           {#each overview.events as event}
             <Badge variant="secondary">{event}</Badge>
@@ -209,11 +209,11 @@
   {:else if activeTab === "routes"}
     {#if !routeStats?.routes?.length}
       <Card>
-        <div class="text-center py-8 text-slate-400">No route data available.</div>
+        <div class="py-8 text-center text-slate-400">No route data available.</div>
       </Card>
     {:else}
       <Table>
-        <thead class="text-left text-xs uppercase text-slate-400">
+        <thead class="text-xs text-left uppercase text-slate-400">
           <tr>
             <th class="pb-2">Method</th>
             <th class="pb-2">Path</th>
@@ -236,11 +236,11 @@
   {:else if activeTab === "jobs"}
     {#if !jobStats?.jobs?.length}
       <Card>
-        <div class="text-center py-8 text-slate-400">No job data available.</div>
+        <div class="py-8 text-center text-slate-400">No job data available.</div>
       </Card>
     {:else}
       <Table>
-        <thead class="text-left text-xs uppercase text-slate-400">
+        <thead class="text-xs text-left uppercase text-slate-400">
           <tr>
             <th class="pb-2">Job ID</th>
             <th class="pb-2">Queue</th>
@@ -252,7 +252,7 @@
             <tr class="border-t border-slate-800">
               <td class="py-2 font-mono text-slate-100">{job.id}</td>
               <td class="py-2 text-slate-400">{job.queue ?? "default"}</td>
-              <td class="py-2 text-xs text-slate-400 font-mono">{job.schedule ?? "-"}</td>
+              <td class="py-2 font-mono text-xs text-slate-400">{job.schedule ?? "-"}</td>
             </tr>
           {/each}
         </tbody>
@@ -261,12 +261,12 @@
   {:else if activeTab === "events"}
     {#if !eventStats?.events?.length}
       <Card>
-        <div class="text-center py-8 text-slate-400">No event data available.</div>
+        <div class="py-8 text-center text-slate-400">No event data available.</div>
       </Card>
     {:else}
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+      <div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
         {#each eventStats.events as event}
-          <div class="bg-slate-900/50 border border-slate-800 rounded px-3 py-2 text-sm font-mono text-slate-300">
+          <div class="px-3 py-2 font-mono text-sm border rounded bg-slate-900/50 border-slate-800 text-slate-300">
             {event}
           </div>
         {/each}

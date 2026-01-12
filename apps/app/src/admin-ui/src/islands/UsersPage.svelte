@@ -60,7 +60,7 @@
     await loadUsers();
   };
 
-  onMount(async () => {
+  onMount(() => {
     const check = setInterval(async () => {
       if (!user) return;
       clearInterval(check);
@@ -79,7 +79,7 @@
 
 <AppShell title="Users">
   <!-- Search -->
-  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+  <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center">
     <div class="flex flex-1 gap-2">
       <Input className="flex-1 sm:max-w-sm" placeholder="Search users" bind:value={search} />
       <Button variant="secondary" onclick={loadUsers}>Search</Button>
@@ -89,24 +89,24 @@
   {#if loading}
     <div class="flex items-center justify-center py-12 text-slate-400">
       <div class="flex flex-col items-center gap-2">
-        <div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200"></div>
+        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-600 border-t-slate-200"></div>
         <span>Loading users...</span>
       </div>
     </div>
   {:else if users.length === 0}
-    <div class="rounded-lg border border-slate-800 bg-slate-900/40 py-12 text-center">
+    <div class="py-12 text-center border rounded-lg border-slate-800 bg-slate-900/40">
       <div class="text-slate-400">No users found.</div>
     </div>
   {:else}
     <!-- Mobile: Card layout -->
     <div class="space-y-3 sm:hidden">
       {#each users as entry}
-        <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
+        <div class="p-4 border rounded-lg border-slate-800 bg-slate-900/40">
           <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0 flex-1">
+            <div class="flex-1 min-w-0">
               <div class="font-medium text-slate-100">{entry.name}</div>
-              <div class="text-sm text-slate-500 truncate">{entry.email}</div>
-              <div class="mt-2 flex flex-wrap gap-1">
+              <div class="text-sm truncate text-slate-500">{entry.email}</div>
+              <div class="flex flex-wrap gap-1 mt-2">
                 {#each entry.roles as role}
                   <Badge variant={role === "admin" ? "success" : "secondary"}>{role}</Badge>
                 {/each}
@@ -121,9 +121,9 @@
     </div>
 
     <!-- Desktop: Table layout -->
-    <div class="hidden rounded-lg border border-slate-800 bg-slate-900/40 sm:block">
+    <div class="hidden border rounded-lg border-slate-800 bg-slate-900/40 sm:block">
       <Table>
-        <thead class="text-left text-xs uppercase text-slate-400">
+        <thead class="text-xs text-left uppercase text-slate-400">
           <tr>
             <th class="px-4 py-3">User</th>
             <th class="px-4 py-3">Roles</th>
