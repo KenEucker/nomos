@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
+import http from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import fastify, { type FastifyRequest } from "fastify";
@@ -532,64 +533,116 @@ export async function createApp() {
     }
   });
 
-  const adminDist = path.join(baseDir, "admin-ui", "dist");
-  const adminServer = path.join(adminDist, "server", "entry.mjs");
-  const adminClient = path.join(adminDist, "client");
-  const adminAstroClient = path.join(adminClient, "_astro");
+  const astroDevPort = env.ASTRO_DEV_PORT;
 
-  if (fs.existsSync(adminAstroClient)) {
-    app.get("/_astro/*", async (req, reply) => {
-      const assetPath = (req.params as { "*": string })["*"] ?? "";
-      const resolved = path.normalize(path.join(adminAstroClient, assetPath));
-      if (!resolved.startsWith(adminAstroClient)) {
-        return reply.code(400).send({ error: "invalid_path" });
+  const shouldSkipAstro = (url: string | undefined) => {
+    const p = (url ?? "/").split("?")[0] ?? "/";
+    const excludedExact = new Set(["/openapi.json", "/docs", "/health", "/ready", "/version"]);
+    if (excludedExact.has(p)) return true;
+    return p === "/api" || p.startsWith("/api/") || p === "/webhooks" || p.startsWith("/webhooks/");
+  };
+
+  if (astroDevPort) {
+    // Development mode: proxy requests to Astro dev server for hot reload
+    await app.register(middie);
+    adminLog.info(
+      {
+        mode: "development",
+        astroDevServer: `http://localhost:${astroDevPort}`,
+        excluded: ["/openapi.json", "/docs", "/health", "/ready", "/version", "/api/*", "/webhooks/*"]
+      },
+      "Proxying to Astro dev server for hot reload."
+    );
+
+    const proxyToAstro = (req: IncomingMessage, res: ServerResponse, next: (err?: Error) => void) => {
+      if (shouldSkipAstro(req.url)) {
+        next();
+        return;
       }
-      if (!fs.existsSync(resolved) || fs.statSync(resolved).isDirectory()) {
-        return reply.code(404).send({ error: "not_found" });
-      }
-      reply.type(contentTypeForPath(resolved));
-      return reply.send(fs.createReadStream(resolved));
-    });
-  }
 
-  if (fs.existsSync(adminServer)) {
-    const astroModule = await import(pathToFileURL(adminServer).href);
-    if (astroModule.createMiddleware) {
-      await app.register(middie);
-      const middleware = astroModule.createMiddleware();
-      const shouldSkipAstro = (url: string | undefined) => {
-        const p = (url ?? "/").split("?")[0] ?? "/";
-        const excludedExact = new Set(["/openapi.json", "/docs", "/health", "/ready", "/version"]);
-        if (excludedExact.has(p)) return true;
-        return p === "/api" || p.startsWith("/api/") || p === "/webhooks" || p.startsWith("/webhooks/");
-      };
-
-      adminLog.info(
+      const proxyReq = http.request(
         {
-          mount: "/",
-          excluded: ["/openapi.json", "/docs", "/health", "/ready", "/version", "/api/*", "/webhooks/*"]
+          hostname: "localhost",
+          port: astroDevPort,
+          path: req.url,
+          method: req.method,
+          headers: {
+            ...req.headers,
+            host: `localhost:${astroDevPort}`
+          }
         },
-        "Mounted Astro middleware."
+        (proxyRes) => {
+          res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers);
+          proxyRes.pipe(res);
+        }
       );
 
-      app.use((req: IncomingMessage, res: ServerResponse, next: (err?: Error) => void) => {
-        if (shouldSkipAstro(req.url)) {
-          next();
-          return;
+      proxyReq.on("error", (err) => {
+        adminLog.warn({ err, url: req.url }, "Astro dev server proxy error - server may still be starting");
+        res.writeHead(502);
+        res.end("Astro dev server unavailable. Please wait for it to start.");
+      });
+
+      req.pipe(proxyReq);
+    };
+
+    app.use(proxyToAstro);
+  } else {
+    // Production mode: serve pre-built Astro output
+    const adminDist = path.join(baseDir, "admin-ui", "dist");
+    const adminServer = path.join(adminDist, "server", "entry.mjs");
+    const adminClient = path.join(adminDist, "client");
+    const adminAstroClient = path.join(adminClient, "_astro");
+
+    if (fs.existsSync(adminAstroClient)) {
+      app.get("/_astro/*", async (req, reply) => {
+        const assetPath = (req.params as { "*": string })["*"] ?? "";
+        const resolved = path.normalize(path.join(adminAstroClient, assetPath));
+        if (!resolved.startsWith(adminAstroClient)) {
+          return reply.code(400).send({ error: "invalid_path" });
         }
-        middleware(req, res, next);
+        if (!fs.existsSync(resolved) || fs.statSync(resolved).isDirectory()) {
+          return reply.code(404).send({ error: "not_found" });
+        }
+        reply.type(contentTypeForPath(resolved));
+        return reply.send(fs.createReadStream(resolved));
       });
-    } else {
-      const handler = astroModule.handler ?? astroModule.default;
-      adminLog.info({ mount: "/" }, "Mounted Astro handler.");
-      app.all("/", async (req, reply) => {
-        reply.hijack();
-        await handler(req.raw, reply.raw);
-      });
-      app.all("/*", async (req, reply) => {
-        reply.hijack();
-        await handler(req.raw, reply.raw);
-      });
+    }
+
+    if (fs.existsSync(adminServer)) {
+      const astroModule = await import(pathToFileURL(adminServer).href);
+      if (astroModule.createMiddleware) {
+        await app.register(middie);
+        const middleware = astroModule.createMiddleware();
+
+        adminLog.info(
+          {
+            mode: "production",
+            mount: "/",
+            excluded: ["/openapi.json", "/docs", "/health", "/ready", "/version", "/api/*", "/webhooks/*"]
+          },
+          "Mounted Astro middleware."
+        );
+
+        app.use((req: IncomingMessage, res: ServerResponse, next: (err?: Error) => void) => {
+          if (shouldSkipAstro(req.url)) {
+            next();
+            return;
+          }
+          middleware(req, res, next);
+        });
+      } else {
+        const handler = astroModule.handler ?? astroModule.default;
+        adminLog.info({ mount: "/" }, "Mounted Astro handler.");
+        app.all("/", async (req, reply) => {
+          reply.hijack();
+          await handler(req.raw, reply.raw);
+        });
+        app.all("/*", async (req, reply) => {
+          reply.hijack();
+          await handler(req.raw, reply.raw);
+        });
+      }
     }
   }
 
