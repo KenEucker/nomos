@@ -32,6 +32,9 @@ import { getPrismaClient } from "./db/prisma.js";
 
 export async function createApp() {
   const env = loadEnv();
+  if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === "") {
+    process.env.DATABASE_URL = env.DATABASE_URL;
+  }
   const app = fastify({
     logger: createLoggerOptions(env),
     genReqId: (req) => {
