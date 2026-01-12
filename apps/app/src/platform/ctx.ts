@@ -1,11 +1,11 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import type { Logger } from "pino";
 import type { JobsRuntime } from "./jobs/runtime.js";
 import type { EventBus } from "./events/bus.js";
 import type { WebhookRuntime } from "./webhooks/outbound.js";
 import type { ServicesRegistry } from "./plugins/registry.js";
 import type { PrismaClient } from "@prisma/client";
 import { HttpError } from "./errors.js";
+import type { AppLogger } from "./logging/logger.js";
 
 export type UserIdentity = {
   id: string;
@@ -41,7 +41,7 @@ export type Ctx = {
     requirePermission: (permission: string) => void;
     hasPermission: (permission: string) => boolean;
   };
-  log: Logger;
+  log: AppLogger;
   json: (payload: any, statusCode?: number, meta?: Record<string, any>) => Promise<void>;
   error: (statusCode: number, code: string, message: string, details?: unknown) => never;
   req: FastifyRequest;

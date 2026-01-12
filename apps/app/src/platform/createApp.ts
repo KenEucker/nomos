@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import fastify, { type FastifyRequest } from "fastify";
 import cookie from "@fastify/cookie";
@@ -8,6 +9,7 @@ import middie from "@fastify/middie";
 import { nanoid } from "nanoid";
 import { loadEnv } from "./config/env.js";
 import { createAuthHelpers, errorResponse, jsonResponse } from "./ctx.js";
+import type { ApiClient, InMemoryStore } from "./ctx.js";
 import { HttpError } from "./errors.js";
 import { createMiddlewareRegistry, resolveMiddleware } from "./middleware/registry.js";
 import { audit } from "./middleware/builtins/audit.js";
@@ -68,7 +70,7 @@ export async function createApp() {
     const durationMs = start ? Date.now() - start : undefined;
     const routeId =
       (req as any).routeId ??
-      (reply.context?.config as { routeId?: string } | undefined)?.routeId ??
+      (reply.routeOptions?.config as { routeId?: string } | undefined)?.routeId ??
       "unknown";
     const authMode = (req as any).authMode ?? "none";
     const userId = (req as any).userId;
@@ -79,7 +81,8 @@ export async function createApp() {
   });
 
   app.setErrorHandler((error, req, reply) => {
-    req.log.error({ err: error }, "Unhandled error.");
+    const err = error instanceof Error ? error : new Error("Unknown error");
+    req.log.error({ err }, "Unhandled error.");
     const requestId = req.id;
     if (error instanceof HttpError) {
       reply.code(error.statusCode).send({
@@ -95,9 +98,9 @@ export async function createApp() {
     const isDev = env.NODE_ENV !== "production";
     const details: Record<string, unknown> = { requestId };
     if (isDev) {
-      details.message = error.message;
-      if (env.LOG_ERROR_STACK && error.stack) {
-        details.stack = error.stack;
+      details.message = err.message;
+      if (env.LOG_ERROR_STACK && err.stack) {
+        details.stack = err.stack;
       }
     }
     reply.code(500).send({
@@ -110,7 +113,7 @@ export async function createApp() {
     });
   });
 
-  const db = {
+  const db: InMemoryStore = {
     users: new Map<string, any>(),
     roles: new Map<string, any>(),
     permissions: new Set<string>(),
@@ -162,7 +165,7 @@ export async function createApp() {
 
   const ctxFactory = () => {
     const reqId = nanoid();
-    return {
+    const ctxBase = {
       reqId,
       method: "JOB",
       path: "job",
@@ -176,33 +179,17 @@ export async function createApp() {
       prisma,
       services,
       events,
-      jobs: jobsRuntime,
-      webhooks: webhooksRuntime,
+      jobs: jobsRuntime!,
+      webhooks: webhooksRuntime!,
       log: jobsLog.child({ reqId, method: "JOB", path: "job" }),
-      auth: createAuthHelpers({
-        reqId,
-        method: "JOB",
-        path: "job",
-        params: {},
-        query: {},
-        body: {},
-        headers: {},
-        user: null,
-        apiClient: null,
-        db,
-        services,
-        events,
-        jobs: undefined as any,
-        webhooks: undefined as any,
-        req: undefined as any,
-        reply: undefined as any,
-        json: async () => undefined,
-        error: errorResponse
-      }),
       json: async () => undefined,
       error: errorResponse,
       req: undefined as any,
       reply: undefined as any
+    };
+    return {
+      ...ctxBase,
+      auth: createAuthHelpers(ctxBase)
     };
   };
 
@@ -298,7 +285,7 @@ export async function createApp() {
       handler: async (req, reply) => {
         const reqId = (req.headers["x-request-id"] as string) ?? req.id ?? nanoid();
         let user = null;
-        let apiClient = null;
+        let apiClient: ApiClient | null = null;
         let authMode: "session" | "none" = "none";
         const sessionId = req.cookies?.session_id;
         if (sessionId) {
@@ -358,24 +345,24 @@ export async function createApp() {
         const ctx = { ...ctxBase, auth: createAuthHelpers(ctxBase) };
 
         try {
-        if (route.config.auth === "required" && !ctx.user && !ctx.apiClient) {
-          throw new HttpError(401, "unauthorized", "Authentication required");
-        }
+          if (route.config.auth === "required" && !ctx.user && !ctx.apiClient) {
+            throw new HttpError(401, "unauthorized", "Authentication required");
+          }
 
-        if (route.config.permissions?.length) {
-          const hasAll = route.config.permissions.every((perm) => ctx.auth.hasPermission(perm));
-          if (!hasAll) throw new HttpError(403, "forbidden", "Missing permissions");
-        }
+          if (route.config.permissions?.length) {
+            const hasAll = route.config.permissions.every((perm) => ctx.auth.hasPermission(perm));
+            if (!hasAll) throw new HttpError(403, "forbidden", "Missing permissions");
+          }
 
-        if (route.config.permissionsAny?.length) {
-          const hasAny = route.config.permissionsAny.some((perm) => ctx.auth.hasPermission(perm));
-          if (!hasAny) throw new HttpError(403, "forbidden", "Missing permissions");
-        }
+          if (route.config.permissionsAny?.length) {
+            const hasAny = route.config.permissionsAny.some((perm) => ctx.auth.hasPermission(perm));
+            if (!hasAny) throw new HttpError(403, "forbidden", "Missing permissions");
+          }
 
-        if (route.config.roles?.length && ctx.user) {
-          const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
-          if (!hasRole) throw new HttpError(403, "forbidden", "Missing role");
-        }
+          if (route.config.roles?.length && ctx.user) {
+            const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
+            if (!hasRole) throw new HttpError(403, "forbidden", "Missing role");
+          }
 
           if (route.config.validate) {
             const { params, query, body } = route.config.validate;
@@ -434,7 +421,8 @@ export async function createApp() {
             reply.send(result);
           }
         } catch (error) {
-          ctx.log.error({ err: error }, "Route handler failed.");
+          const err = error instanceof Error ? error : new Error("Unknown error");
+          ctx.log.error({ err }, "Route handler failed.");
           if (error instanceof HttpError) {
             reply.code(error.statusCode).send({
               ok: false,
@@ -449,7 +437,7 @@ export async function createApp() {
               ok: false,
               error: { code: "internal_error", message: "Unexpected error", details: { requestId: req.id } }
             });
-            db.errors.push({ timestamp: new Date().toISOString(), error: (error as Error).message });
+            db.errors.push({ timestamp: new Date().toISOString(), error: err.message });
           }
         }
       }
@@ -457,7 +445,8 @@ export async function createApp() {
   }
 
   app.post("/webhooks/:provider", async (req, reply) => {
-    const handler = plugins.registry.inboundWebhooks.get(req.params.provider as string);
+    const provider = (req.params as { provider?: string }).provider;
+    const handler = provider ? plugins.registry.inboundWebhooks.get(provider) : undefined;
     if (!handler) return reply.code(404).send({ error: "not_found" });
     const ctxBase = {
       reqId: nanoid(),
@@ -530,7 +519,7 @@ export async function createApp() {
         },
         "Mounted Astro middleware."
       );
-      app.use((req, res, next) => {
+      app.use((req: IncomingMessage, res: ServerResponse, next: (err?: Error) => void) => {
         if (shouldSkipAstro(req.url)) {
           next();
           return;

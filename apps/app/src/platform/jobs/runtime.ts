@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
-import type { Logger } from "pino";
 import type { Ctx } from "../ctx.js";
 import type { EventBus } from "../events/bus.js";
+import type { AppLogger } from "../logging/logger.js";
 import { MemoryJobDriver } from "./drivers/memoryDriver.js";
 import type { JobDefinition, JobDispatchOptions, JobRun } from "./types.js";
 
@@ -13,7 +13,7 @@ export class JobsRuntime {
   constructor(
     private events: EventBus,
     private ctxFactory: () => Ctx,
-    private log: Logger
+    private log: AppLogger
   ) {}
 
   register(job: JobDefinition) {
