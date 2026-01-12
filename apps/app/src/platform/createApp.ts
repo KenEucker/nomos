@@ -32,15 +32,32 @@ import { getPrismaClient } from "./db/prisma.js";
 
 export async function createApp() {
   const env = loadEnv();
+
   if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === "") {
     process.env.DATABASE_URL = env.DATABASE_URL;
   }
+
+  // Only normalize sqlite "file:" URLs
   if (process.env.DATABASE_URL?.startsWith("file:")) {
-    const dbUrl = process.env.DATABASE_URL.slice("file:".length);
-    const absolutePath = path.resolve(dbUrl);
+    const raw = process.env.DATABASE_URL.slice("file:".length);
+
+    // Keep already-absolute paths as-is
+    if (path.isAbsolute(raw)) {
+      fs.mkdirSync(path.dirname(raw), { recursive: true });
+      process.env.DATABASE_URL = `file:${raw}`;
+      return;
+    }
+
+    // Resolve RELATIVE TO THE PRISMA SCHEMA DIRECTORY, not process.cwd()
+    const schemaPath = path.resolve("prisma/schema.prisma"); // cwd here is apps/app
+    const schemaDir = path.dirname(schemaPath);
+
+    const absolutePath = path.resolve(schemaDir, raw);
+
     fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
     process.env.DATABASE_URL = `file:${absolutePath}`;
   }
+  
   const contentTypeForPath = (filePath: string) => {
     const ext = path.extname(filePath);
     switch (ext) {
