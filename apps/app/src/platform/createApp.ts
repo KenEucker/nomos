@@ -299,12 +299,12 @@ export async function createApp() {
     reply.send(openApi);
   });
 
-  app.get("/docs", async (req, reply) => {
-    if (!(await canAccessDocs(req))) {
-      return reply.code(403).send({ error: "forbidden" });
-    }
-    reply.type("text/html").send(buildSwaggerUiHtml("/openapi.json"));
-  });
+  // app.get("/docs", async (req, reply) => {
+  //   if (!(await canAccessDocs(req))) {
+  //     return reply.code(403).send({ error: "forbidden" });
+  //   }
+  //   reply.type("text/html").send(buildSwaggerUiHtml("/openapi.json"));
+  // });
 
   app.get("/api", async (_req, reply) => {
     reply.redirect("/api/docs", 302);
@@ -537,9 +537,9 @@ export async function createApp() {
 
   const shouldSkipAstro = (url: string | undefined) => {
     const p = (url ?? "/").split("?")[0] ?? "/";
-    const excludedExact = new Set(["/openapi.json", "/docs", "/health", "/ready", "/version"]);
+    const excludedExact = new Set(["/openapi.json", "/health", "/ready", "/version"]);
     if (excludedExact.has(p)) return true;
-    return p === "/api" || p.startsWith("/api/") || p === "/webhooks" || p.startsWith("/webhooks/");
+    return p === "/api" || p.startsWith("/api/") || p === "/hooks" || p.startsWith("/hooks/");
   };
 
   if (astroDevPort) {
@@ -549,7 +549,7 @@ export async function createApp() {
       {
         mode: "development",
         astroDevServer: `http://localhost:${astroDevPort}`,
-        excluded: ["/openapi.json", "/docs", "/health", "/ready", "/version", "/api/*", "/webhooks/*"]
+        excluded: ["/openapi.json", "/health", "/ready", "/version", "/api/*", "/hooks/*"]
       },
       "Proxying to Astro dev server for hot reload."
     );
@@ -619,7 +619,7 @@ export async function createApp() {
           {
             mode: "production",
             mount: "/",
-            excluded: ["/openapi.json", "/docs", "/health", "/ready", "/version", "/api/*", "/webhooks/*"]
+            excluded: ["/openapi.json", "/docs", "/health", "/ready", "/version", "/api/*", "/hooks/*"]
           },
           "Mounted Astro middleware."
         );

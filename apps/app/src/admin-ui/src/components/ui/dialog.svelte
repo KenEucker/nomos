@@ -22,16 +22,16 @@
 
 {#if open}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" 
-      role="button"
-      tabindex="0"
-      aria-label="Close dialog"
-      onclick={close}
-      onkeydown={(e) => e.key === "Escape" || e.key === "Enter" || e.key === " " ? close() : null}
-    >
+    class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+    role="button"
+    tabindex="0"
+    aria-label="Close dialog"
+    onclick={close}
+    onkeydown={(e) => e.key === "Escape" || e.key === "Enter" || e.key === " " ? close() : null}
+  >
     <div
       class={cn(
-        "w-full max-w-lg rounded-lg border border-slate-800 bg-slate-950 p-6 shadow-xl",
+        "max-h-[90vh] w-full overflow-y-auto rounded-t-xl border border-slate-800 bg-slate-950 p-4 shadow-xl sm:max-w-lg sm:rounded-lg sm:p-6",
         className
       )}
       onclick={(e) => e.stopPropagation()}
