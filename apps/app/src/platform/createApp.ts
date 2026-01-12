@@ -35,6 +35,12 @@ export async function createApp() {
   if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === "") {
     process.env.DATABASE_URL = env.DATABASE_URL;
   }
+  if (process.env.DATABASE_URL?.startsWith("file:")) {
+    const dbUrl = process.env.DATABASE_URL.slice("file:".length);
+    const absolutePath = path.resolve(dbUrl);
+    fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
+    process.env.DATABASE_URL = `file:${absolutePath}`;
+  }
   const app = fastify({
     logger: createLoggerOptions(env),
     genReqId: (req) => {
