@@ -107,19 +107,6 @@
   </div>
 {:else}
   <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-    <!-- Mobile header -->
-    <header class="sticky top-0 z-40 flex items-center gap-4 px-4 border-b h-14 border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
-      <button
-        type="button"
-        class="inline-flex items-center justify-center p-2 rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-        onclick={toggleMobileMenu}
-        aria-label="Toggle menu"
-      >
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          {@html mobileMenuOpen ? icons.close : icons.menu}
-        </svg>
-      </button>
-      <div class="flex-1">
     <!-- Mobile header with horizontal scrollable nav -->
     <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
       <!-- Top bar with branding and controls -->
@@ -183,7 +170,6 @@
         <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
           <ThemeToggle collapsed={false} />
         </div>
-      </nav>
     </header>
 
     <div class="flex min-h-screen">
