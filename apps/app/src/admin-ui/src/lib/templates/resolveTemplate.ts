@@ -48,22 +48,27 @@ export class TemplateError extends Error {
 
 // Discover all templates using import.meta.glob
 // These patterns are statically analyzed by Vite at build time
+// Paths are relative to the admin-ui src directory
 
 // Admin-UI default templates (resource-specific and _default fallback)
+// This file is at: lib/templates/resolveTemplate.ts
+// Templates are at: templates/**/*.svelte (relative: ../../templates/)
 const adminTemplates = import.meta.glob<{ default: Component }>(
-  "/src/admin-ui/src/templates/**/*.svelte",
+  "../../templates/**/*.svelte",
   { eager: false }
 );
 
 // Plugin template overrides
+// Plugins are at: ../../../../plugins/ (relative to admin-ui/src/lib/templates/)
 const pluginTemplates = import.meta.glob<{ default: Component }>(
-  "/src/plugins/**/templates/**/*.svelte",
+  "../../../../plugins/**/templates/**/*.svelte",
   { eager: false }
 );
 
 // Platform module template overrides
+// Platform is at: ../../../../platform/ (relative to admin-ui/src/lib/templates/)
 const platformTemplates = import.meta.glob<{ default: Component }>(
-  "/src/platform/**/templates/**/*.svelte",
+  "../../../../platform/**/templates/**/*.svelte",
   { eager: false }
 );
 
@@ -78,9 +83,11 @@ interface ParsedPath {
 }
 
 function parseAdminTemplatePath(path: string): ParsedPath | null {
-  // Expected: /src/admin-ui/src/templates/<resource>/<View>.svelte
-  // or: /src/admin-ui/src/templates/_default/<View>.svelte
-  const match = path.match(/\/templates\/([^/]+)\/([^/]+)\.svelte$/);
+  // Expected formats:
+  // - ../../templates/<resource>/<View>.svelte (relative from this file)
+  // - /templates/<resource>/<View>.svelte (absolute)
+  // - templates/<resource>/<View>.svelte (root relative)
+  const match = path.match(/templates\/([^/]+)\/([^/]+)\.svelte$/);
   if (!match) return null;
 
   const [, resource, view] = match;
@@ -94,8 +101,10 @@ function parseAdminTemplatePath(path: string): ParsedPath | null {
 }
 
 function parsePluginTemplatePath(path: string): ParsedPath | null {
-  // Expected: /src/plugins/<plugin>/templates/<resource>/<View>.svelte
-  const match = path.match(/\/plugins\/[^/]+\/templates\/([^/]+)\/([^/]+)\.svelte$/);
+  // Expected formats:
+  // - ../../../../plugins/<plugin>/templates/<resource>/<View>.svelte
+  // - /plugins/<plugin>/templates/<resource>/<View>.svelte
+  const match = path.match(/plugins\/[^/]+\/templates\/([^/]+)\/([^/]+)\.svelte$/);
   if (!match) return null;
 
   return {
@@ -106,8 +115,10 @@ function parsePluginTemplatePath(path: string): ParsedPath | null {
 }
 
 function parsePlatformTemplatePath(path: string): ParsedPath | null {
-  // Expected: /src/platform/<module>/templates/<resource>/<View>.svelte
-  const match = path.match(/\/platform\/[^/]+\/templates\/([^/]+)\/([^/]+)\.svelte$/);
+  // Expected formats:
+  // - ../../../../platform/<module>/templates/<resource>/<View>.svelte
+  // - /platform/<module>/templates/<resource>/<View>.svelte
+  const match = path.match(/platform\/[^/]+\/templates\/([^/]+)\/([^/]+)\.svelte$/);
   if (!match) return null;
 
   return {

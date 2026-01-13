@@ -38,15 +38,20 @@ export class PageModuleError extends Error {
 
 // Use import.meta.glob to discover handwritten page modules
 // This allows Vite/Astro to statically analyze imports at build time
+// This file is at: lib/pages/resolvePageModule.ts
+// Handwritten modules are at: pages/*/*.ts (relative: ../../pages/)
+// Note: This looks for TypeScript page modules, not Astro pages
 const handwrittenModules = import.meta.glob<{ default: PageModule }>(
-  "/src/admin-ui/src/pages/*/*.ts",
+  "../../pages/*/*.ts",
   { eager: false }
 );
 
 // Normalize paths to resourceId/View format
 function normalizeModulePath(path: string): string | null {
-  // Expected: /src/admin-ui/src/pages/<resource>/<View>.ts
-  const match = path.match(/\/pages\/([^/]+)\/([^/]+)\.ts$/);
+  // Expected formats:
+  // - ../../pages/<resource>/<View>.ts (relative)
+  // - /pages/<resource>/<View>.ts (absolute)
+  const match = path.match(/pages\/([^/]+)\/([^/]+)\.ts$/);
   if (!match) return null;
   return `${match[1]}/${match[2]}`;
 }

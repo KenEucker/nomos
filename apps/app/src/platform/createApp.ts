@@ -281,7 +281,7 @@ export async function createApp() {
     events.on(listener.event, listener.handler, { mode: listener.mode });
   }
 
-  const routeRegistry = await loadRoutes(baseDir, []);
+  const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
   services.routeRegistry = routeRegistry;
 
   const openApi = buildOpenApi(routeRegistry);

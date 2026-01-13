@@ -9,11 +9,11 @@ export const apiKeysResource: AdminResource = {
   icon: "key",
 
   endpoints: {
-    list: "/admin/api/api-keys",
-    get: "/admin/api/api-keys/{id}",
-    create: "/admin/api/api-keys",
-    update: "/admin/api/api-keys/{id}",
-    delete: "/admin/api/api-keys/{id}"
+    list: "/admin/api-keys",
+    get: "/admin/api-keys/{id}",
+    create: "/admin/api-keys",
+    update: "/admin/api-keys/{id}",
+    delete: "/admin/api-keys/{id}"
   },
 
   list: {
@@ -96,7 +96,7 @@ export const apiKeysResource: AdminResource = {
         label: "Rotate Key",
         variant: "secondary",
         confirm: "Are you sure you want to rotate this API key? The old key will stop working immediately.",
-        endpoint: "/admin/api/api-keys/{id}/rotate",
+        endpoint: "/admin/api-keys/{id}/rotate",
         method: "POST"
       }
     ]
