@@ -64,15 +64,15 @@
   </div>
 
   {#if loading}
-    <div class="flex items-center justify-center py-12 text-slate-400">
+    <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
       <div class="flex flex-col items-center gap-2">
-        <div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-slate-200"></div>
+        <div class="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
         <span>Loading projects...</span>
       </div>
     </div>
   {:else if projects.length === 0}
-    <div class="rounded-lg border border-slate-800 bg-slate-900/40 py-12 text-center">
-      <div class="text-slate-400">No projects found.</div>
+    <div class="rounded-lg border border-slate-200 bg-white/40 py-12 text-center dark:border-slate-800 dark:bg-slate-900/40">
+      <div class="text-slate-500 dark:text-slate-400">No projects found.</div>
       {#if hasRole(user, "editor") || hasRole(user, "admin")}
         <Button className="mt-4" onclick={() => (showCreate = true)}>Create your first project</Button>
       {/if}
@@ -83,11 +83,11 @@
       {#each projects as project}
         <a
           href={`/projects/${project.id}`}
-          class="block rounded-lg border border-slate-800 bg-slate-900/40 p-4 transition hover:border-slate-700"
+          class="block rounded-lg border border-slate-200 bg-white/40 p-4 transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-slate-700"
         >
-          <div class="font-medium text-slate-100">{project.name}</div>
+          <div class="font-medium text-slate-900 dark:text-slate-100">{project.name}</div>
           {#if project.description}
-            <div class="mt-1 text-sm text-slate-400 line-clamp-2">{project.description}</div>
+            <div class="mt-1 text-sm text-slate-500 line-clamp-2 dark:text-slate-400">{project.description}</div>
           {/if}
           <div class="mt-2 text-xs text-slate-500">{formatDate(project.createdAt)}</div>
         </a>
@@ -95,9 +95,9 @@
     </div>
 
     <!-- Desktop: Table layout -->
-    <div class="hidden rounded-lg border border-slate-800 bg-slate-900/40 sm:block">
+    <div class="hidden rounded-lg border border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40 sm:block">
       <Table>
-        <thead class="text-left text-xs uppercase text-slate-400">
+        <thead class="text-left text-xs uppercase text-slate-500 dark:text-slate-400">
           <tr>
             <th class="px-4 py-3">Name</th>
             <th class="px-4 py-3">Description</th>
@@ -106,11 +106,11 @@
         </thead>
         <tbody class="text-sm">
           {#each projects as project}
-            <tr class="border-t border-slate-800 hover:bg-slate-800/30">
+            <tr class="border-t border-slate-200 hover:bg-slate-100/50 dark:border-slate-800 dark:hover:bg-slate-800/30">
               <td class="px-4 py-3 font-medium">
-                <a class="text-slate-100 hover:text-white" href={`/projects/${project.id}`}>{project.name}</a>
+                <a class="text-slate-900 hover:text-slate-700 dark:text-slate-100 dark:hover:text-white" href={`/projects/${project.id}`}>{project.name}</a>
               </td>
-              <td class="px-4 py-3 text-slate-400">{project.description ?? "-"}</td>
+              <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{project.description ?? "-"}</td>
               <td class="px-4 py-3 text-slate-500">{formatDate(project.createdAt)}</td>
             </tr>
           {/each}
@@ -119,7 +119,7 @@
     </div>
 
     <!-- Pagination -->
-    <div class="mt-4 flex flex-col items-center justify-between gap-3 text-sm text-slate-400 sm:flex-row">
+    <div class="mt-4 flex flex-col items-center justify-between gap-3 text-sm text-slate-500 dark:text-slate-400 sm:flex-row">
       <div>Page {page} of {Math.max(1, Math.ceil(total / pageSize))}</div>
       <div class="flex gap-2">
         <Button
@@ -146,15 +146,15 @@
     <div class="space-y-4">
       <div>
         <h2 class="text-lg font-semibold">Create project</h2>
-        <p class="text-sm text-slate-400">Set a name and optional description.</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Set a name and optional description.</p>
       </div>
       <div class="space-y-3">
         <div>
-          <label for="project-name" class="mb-1 block text-sm text-slate-400">Name</label>
+          <label for="project-name" class="mb-1 block text-sm text-slate-600 dark:text-slate-400">Name</label>
           <Input id="project-name" placeholder="Project name" bind:value={name} />
         </div>
         <div>
-          <label for="project-desc" class="mb-1 block text-sm text-slate-400">Description</label>
+          <label for="project-desc" class="mb-1 block text-sm text-slate-600 dark:text-slate-400">Description</label>
           <Input id="project-desc" placeholder="Description (optional)" bind:value={description} />
         </div>
       </div>

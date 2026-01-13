@@ -98,7 +98,7 @@
     }
   };
 
-  onMount(async () => {
+  onMount(() => {
     const check = setInterval(async () => {
       if (!user) return;
       clearInterval(check);
@@ -221,24 +221,24 @@
       <h2 class="text-lg font-semibold">Add Webhook Destination</h2>
       <div class="space-y-3">
         <div>
-          <label class="block mb-1 text-sm text-slate-400">URL *</label>
+          <label for="newUrl" class="block mb-1 text-sm text-slate-400">URL *</label>
           <Input placeholder="https://example.com/webhook" bind:value={newUrl} />
         </div>
         <div>
-          <label class="block mb-1 text-sm text-slate-400">Events (comma-separated) *</label>
+          <label for="newEvents" class="block mb-1 text-sm text-slate-400">Events (comma-separated) *</label>
           <Input placeholder="users.created, tasks.updated" bind:value={newEvents} />
         </div>
         <div>
-          <label class="block mb-1 text-sm text-slate-400">Secret (for HMAC signing)</label>
+          <label for="newSecret" class="block mb-1 text-sm text-slate-400">Secret (for HMAC signing)</label>
           <Input type="password" placeholder="Optional secret" bind:value={newSecret} />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block mb-1 text-sm text-slate-400">Retry Attempts</label>
+            <label for="newRetryAttempts" class="block mb-1 text-sm text-slate-400">Retry Attempts</label>
             <Input type="text" bind:value={newRetryAttempts} />
           </div>
           <div>
-            <label class="block mb-1 text-sm text-slate-400">Retry Delay (ms)</label>
+            <label for="newRetryDelay" class="block mb-1 text-sm text-slate-400">Retry Delay (ms)</label>
             <Input type="text" bind:value={newRetryDelay} />
           </div>
         </div>

@@ -19,14 +19,14 @@
   };
 </script>
 
-<div class={cn("inline-flex rounded-lg border border-slate-800 bg-slate-900 p-1", className)}>
+<div class={cn("inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-900", className)}>
   {#each tabs as tab}
     <button
       class={cn(
         "rounded-md px-3 py-1 text-sm transition",
         activeTab === tab.id
-          ? "bg-slate-100 text-slate-900"
-          : "text-slate-300 hover:text-slate-100"
+          ? "bg-white text-slate-900 dark:bg-slate-100"
+          : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100"
       )}
       onclick={() => handleClick(tab.id)}
     >

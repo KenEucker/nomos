@@ -12,7 +12,7 @@
   let { className = "", header, footer, children }: Props = $props();
 </script>
 
-<div class={cn("rounded-lg border border-slate-800 bg-slate-950 text-slate-100 shadow-sm", className)}>
+<div class={cn("rounded-lg border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100", className)}>
   <div class="p-4">
     {#if header}
       <div class="mb-3">
@@ -24,7 +24,7 @@
   </div>
 
   {#if footer}
-    <div class="border-t border-slate-800 p-4">
+    <div class="border-t border-slate-200 p-4 dark:border-slate-800">
       {@render footer()}
     </div>
   {/if}
