@@ -28,6 +28,9 @@ import { WebhookRuntime } from "./webhooks/outbound";
 import { registerDefaultListeners } from "./observability/listeners";
 import { LocalStorageProvider } from "./storage/local";
 import { getSession } from "./auth/sessions";
+import { verifyJwt } from "./auth/jwt";
+import { findApiKey } from "./auth/apiKeys";
+import { resolvePermissions } from "./auth/permissions";
 import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logging/logger";
 import { getPrismaClient } from "./db/prisma";
 
@@ -68,6 +71,7 @@ export async function createApp() {
   const baseLogger = app.log;
   const serverLog = createDomainLogger(baseLogger, "server", allowedDomains);
   const pluginsLog = createDomainLogger(baseLogger, "plugins", allowedDomains);
+  const authLog = createDomainLogger(baseLogger, "auth", allowedDomains);
   const adminLog = createDomainLogger(baseLogger, "admin", allowedDomains);
   const jobsLog = createDomainLogger(baseLogger, "jobs", allowedDomains);
   const eventsLog = createDomainLogger(baseLogger, "events", allowedDomains);
@@ -330,27 +334,63 @@ export async function createApp() {
         const reqId = (req.headers["x-request-id"] as string) ?? req.id ?? nanoid();
         let user = null;
         let apiClient: ApiClient | null = null;
-        let authMode: "session" | "none" = "none";
+        let authMode: "session" | "jwt" | "apiKey" | "none" = "none";
 
+        // 1. Try session cookie authentication
         const sessionId = req.cookies?.session_id;
-        console.log("Session ID:", sessionId);
         if (sessionId) {
           const session = await getSession(prisma, sessionId);
-          console.log("Session:", session);
           if (session) {
             const userRecord = await prisma.user.findUnique({
               where: { id: session.userId },
               include: { roles: { include: { role: true } } }
             });
-            console.log("User record:", userRecord);
             if (userRecord) {
               const roles = userRecord.roles.map((entry) => entry.role.key);
               user = {
                 id: userRecord.id,
                 roles,
-                permissions: []
+                permissions: resolvePermissions({ roles }, db.roles)
               };
               authMode = "session";
+              authLog.debug({ userId: user.id }, "Authenticated via session");
+            }
+          }
+        }
+
+        // 2. Try API key authentication (X-API-Key header)
+        if (!user && !apiClient) {
+          const apiKeyHeader = req.headers["x-api-key"] as string | undefined;
+          if (apiKeyHeader) {
+            const foundKey = findApiKey(db.apiKeys, apiKeyHeader);
+            if (foundKey) {
+              apiClient = {
+                id: foundKey.id,
+                name: foundKey.name,
+                permissions: foundKey.permissions,
+                allowedHosts: foundKey.allowedHosts
+              };
+              authMode = "apiKey";
+              authLog.debug({ apiKeyId: apiClient.id }, "Authenticated via API key");
+            }
+          }
+        }
+
+        // 3. Try Bearer JWT authentication
+        if (!user && !apiClient) {
+          const authHeader = req.headers.authorization as string | undefined;
+          if (authHeader?.startsWith("Bearer ")) {
+            const token = authHeader.slice(7);
+            const payload = verifyJwt(token, env.JWT_SECRET);
+            if (payload) {
+              const roles = payload.roles ?? [];
+              user = {
+                id: payload.sub,
+                roles,
+                permissions: resolvePermissions({ roles }, db.roles)
+              };
+              authMode = "jwt";
+              authLog.debug({ userId: user.id }, "Authenticated via JWT");
             }
           }
         }
