@@ -1,12 +1,14 @@
 ---
-const { title = "Nomos Admin" } = Astro.props;
 import "../styles/global.css";
+import { ClientRouter } from "astro:transitions";
+const { title = "Nomos Admin" } = Astro.props;
 ---
-<html lang="en">
+<html lang="en" class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+
     <script is:inline>
       (function() {
         const stored = localStorage.getItem("theme");
@@ -15,8 +17,16 @@ import "../styles/global.css";
         }
       })();
     </script>
+    <style is:inline>
+      html { background: #f1f5f9; }
+      html.dark { background: #020617; }
+      :root { color-scheme: light dark; }
+    </style>
+
+    <ClientRouter />
+
   </head>
-  <body>
+  <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100" transition:animate="fade">
     <slot />
   </body>
 </html>

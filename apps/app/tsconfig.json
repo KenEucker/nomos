@@ -7,9 +7,11 @@
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,
+    "types": ["svelte"],
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowArbitraryExtensions": true
   },
   "include": ["src/**/*"]
 }

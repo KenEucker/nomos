@@ -21,10 +21,6 @@
   import { resolvePageModule, type ViewType, type FormMode, type PageModule } from "../lib/pages";
   import { resolveTemplate, type ResolvedTemplate } from "../lib/templates";
 
-  // Import default templates for fallback
-  import DefaultForm from "../templates/_default/Form.svelte";
-  import DefaultShow from "../templates/_default/Show.svelte";
-
   interface Props {
     /** Resource identifier */
     resourceId: string;
@@ -85,17 +81,8 @@
       pageModule = await resolvePageModule(resourceId, view);
 
       // Try to resolve template
-      try {
-        const resolved = await resolveTemplate(resourceId, view);
-        template = resolved.template;
-      } catch (templateError) {
-        // Fall back to default templates
-        template = {
-          component: view === "Form" ? DefaultForm : DefaultShow,
-          source: `_default/${view}.svelte`,
-          type: "default",
-        };
-      }
+      const resolved = await resolveTemplate(resourceId, view);
+      template = resolved.template;
     } catch (err: any) {
       error = err.message ?? "Failed to load view";
     } finally {
@@ -125,7 +112,7 @@
 
 <Dialog bind:open onClose={handleClose} className="sm:max-w-2xl">
   <!-- Modal Header -->
-  <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+  <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-800">
     <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
       {title()}
     </h2>
@@ -146,12 +133,11 @@
       </div>
     </div>
   {:else if error}
-    <div class="p-4 border rounded-lg border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+    <div class="p-4 text-red-700 border border-red-200 rounded-lg bg-red-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
       <strong>Error:</strong> {error}
     </div>
   {:else if TemplateComponent && pageModule}
-    <svelte:component
-      this={TemplateComponent}
+    <TemplateComponent
       module={pageModule}
       {resource}
       {params}

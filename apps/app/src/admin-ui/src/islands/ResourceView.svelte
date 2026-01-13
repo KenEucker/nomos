@@ -95,18 +95,8 @@
       pageModule = await resolvePageModule(resourceId, view);
 
       // Try to resolve template (may fail if not set up)
-      try {
-        const resolved = await resolveTemplate(resourceId, view);
-        template = resolved.template;
-      } catch (templateError) {
-        // Fall back to default templates
-        console.warn(`Template resolution failed for ${resourceId}/${view}, using default`, templateError);
-        template = {
-          component: view === "List" ? DefaultList : view === "Form" ? DefaultForm : DefaultShow,
-          source: `_default/${view}.svelte`,
-          type: "default",
-        };
-      }
+      const resolved = await resolveTemplate(resourceId, view);
+      template = resolved.template;
 
       ready = true;
     } catch (err: any) {
@@ -164,7 +154,7 @@
         </div>
       </div>
     {:else if error}
-      <div class="p-4 border rounded-lg border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+      <div class="p-4 text-red-700 border border-red-200 rounded-lg bg-red-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
         <strong>Error:</strong> {error}
       </div>
     {:else if ready && TemplateComponent && pageModule}
@@ -190,7 +180,7 @@
       </div>
     </div>
   {:else if error}
-    <div class="p-4 border rounded-lg border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+    <div class="p-4 text-red-700 border border-red-200 rounded-lg bg-red-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
       <strong>Error:</strong> {error}
     </div>
   {:else if ready && TemplateComponent && pageModule}

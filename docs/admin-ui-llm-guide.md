@@ -206,7 +206,7 @@ Page modules are the rendering contract between data and UI. They expose query f
 
 Handwritten page modules go in:
 ```
-apps/app/src/admin-ui/src/pages/<resource>/<View>.ts
+apps/app/src/admin-ui/src/pages/<resource>/<View>
 ```
 
 Where `<View>` is one of: `List`, `Form`, `Show`
