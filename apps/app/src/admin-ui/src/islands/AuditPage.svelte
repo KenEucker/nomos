@@ -33,7 +33,7 @@
   const loadAudit = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ audit: AuditEntry[] }>("/admin/api/audit");
+      const response = await apiGet<{ audit: AuditEntry[] }>("/_/audit");
       audit = response.data?.audit ?? [];
     } catch (e) {
       console.error("Failed to load audit log", e);

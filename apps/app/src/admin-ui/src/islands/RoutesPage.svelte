@@ -39,7 +39,7 @@
   const loadRoutes = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ routes: RouteEntry[] }>("/admin/api/routes");
+      const response = await apiGet<{ routes: RouteEntry[] }>("/_/routes");
       routes = response.data?.routes ?? [];
     } catch (e) {
       console.error("Failed to load routes", e);

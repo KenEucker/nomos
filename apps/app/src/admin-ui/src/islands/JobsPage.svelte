@@ -45,7 +45,7 @@
 
   const loadJobs = async () => {
     try {
-      const response = await apiGet<{ jobs: Job[]; runs: JobRun[] }>("/admin/api/jobs");
+      const response = await apiGet<{ jobs: Job[]; runs: JobRun[] }>("/_/jobs");
       jobs = response.data?.jobs ?? [];
       runs = response.data?.runs ?? [];
     } catch (e) {
@@ -62,7 +62,7 @@
       } catch {
         // ignore parse errors
       }
-      await apiPost("/admin/api/jobs", { jobId: selectedJobId, payload });
+      await apiPost("/_/jobs", { jobId: selectedJobId, payload });
       showTrigger = false;
       triggerPayload = "{}";
       await loadJobs();
@@ -73,7 +73,7 @@
 
   const retryJob = async (run: JobRun) => {
     try {
-      await apiPost("/admin/api/jobs", { jobId: run.jobId, payload: run.payload });
+      await apiPost("/_/jobs", { jobId: run.jobId, payload: run.payload });
       await loadJobs();
     } catch (e) {
       console.error("Failed to retry job", e);

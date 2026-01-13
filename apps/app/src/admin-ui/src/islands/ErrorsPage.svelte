@@ -29,7 +29,7 @@
   const loadErrors = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ errors: ErrorEntry[] }>("/admin/api/errors");
+      const response = await apiGet<{ errors: ErrorEntry[] }>("/_/errors");
       errors = response.data?.errors ?? [];
     } catch (e) {
       console.error("Failed to load errors", e);
