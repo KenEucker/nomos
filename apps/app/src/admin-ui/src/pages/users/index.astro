@@ -1,7 +1,143 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import ResourceListCard from "../../components/admin/ResourceListCard.astro";
+import Badge from "../../components/ui/badge.svelte";
+import Button from "../../components/ui/button.svelte";
+import Table from "../../components/ui/table.svelte";
+import { serverApiGet } from "../../lib/server/api";
+import type { SessionUser } from "../../lib/session";
+
+type UserRow = {
+  id: string;
+  name: string;
+  email: string;
+  roles: string[];
+  createdAt: string;
+};
+
+const search = Astro.url.searchParams.get("search") ?? "";
+const page = Number(Astro.url.searchParams.get("page") ?? "1");
+const pageSize = Number(Astro.url.searchParams.get("pageSize") ?? "20");
+const query = new URLSearchParams({
+  page: String(page),
+  pageSize: String(pageSize)
+});
+
+if (search) {
+  query.set("search", search);
+}
+
+let user: SessionUser | null = null;
+let users: UserRow[] = [];
+let total = 0;
+let errorMessage = "";
+
+try {
+  const sessionResponse = await serverApiGet<{ user: SessionUser }>(Astro, "/auth/me");
+  user = sessionResponse.data?.user ?? null;
+} catch (err) {
+  if (err instanceof Response) {
+    return err;
+  }
+  throw err;
+}
+
+try {
+  const response = await serverApiGet<{ users: UserRow[] }>(Astro, `/users?${query.toString()}`);
+  users = response.data?.users ?? [];
+  total = response.meta?.total ?? users.length;
+} catch (err) {
+  if (err instanceof Response) {
+    return err;
+  }
+  if ((err as Error).message === "forbidden") {
+    errorMessage = "You do not have access to view users.";
+  } else {
+    throw err;
+  }
+}
+
+const formatDateTime = (value: string) => {
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+};
 ---
-<BaseLayout title="Users">
-  <ResourceView client:load resourceId="users" view="List" />
-</BaseLayout>
+
+<AdminLayout title="Users" user={user}>
+  {errorMessage ? (
+    <div class="p-4 text-red-700 border border-red-200 rounded-lg bg-red-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+      <strong>Error:</strong> {errorMessage}
+    </div>
+  ) : (
+    <ResourceListCard
+      searchValue={search}
+      searchPlaceholder="Search users..."
+      createHref="/admin/users/new"
+      createLabel="New user"
+      total={total}
+      page={page}
+      pageSize={pageSize}
+    >
+      <div class="border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
+        <Table>
+          <thead class="text-xs text-left uppercase text-slate-500 dark:text-slate-400">
+            <tr>
+              <th class="px-4 py-3">Name</th>
+              <th class="px-4 py-3">Email</th>
+              <th class="px-4 py-3">Roles</th>
+              <th class="px-4 py-3">Created</th>
+              <th class="px-4 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            {users.length ? (
+              users.map((entry) => (
+                <tr class="border-t border-slate-200 hover:bg-slate-100/50 dark:border-slate-800 dark:hover:bg-slate-800/30">
+                  <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{entry.name}</td>
+                  <td class="px-4 py-3">
+                    <a href={`mailto:${entry.email}`} class="text-blue-600 hover:underline dark:text-blue-400">
+                      {entry.email}
+                    </a>
+                  </td>
+                  <td class="px-4 py-3">
+                    {entry.roles.length ? (
+                      <div class="flex flex-wrap gap-1">
+                        {entry.roles.map((role) => (
+                          <Badge>{role}</Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span class="text-slate-500 dark:text-slate-400">None</span>
+                    )}
+                  </td>
+                  <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
+                    {formatDateTime(entry.createdAt)}
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex gap-2">
+                      <form method="get" action={`/admin/users/${entry.id}`}>
+                        <Button type="submit" variant="ghost" size="sm">View</Button>
+                      </form>
+                      <form method="get" action={`/admin/users/${entry.id}/edit`}>
+                        <Button type="submit" variant="ghost" size="sm">Edit</Button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td class="px-4 py-6 text-center text-slate-500 dark:text-slate-400" colSpan={5}>
+                  No users found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </Table>
+      </div>
+    </ResourceListCard>
+  )}
+</AdminLayout>

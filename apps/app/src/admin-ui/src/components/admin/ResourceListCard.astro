@@ -1,0 +1,62 @@
+---
+import Card from "../ui/card.svelte";
+import Button from "../ui/button.svelte";
+import Input from "../ui/input.svelte";
+
+const {
+  searchValue = "",
+  searchPlaceholder = "Search...",
+  createHref,
+  createLabel,
+  total,
+  page = 1,
+  pageSize = 20
+} = Astro.props as {
+  searchValue?: string;
+  searchPlaceholder?: string;
+  createHref?: string;
+  createLabel?: string;
+  total?: number;
+  page?: number;
+  pageSize?: number;
+};
+
+const action = Astro.url.pathname;
+const totalPages = typeof total === "number" ? Math.max(1, Math.ceil(total / pageSize)) : null;
+---
+
+<Card className="border-slate-200/70 bg-white/70 dark:border-slate-800/70 dark:bg-slate-900/40">
+  <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div class="flex flex-col gap-1">
+      {typeof total === "number" ? (
+        <p class="text-sm font-medium text-slate-700 dark:text-slate-200">{total} total</p>
+      ) : null}
+      {totalPages ? (
+        <p class="text-xs text-slate-500 dark:text-slate-400">Page {page} of {totalPages}</p>
+      ) : null}
+    </div>
+
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <form method="get" action={action} class="flex flex-1 gap-2">
+        <Input
+          type="search"
+          name="search"
+          value={searchValue}
+          placeholder={searchPlaceholder}
+          className="w-full sm:w-64"
+        />
+        <Button type="submit" variant="secondary">Search</Button>
+      </form>
+
+      {createHref ? (
+        <form method="get" action={createHref}>
+          <Button type="submit">{createLabel ?? "Create"}</Button>
+        </form>
+      ) : null}
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <slot />
+  </div>
+</Card>
