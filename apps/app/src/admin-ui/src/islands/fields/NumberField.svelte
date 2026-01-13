@@ -3,59 +3,41 @@
 
   interface Props {
     label: string;
-    value?: string;
+    value?: number | null;
     placeholder?: string;
     help?: string;
     required?: boolean;
     readonly?: boolean;
+    min?: number;
+    max?: number;
+    step?: number;
     error?: string;
-    type?: "datetime" | "date";
   }
 
   let {
     label,
-    value = $bindable(""),
+    value = $bindable<number | null>(null),
     placeholder = "",
     help = "",
     required = false,
     readonly = false,
-    error = "",
-    type = "datetime"
+    min,
+    max,
+    step,
+    error = ""
   }: Props = $props();
 
-  // Convert ISO string to datetime-local format
-  let localValue = $state("");
+  let stringValue = $state(value?.toString() ?? "");
 
   $effect(() => {
-    if (value) {
-      try {
-        const date = new Date(value);
-        if (type === "date") {
-          localValue = date.toISOString().split("T")[0];
-        } else {
-          localValue = date.toISOString().slice(0, 16);
-        }
-      } catch {
-        localValue = value;
-      }
-    } else {
-      localValue = "";
-    }
+    stringValue = value?.toString() ?? "";
   });
 
   const handleInput = (e: Event) => {
     const target = e.target as HTMLInputElement;
-    localValue = target.value;
-    if (target.value) {
-      try {
-        const date = new Date(target.value);
-        value = date.toISOString();
-      } catch {
-        value = target.value;
-      }
-    } else {
-      value = "";
-    }
+    const num = parseFloat(target.value);
+    value = isNaN(num) ? null : num;
+    stringValue = target.value;
   };
 </script>
 
@@ -65,10 +47,13 @@
     {#if required}<span class="text-red-500">*</span>{/if}
   </label>
   <Input
-    type={type === "date" ? "date" : "datetime-local"}
-    value={localValue}
+    type="number"
+    value={stringValue}
     {placeholder}
     {readonly}
+    {min}
+    {max}
+    {step}
     oninput={handleInput}
     className={error ? "border-red-500" : ""}
   />
