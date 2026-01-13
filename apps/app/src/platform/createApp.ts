@@ -333,13 +333,16 @@ export async function createApp() {
         let authMode: "session" | "none" = "none";
 
         const sessionId = req.cookies?.session_id;
+        console.log("Session ID:", sessionId);
         if (sessionId) {
           const session = await getSession(prisma, sessionId);
+          console.log("Session:", session);
           if (session) {
             const userRecord = await prisma.user.findUnique({
               where: { id: session.userId },
               include: { roles: { include: { role: true } } }
             });
+            console.log("User record:", userRecord);
             if (userRecord) {
               const roles = userRecord.roles.map((entry) => entry.role.key);
               user = {

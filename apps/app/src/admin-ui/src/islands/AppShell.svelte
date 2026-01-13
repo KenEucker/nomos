@@ -17,7 +17,6 @@
 
   const navItems = [
     { label: "Dashboard", path: "/", icon: "dashboard" },
-    { label: "Projects", path: "/projects", icon: "folder" },
     { label: "Users", path: "/users", role: "admin", icon: "users" },
     { label: "API Keys", path: "/api-keys", role: "admin", icon: "key" },
     { label: "Webhooks", path: "/webhooks", role: "admin", icon: "webhook" },
@@ -100,18 +99,31 @@
 </script>
 
 {#if loading}
-  <div class="flex min-h-screen items-center justify-center bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-200">
+  <div class="flex items-center justify-center min-h-screen bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-200">
     <div class="flex flex-col items-center gap-2">
-      <div class="h-8 w-8 animate-spin rounded-full border-2 border-slate-400 border-t-slate-700 dark:border-slate-600 dark:border-t-slate-200"></div>
+      <div class="w-8 h-8 border-2 rounded-full animate-spin border-slate-400 border-t-slate-700 dark:border-slate-600 dark:border-t-slate-200"></div>
       <span>Loading...</span>
     </div>
   </div>
 {:else}
   <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <!-- Mobile header -->
+    <header class="sticky top-0 z-40 flex items-center gap-4 px-4 border-b h-14 border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
+      <button
+        type="button"
+        class="inline-flex items-center justify-center p-2 rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+        onclick={toggleMobileMenu}
+        aria-label="Toggle menu"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {@html mobileMenuOpen ? icons.close : icons.menu}
+        </svg>
+      </button>
+      <div class="flex-1">
     <!-- Mobile header with horizontal scrollable nav -->
     <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
       <!-- Top bar with branding and controls -->
-      <div class="flex h-12 items-center gap-2 px-3">
+      <div class="flex items-center h-12 gap-2 px-3">
         <span class="text-lg font-semibold">Nomos</span>
         <div class="flex-1"></div>
         <ThemeToggle collapsed={true} />
@@ -122,25 +134,25 @@
           aria-label={mobileMenuCollapsed ? "Expand menu" : "Collapse menu"}
           title={mobileMenuCollapsed ? "Show labels" : "Hide labels"}
         >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {@html mobileMenuCollapsed ? icons.collapse : icons.expand}
           </svg>
         </button>
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-md p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+          class="p-1 inline-flex items-center justify-center rounded-md.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
           onclick={handleLogout}
           aria-label="Log out"
           title="Log out"
         >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {@html icons.logout}
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {@html icons.close}
           </svg>
         </button>
       </div>
 
       <!-- Horizontal scrollable navigation -->
-      <nav class="flex overflow-x-auto scrollbar-hide border-t border-slate-200/50 dark:border-slate-800/50">
+      <nav class="flex overflow-x-auto border-t scrollbar-hide border-slate-200/50 dark:border-slate-800/50">
         <div class={
           "flex gap-1 px-2 py-2 " +
           (mobileMenuCollapsed ? "" : "min-w-max")
@@ -158,7 +170,7 @@
                 }
                 title={item.label}
               >
-                <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {@html icons[item.icon]}
                 </svg>
                 {#if !mobileMenuCollapsed}
@@ -167,6 +179,9 @@
               </a>
             {/if}
           {/each}
+        </nav>
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+          <ThemeToggle collapsed={false} />
         </div>
       </nav>
     </header>
@@ -179,7 +194,7 @@
           (sidebarCollapsed ? "w-16" : "w-64")
         }
       >
-        <div class="sticky top-0 flex h-full flex-col">
+        <div class="sticky top-0 flex flex-col h-full">
           <!-- Logo/Brand -->
           <div class={
             "flex h-14 items-center border-b border-slate-200 dark:border-slate-800 " +
@@ -194,13 +209,13 @@
 
           <!-- User info -->
           {#if !sidebarCollapsed}
-            <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-              <div class="truncate text-sm text-slate-500 dark:text-slate-400">{user?.email}</div>
+            <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+              <div class="text-sm truncate text-slate-500 dark:text-slate-400">{user?.email}</div>
             </div>
           {/if}
 
           <!-- Navigation -->
-          <nav class="flex-1 space-y-1 p-2">
+          <nav class="flex-1 p-2 space-y-1">
             {#each navItems as item}
               {#if !item.role || hasRole(user, item.role)}
                 <a
@@ -214,7 +229,7 @@
                   }
                   title={sidebarCollapsed ? item.label : ""}
                 >
-                  <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {@html icons[item.icon]}
                   </svg>
                   {#if !sidebarCollapsed}
@@ -226,7 +241,7 @@
           </nav>
 
           <!-- Theme toggle, Collapse toggle & Logout -->
-          <div class="border-t border-slate-200 p-2 dark:border-slate-800">
+          <div class="p-2 border-t border-slate-200 dark:border-slate-800">
             <ThemeToggle collapsed={sidebarCollapsed} />
             <button
               type="button"
@@ -237,7 +252,7 @@
               }
               title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {@html sidebarCollapsed ? icons.expand : icons.collapse}
               </svg>
               {#if !sidebarCollapsed}
@@ -253,7 +268,7 @@
               }
               title={sidebarCollapsed ? "Log out" : ""}
             >
-              <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {@html icons.logout}
               </svg>
               {#if !sidebarCollapsed}

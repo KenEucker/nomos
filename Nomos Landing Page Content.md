@@ -25,7 +25,7 @@ Nomos is an opinionated API and admin platform built on Fastify and Astro. Skip 
 Stop Rebuilding the Wheel. Start Building Your App.
 
 **Subheadline**\
-We provide the boring stuff—authentication, roles, and project structure—so you can focus on your business logic.
+We provide the boring stuff—authentication and roles structure—so you can focus on your business logic.
 
 ### Feature Grid
 

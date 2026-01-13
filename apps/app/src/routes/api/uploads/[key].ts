@@ -8,7 +8,7 @@ const querySchema = z.object({ token: z.string() });
 
 export const config = {
   auth: "none",
-  tags: ["Attachments"],
+  tags: ["Uploads"],
   summary: "Upload file (signed URL)",
   validate: { params: paramsSchema, query: querySchema },
   openapi: {

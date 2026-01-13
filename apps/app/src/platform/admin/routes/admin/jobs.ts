@@ -5,7 +5,7 @@ export const config = {
   summary: "Jobs"
 };
 
-import type { Ctx } from "../../../../ctx";
+import type { Ctx } from "../../../ctx";
 
 export const get = async (ctx: Ctx) => {
   return ctx.json({ jobs: ctx.services.jobsRuntime.list(), runs: ctx.db.jobRuns.slice(-200) });

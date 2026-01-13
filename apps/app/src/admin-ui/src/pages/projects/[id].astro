@@ -1,8 +1,0 @@
----
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import ProjectDetailPage from "../../islands/ProjectDetailPage.svelte";
-const { id } = Astro.params;
----
-<BaseLayout title="Project">
-  <ProjectDetailPage client:load projectId={id} />
-</BaseLayout>

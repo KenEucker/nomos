@@ -6,30 +6,28 @@
   import Badge from "../components/ui/badge.svelte";
   import { apiGet } from "../lib/api";
 
-  let counts = $state({ projects: 0, tasks: 0 });
+  let counts = $state({ jobs: 0 });
   let usersCount = $state<number | null>(null);
-  let recentTasks = $state<Array<any>>([]);
+  let recentJobs = $state<Array<any>>([]);
   let loading = $state(true);
 
   onMount(async () => {
     try {
-      const [projectsRes, tasksRes] = await Promise.all([
-        apiGet<{ projects: any }>("/api/projects?page=1&pageSize=1"),
-        apiGet<{ tasks: any }>("/api/tasks?page=1&pageSize=5")
+      const [jobsRes] = await Promise.all([
+        apiGet<{ jobs: any }>("/admin/api/jobs?page=1&pageSize=5")
       ]);
       let usersTotal: number | null = null;
       try {
         const usersRes = await apiGet<{ users: any }>("/api/users?page=1&pageSize=1");
+        console.log({ usersRes });
         usersTotal = usersRes.meta?.total ?? 0;
       } catch {
         usersTotal = null;
       }
       counts = {
-        projects: projectsRes.meta?.total ?? 0,
-        tasks: tasksRes.meta?.total ?? 0
+        jobs: jobsRes.meta?.total ?? 0
       };
       usersCount = usersTotal;
-      recentTasks = tasksRes.data?.tasks ?? [];
     } finally {
       loading = false;
     }
@@ -50,8 +48,8 @@
       <Card>
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-sm text-slate-500 dark:text-slate-400">Projects</div>
-            <div class="text-2xl font-semibold sm:text-3xl">{counts.projects}</div>
+            <div class="text-sm text-slate-500 dark:text-slate-400">Jobs</div>
+            <div class="text-2xl font-semibold sm:text-3xl">{counts.jobs}</div>
           </div>
           <div class="p-3 rounded-lg bg-slate-200 dark:bg-slate-800">
             <svg class="w-6 h-6 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,21 +57,7 @@
             </svg>
           </div>
         </div>
-        <div class="mt-2 text-xs text-slate-500">Active projects tracked in Nomos.</div>
-      </Card>
-      <Card>
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-sm text-slate-500 dark:text-slate-400">Tasks</div>
-            <div class="text-2xl font-semibold sm:text-3xl">{counts.tasks}</div>
-          </div>
-          <div class="p-3 rounded-lg bg-slate-200 dark:bg-slate-800">
-            <svg class="w-6 h-6 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-            </svg>
-          </div>
-        </div>
-        <div class="mt-2 text-xs text-slate-500">Tasks across all projects.</div>
+        <div class="mt-2 text-xs text-slate-500">Active jobs tracked in Nomos.</div>
       </Card>
       <Card className="sm:col-span-2 lg:col-span-1">
         <div class="flex items-center justify-between">
@@ -91,29 +75,26 @@
       </Card>
     </div>
 
-    <!-- Recent Tasks -->
+    <!-- Recent Jobs -->
     <div class="mt-6 border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
       <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 sm:px-6">
-        <h2 class="text-lg font-semibold">Recent Tasks</h2>
+        <h2 class="text-lg font-semibold">Recent Jobs</h2>
       </div>
       <div class="p-4 sm:p-6">
-        {#if recentTasks.length === 0}
-          <div class="py-8 text-center text-slate-500 dark:text-slate-400">No tasks yet.</div>
+        {#if recentJobs.length === 0}
+          <div class="py-8 text-center text-slate-500 dark:text-slate-400">No jobs yet.</div>
         {:else}
           <!-- Mobile: Card layout -->
           <div class="space-y-3 sm:hidden">
-            {#each recentTasks as task}
+            {#each recentJobs as job}
               <a
-                href={`/tasks/${task.id}`}
+                href={`/jobs/${job.id}`}
                 class="block p-3 transition border rounded-lg border-slate-200 bg-slate-50/50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700"
               >
-                <div class="flex items-start justify-between gap-2">
-                  <div class="flex-1 min-w-0">
-                    <div class="font-medium truncate text-slate-900 dark:text-slate-100">{task.title}</div>
-                    <div class="mt-1 text-xs text-slate-500">Project: {task.projectId}</div>
-                  </div>
-                  <Badge variant={task.status === "done" ? "success" : "secondary"}>
-                    {task.status}
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-medium text-slate-900 dark:text-slate-100">{job.title}</div>
+                  <Badge variant={job.status === "done" ? "success" : "secondary"}>
+                    {job.status}
                   </Badge>
                 </div>
               </a>
@@ -126,21 +107,19 @@
                 <tr>
                   <th class="pb-2">Title</th>
                   <th class="pb-2">Status</th>
-                  <th class="pb-2">Project</th>
                 </tr>
               </thead>
               <tbody class="text-sm">
-                {#each recentTasks as task}
+                {#each recentJobs as job}
                   <tr class="border-t border-slate-200 dark:border-slate-800">
                     <td class="py-3">
-                      <a class="text-slate-900 hover:text-slate-700 dark:text-slate-100 dark:hover:text-white" href={`/tasks/${task.id}`}>{task.title}</a>
+                      <a class="text-slate-900 hover:text-slate-700 dark:text-slate-100 dark:hover:text-white" href={`/jobs/${job.id}`}>{job.title}</a>
                     </td>
                     <td class="py-3">
-                      <Badge variant={task.status === "done" ? "success" : "secondary"}>
-                        {task.status}
+                      <Badge variant={job.status === "done" ? "success" : "secondary"}>
+                        {job.status}
                       </Badge>
                     </td>
-                    <td class="py-3 text-slate-500 dark:text-slate-400">{task.projectId}</td>
                   </tr>
                 {/each}
               </tbody>

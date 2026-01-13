@@ -6,7 +6,6 @@ Nomos is an opinionated admin and API platform for Node.js applications, built o
 
 - **OpenAPI Documentation**: Automatically generated API docs available at `/api/docs`.
 - **Authentication**: Built-in endpoints for user login (`/api/auth/login`) and session management (`/api/auth/me`).
-- **Projects and Tasks Management**: Core API endpoints for managing projects and tasks.
 - **Role-Based Access Control**: Admin-only features for user and role management.
 - **Modern Tech Stack**: Leverages TypeScript, Fastify for the backend, and Astro for the frontend.
 
@@ -46,8 +45,6 @@ Once the application is running, you can explore the user interface.
 
 - **Login**: Navigate to `http://localhost:3001/login` to sign in with one of the demo accounts.
 - **Dashboard**: The main dashboard at `/` displays summary counts and a list of recent tasks.
-- **Projects**: View all projects at `/projects` and see project-specific details at `/projects/:id`.
-- **Tasks**: Manage individual tasks, including edits, comments, and attachments, at `/tasks/:id`.
 - **User Management**: Admins can manage user roles by navigating to `/users`.
 
 ## Technical Details
