@@ -54,8 +54,8 @@ Once the application is running, you can explore the user interface.
 
 - **Primary Languages**:
 
-  - TypeScript (78.8%)
-  - Svelte (19.7%)
+  - TypeScript
+  - Svelte
 
 - **Backend Framework**: Fastify
 

@@ -143,15 +143,15 @@
   </div>
 
   {#if loading}
-    <div class="flex items-center justify-center py-12 text-slate-400">
+    <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
       <div class="flex flex-col items-center gap-2">
-        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-600 border-t-slate-200"></div>
+        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
         <span>Loading API keys...</span>
       </div>
     </div>
   {:else if filteredKeys.length === 0}
     <Card>
-      <div class="py-8 text-center text-slate-400">
+      <div class="py-8 text-center text-slate-500 dark:text-slate-400">
         {#if search}
           No API keys matching "{search}"
         {:else}
@@ -163,10 +163,10 @@
     <!-- Mobile: Card layout -->
     <div class="space-y-3 sm:hidden">
       {#each filteredKeys as key}
-        <div class="p-4 border rounded-lg border-slate-800 bg-slate-900/40">
+        <div class="p-4 border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
           <div class="flex items-start justify-between gap-2">
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-slate-100" class:line-through={key.revoked}>{key.name}</div>
+              <div class="font-medium text-slate-900 dark:text-slate-100" class:line-through={key.revoked}>{key.name}</div>
               <div class="font-mono text-xs text-slate-500">{key.id.slice(0, 8)}...</div>
             </div>
             <Badge variant={key.revoked ? "secondary" : "success"}>
@@ -199,9 +199,9 @@
     </div>
 
     <!-- Desktop: Table layout -->
-    <div class="hidden border rounded-lg border-slate-800 bg-slate-900/40 sm:block">
+    <div class="hidden border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40 sm:block">
       <Table>
-        <thead class="text-xs text-left uppercase text-slate-400">
+        <thead class="text-xs text-left uppercase text-slate-500 dark:text-slate-400">
           <tr>
             <th class="px-4 py-3">Name</th>
             <th class="px-4 py-3">Permissions</th>
@@ -213,9 +213,9 @@
         </thead>
         <tbody class="text-sm">
           {#each filteredKeys as key}
-            <tr class="border-t border-slate-800 hover:bg-slate-800/30">
+            <tr class="border-t border-slate-200 hover:bg-slate-100/50 dark:border-slate-800 dark:hover:bg-slate-800/30">
               <td class="px-4 py-3">
-                <div class="font-medium text-slate-100" class:line-through={key.revoked}>{key.name}</div>
+                <div class="font-medium text-slate-900 dark:text-slate-100" class:line-through={key.revoked}>{key.name}</div>
                 <div class="font-mono text-xs text-slate-500">{key.id.slice(0, 8)}...</div>
               </td>
               <td class="px-4 py-3">
@@ -229,7 +229,7 @@
                 </div>
               </td>
               <td class="hidden px-4 py-3 lg:table-cell">
-                <div class="text-xs text-slate-400">
+                <div class="text-xs text-slate-500 dark:text-slate-400">
                   {#if key.allowedHosts.length > 0}
                     {key.allowedHosts.slice(0, 2).join(", ")}
                     {#if key.allowedHosts.length > 2}
@@ -245,7 +245,7 @@
                   {key.revoked ? "Revoked" : "Active"}
                 </Badge>
               </td>
-              <td class="hidden px-4 py-3 text-xs text-slate-400 md:table-cell">
+              <td class="hidden px-4 py-3 text-xs text-slate-500 dark:text-slate-400 md:table-cell">
                 {formatDate(key.createdAt)}
               </td>
               <td class="px-4 py-3">
@@ -269,15 +269,15 @@
       <h2 class="text-lg font-semibold">Create API Key</h2>
       <div class="space-y-3">
         <div>
-          <label for="key-name" class="block mb-1 text-sm text-slate-400">Name</label>
+          <label for="key-name" class="block mb-1 text-sm text-slate-600 dark:text-slate-400">Name</label>
           <Input id="key-name" placeholder="My API Key" bind:value={newName} />
         </div>
         <div>
-          <label for="key-perms" class="block mb-1 text-sm text-slate-400">Permissions (comma-separated)</label>
+          <label for="key-perms" class="block mb-1 text-sm text-slate-600 dark:text-slate-400">Permissions (comma-separated)</label>
           <Input id="key-perms" placeholder="users.read, users.create" bind:value={newPermissions} />
         </div>
         <div>
-          <label for="key-hosts" class="block mb-1 text-sm text-slate-400">Allowed Hosts (comma-separated)</label>
+          <label for="key-hosts" class="block mb-1 text-sm text-slate-600 dark:text-slate-400">Allowed Hosts (comma-separated)</label>
           <Input id="key-hosts" placeholder="example.com, api.example.com" bind:value={newAllowedHosts} />
         </div>
       </div>
@@ -291,10 +291,10 @@
   <Dialog bind:open={showToken} onClose={() => (showToken = false)}>
     <div class="space-y-4">
       <h2 class="text-lg font-semibold">API Key Created</h2>
-      <p class="text-sm text-slate-400">
+      <p class="text-sm text-slate-500 dark:text-slate-400">
         Copy this token now. You won't be able to see it again.
       </p>
-      <div class="p-3 font-mono text-xs break-all border rounded bg-slate-900 border-slate-700 sm:text-sm">
+      <div class="p-3 font-mono text-xs break-all border rounded bg-slate-100 border-slate-300 dark:bg-slate-900 dark:border-slate-700 sm:text-sm">
         {newToken}
       </div>
       <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
