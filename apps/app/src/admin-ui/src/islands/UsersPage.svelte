@@ -87,24 +87,24 @@
   </div>
 
   {#if loading}
-    <div class="flex items-center justify-center py-12 text-slate-400">
+    <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
       <div class="flex flex-col items-center gap-2">
-        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-600 border-t-slate-200"></div>
+        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
         <span>Loading users...</span>
       </div>
     </div>
   {:else if users.length === 0}
-    <div class="py-12 text-center border rounded-lg border-slate-800 bg-slate-900/40">
-      <div class="text-slate-400">No users found.</div>
+    <div class="py-12 text-center border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
+      <div class="text-slate-500 dark:text-slate-400">No users found.</div>
     </div>
   {:else}
     <!-- Mobile: Card layout -->
     <div class="space-y-3 sm:hidden">
       {#each users as entry}
-        <div class="p-4 border rounded-lg border-slate-800 bg-slate-900/40">
+        <div class="p-4 border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
           <div class="flex items-start justify-between gap-3">
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-slate-100">{entry.name}</div>
+              <div class="font-medium text-slate-900 dark:text-slate-100">{entry.name}</div>
               <div class="text-sm truncate text-slate-500">{entry.email}</div>
               <div class="flex flex-wrap gap-1 mt-2">
                 {#each entry.roles as role}
@@ -121,9 +121,9 @@
     </div>
 
     <!-- Desktop: Table layout -->
-    <div class="hidden border rounded-lg border-slate-800 bg-slate-900/40 sm:block">
+    <div class="hidden border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40 sm:block">
       <Table>
-        <thead class="text-xs text-left uppercase text-slate-400">
+        <thead class="text-xs text-left uppercase text-slate-500 dark:text-slate-400">
           <tr>
             <th class="px-4 py-3">User</th>
             <th class="px-4 py-3">Roles</th>
@@ -132,9 +132,9 @@
         </thead>
         <tbody class="text-sm">
           {#each users as entry}
-            <tr class="border-t border-slate-800 hover:bg-slate-800/30">
+            <tr class="border-t border-slate-200 hover:bg-slate-100/50 dark:border-slate-800 dark:hover:bg-slate-800/30">
               <td class="px-4 py-3">
-                <div class="font-medium text-slate-100">{entry.name}</div>
+                <div class="font-medium text-slate-900 dark:text-slate-100">{entry.name}</div>
                 <div class="text-xs text-slate-500">{entry.email}</div>
               </td>
               <td class="px-4 py-3">
@@ -161,7 +161,7 @@
       <div>
         <h2 class="text-lg font-semibold">Update roles</h2>
         {#if selectedUser}
-          <p class="text-sm text-slate-400">{selectedUser.name} ({selectedUser.email})</p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">{selectedUser.name} ({selectedUser.email})</p>
         {/if}
       </div>
       <div class="flex flex-wrap gap-2">

@@ -38,9 +38,9 @@
 
 <AppShell title="Dashboard">
   {#if loading}
-    <div class="flex items-center justify-center py-12 text-slate-400">
+    <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
       <div class="flex flex-col items-center gap-2">
-        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-600 border-t-slate-200"></div>
+        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
         <span>Loading dashboard...</span>
       </div>
     </div>
@@ -50,11 +50,11 @@
       <Card>
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-sm text-slate-400">Projects</div>
+            <div class="text-sm text-slate-500 dark:text-slate-400">Projects</div>
             <div class="text-2xl font-semibold sm:text-3xl">{counts.projects}</div>
           </div>
-          <div class="p-3 rounded-lg bg-slate-800">
-            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="p-3 rounded-lg bg-slate-200 dark:bg-slate-800">
+            <svg class="w-6 h-6 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
             </svg>
           </div>
@@ -64,11 +64,11 @@
       <Card>
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-sm text-slate-400">Tasks</div>
+            <div class="text-sm text-slate-500 dark:text-slate-400">Tasks</div>
             <div class="text-2xl font-semibold sm:text-3xl">{counts.tasks}</div>
           </div>
-          <div class="p-3 rounded-lg bg-slate-800">
-            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="p-3 rounded-lg bg-slate-200 dark:bg-slate-800">
+            <svg class="w-6 h-6 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
             </svg>
           </div>
@@ -78,11 +78,11 @@
       <Card className="sm:col-span-2 lg:col-span-1">
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-sm text-slate-400">Users</div>
+            <div class="text-sm text-slate-500 dark:text-slate-400">Users</div>
             <div class="text-2xl font-semibold sm:text-3xl">{usersCount ?? "—"}</div>
           </div>
-          <div class="p-3 rounded-lg bg-slate-800">
-            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="p-3 rounded-lg bg-slate-200 dark:bg-slate-800">
+            <svg class="w-6 h-6 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
             </svg>
           </div>
@@ -92,24 +92,24 @@
     </div>
 
     <!-- Recent Tasks -->
-    <div class="mt-6 border rounded-lg border-slate-800 bg-slate-900/40">
-      <div class="px-4 py-3 border-b border-slate-800 sm:px-6">
+    <div class="mt-6 border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
+      <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 sm:px-6">
         <h2 class="text-lg font-semibold">Recent Tasks</h2>
       </div>
       <div class="p-4 sm:p-6">
         {#if recentTasks.length === 0}
-          <div class="py-8 text-center text-slate-400">No tasks yet.</div>
+          <div class="py-8 text-center text-slate-500 dark:text-slate-400">No tasks yet.</div>
         {:else}
           <!-- Mobile: Card layout -->
           <div class="space-y-3 sm:hidden">
             {#each recentTasks as task}
               <a
                 href={`/tasks/${task.id}`}
-                class="block p-3 transition border rounded-lg border-slate-800 bg-slate-900/50 hover:border-slate-700"
+                class="block p-3 transition border rounded-lg border-slate-200 bg-slate-50/50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700"
               >
                 <div class="flex items-start justify-between gap-2">
                   <div class="flex-1 min-w-0">
-                    <div class="font-medium truncate text-slate-100">{task.title}</div>
+                    <div class="font-medium truncate text-slate-900 dark:text-slate-100">{task.title}</div>
                     <div class="mt-1 text-xs text-slate-500">Project: {task.projectId}</div>
                   </div>
                   <Badge variant={task.status === "done" ? "success" : "secondary"}>
@@ -122,7 +122,7 @@
           <!-- Desktop: Table layout -->
           <div class="hidden sm:block">
             <Table>
-              <thead class="text-xs text-left uppercase text-slate-400">
+              <thead class="text-xs text-left uppercase text-slate-500 dark:text-slate-400">
                 <tr>
                   <th class="pb-2">Title</th>
                   <th class="pb-2">Status</th>
@@ -131,16 +131,16 @@
               </thead>
               <tbody class="text-sm">
                 {#each recentTasks as task}
-                  <tr class="border-t border-slate-800">
+                  <tr class="border-t border-slate-200 dark:border-slate-800">
                     <td class="py-3">
-                      <a class="text-slate-100 hover:text-white" href={`/tasks/${task.id}`}>{task.title}</a>
+                      <a class="text-slate-900 hover:text-slate-700 dark:text-slate-100 dark:hover:text-white" href={`/tasks/${task.id}`}>{task.title}</a>
                     </td>
                     <td class="py-3">
                       <Badge variant={task.status === "done" ? "success" : "secondary"}>
                         {task.status}
                       </Badge>
                     </td>
-                    <td class="py-3 text-slate-400">{task.projectId}</td>
+                    <td class="py-3 text-slate-500 dark:text-slate-400">{task.projectId}</td>
                   </tr>
                 {/each}
               </tbody>
