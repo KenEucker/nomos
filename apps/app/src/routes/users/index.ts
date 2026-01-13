@@ -1,8 +1,8 @@
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import type { Ctx } from "../../../platform/ctx";
-import { HttpError } from "../../../platform/errors";
-import { paginationQuery, parseSort } from "../../../platform/validation";
+import type { Ctx } from "../../platform/ctx";
+import { HttpError } from "../../platform/errors";
+import { paginationQuery, parseSort } from "../../platform/validation";
 import { modelSchemas, okResponse } from "../_openapi";
 import { serializeUser } from "../_serializers";
 

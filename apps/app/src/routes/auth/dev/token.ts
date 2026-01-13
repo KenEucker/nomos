@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { Ctx } from "../../../../platform/ctx.js";
-import { signJwt } from "../../../../platform/auth/jwt.js";
+import type { Ctx } from "../../../platform/ctx.js";
+import { signJwt } from "../../../platform/auth/jwt.js";
 
 const DEFAULT_ADMIN_PERMISSIONS = [
   "admin.read",

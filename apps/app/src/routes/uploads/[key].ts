@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { Ctx } from "../../../platform/ctx";
-import { HttpError } from "../../../platform/errors";
+import type { Ctx } from "../../platform/ctx";
+import { HttpError } from "../../platform/errors";
 import { okResponse } from "../_openapi";
 
 const paramsSchema = z.object({ key: z.string() });
