@@ -6,6 +6,7 @@
   import Input from "../components/ui/input.svelte";
   import ConfirmDialog from "./ConfirmDialog.svelte";
   import { apiGet, apiDelete } from "../lib/api";
+  import { toasts } from "../lib/toast";
   import type { AdminResource, ColumnDef } from "../lib/resources/types";
   import { resolveEndpoint } from "../lib/resources/types";
 
@@ -119,9 +120,11 @@
       await apiDelete(endpoint);
       deleteDialogOpen = false;
       deleteId = null;
+      toasts.success(`${resource.label} deleted successfully`);
       loadData();
     } catch (err: any) {
       error = err.message ?? "Failed to delete";
+      toasts.error(error);
     } finally {
       deleting = false;
     }

@@ -3,6 +3,7 @@
   import Button from "../components/ui/button.svelte";
   import FieldRenderer from "./FieldRenderer.svelte";
   import { apiGet, apiPost, apiPatch } from "../lib/api";
+  import { toasts } from "../lib/toast";
   import type { AdminResource, FieldDef } from "../lib/resources/types";
   import { resolveEndpoint, getFieldsForView } from "../lib/resources/types";
 
@@ -131,9 +132,34 @@
 
       const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
       const resultData = response.data?.[dataKey] ?? response.data;
+
+      // Show success toast
+      const action = mode === "create" ? "created" : "updated";
+      toasts.success(`${resource.label} ${action} successfully`);
+
       onSuccess?.(resultData);
     } catch (err: any) {
-      error = err.message ?? "Failed to save";
+      // Handle validation errors with field-specific details
+      if (err.details && Array.isArray(err.details)) {
+        const newFieldErrors: Record<string, string> = {};
+        for (const detail of err.details) {
+          const fieldName = detail.path?.[0] ?? detail.field;
+          if (fieldName) {
+            newFieldErrors[fieldName] = detail.message;
+          }
+        }
+        if (Object.keys(newFieldErrors).length > 0) {
+          fieldErrors = newFieldErrors;
+          error = "Please fix the errors below";
+          toasts.error("Please fix the validation errors");
+        } else {
+          error = err.message ?? "Failed to save";
+          toasts.error(error);
+        }
+      } else {
+        error = err.message ?? "Failed to save";
+        toasts.error(error);
+      }
     } finally {
       loading = false;
     }

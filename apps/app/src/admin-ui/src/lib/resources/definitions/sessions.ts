@@ -9,11 +9,11 @@ export const sessionsResource: AdminResource = {
   icon: "key",
 
   endpoints: {
-    list: "/admin/api/sessions",
-    get: "/admin/api/sessions/{id}",
+    list: "/admin/sessions",
+    get: "/admin/sessions/{id}",
     create: "", // Sessions are not created via admin
     update: "", // Sessions are not updated
-    delete: "/admin/api/sessions/{id}"
+    delete: "/admin/sessions/{id}"
   },
 
   list: {
@@ -114,7 +114,7 @@ export const sessionsResource: AdminResource = {
         label: "Revoke Session",
         variant: "destructive",
         confirm: "Are you sure you want to revoke this session? The user will be logged out.",
-        endpoint: "/admin/api/sessions/{id}",
+        endpoint: "/admin/sessions/{id}",
         method: "DELETE"
       }
     ]

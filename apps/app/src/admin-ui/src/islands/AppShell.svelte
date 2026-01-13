@@ -5,6 +5,7 @@
   import { apiPost } from "../lib/api";
   import Button from "../components/ui/button.svelte";
   import ThemeToggle from "../components/ui/theme-toggle.svelte";
+  import Toast from "../components/ui/toast.svelte";
 
   type Props = { title?: string; children?: Snippet };
   let { title = "Dashboard", children }: Props = $props();
@@ -285,5 +286,6 @@
         </div>
       </main>
     </div>
+    <Toast />
   </div>
 {/if}

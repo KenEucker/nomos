@@ -23,18 +23,24 @@
 {#if open}
   <div
     class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
-    role="button"
-    tabindex="0"
-    aria-label="Close dialog"
+    role="dialog"
+    aria-modal="true"
     onclick={close}
-    onkeydown={(e) => e.key === "Escape" || e.key === "Enter" || e.key === " " ? close() : null}
+    onkeydown={(e) => {
+      // Only close on Escape, not on other keys
+      if (e.key === "Escape") {
+        close();
+      }
+    }}
   >
     <div
       class={cn(
         "max-h-[90vh] w-full overflow-y-auto rounded-t-xl border border-slate-200 bg-white p-4 shadow-xl sm:max-w-lg sm:rounded-lg sm:p-6 dark:border-slate-800 dark:bg-slate-950",
         className
       )}
+      role="document"
       onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
     >
       {@render children?.()}
     </div>
