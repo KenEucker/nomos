@@ -27,13 +27,13 @@
       pageSize: "50",
       ...(search ? { search } : {})
     });
-    const response = await apiGet<{ users: any }>(`/api/users?${query}`);
+    const response = await apiGet<{ users: any }>(`/users?${query}`);
     users = response.data?.users ?? [];
     loading = false;
   };
 
   const loadRoles = async () => {
-    const response = await apiGet<{ roles: any }>("/api/roles");
+    const response = await apiGet<{ roles: any }>("/roles");
     roles = response.data?.roles ?? [];
   };
 
@@ -55,7 +55,7 @@
   };
 
   const saveRoles = async () => {
-    await apiPut(`/api/users/${selectedUser.id}/roles`, { roles: selectedRoles });
+    await apiPut(`/users/${selectedUser.id}/roles`, { roles: selectedRoles });
     showRoles = false;
     await loadUsers();
   };
@@ -65,7 +65,7 @@
       if (!user) return;
       clearInterval(check);
       if (!hasRole(user, "admin")) {
-        window.location.href = "/";
+        window.location.href = "/admin";
         return;
       }
       await loadUsers();

@@ -18,7 +18,7 @@
       ]);
       let usersTotal: number | null = null;
       try {
-        const usersRes = await apiGet<{ users: any }>("/api/users?page=1&pageSize=1");
+        const usersRes = await apiGet<{ users: any }>("/users?page=1&pageSize=1");
         console.log({ usersRes });
         usersTotal = usersRes.meta?.total ?? 0;
       } catch {
@@ -88,7 +88,7 @@
           <div class="space-y-3 sm:hidden">
             {#each recentJobs as job}
               <a
-                href={`/jobs/${job.id}`}
+                href={`/admin/jobs/${job.id}`}
                 class="block p-3 transition border rounded-lg border-slate-200 bg-slate-50/50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700"
               >
                 <div class="flex items-center justify-between">
@@ -113,7 +113,7 @@
                 {#each recentJobs as job}
                   <tr class="border-t border-slate-200 dark:border-slate-800">
                     <td class="py-3">
-                      <a class="text-slate-900 hover:text-slate-700 dark:text-slate-100 dark:hover:text-white" href={`/jobs/${job.id}`}>{job.title}</a>
+                      <a class="text-slate-900 hover:text-slate-700 dark:text-slate-100 dark:hover:text-white" href={`/admin/jobs/${job.id}`}>{job.title}</a>
                     </td>
                     <td class="py-3">
                       <Badge variant={job.status === "done" ? "success" : "secondary"}>
