@@ -25,7 +25,7 @@
 
   let formData = $state<Record<string, any>>({});
   let loading = $state(false);
-  let loadingData = $state(mode === "edit");
+  let loadingData = $state(true); // Start loading for both modes
   let error = $state<string | null>(null);
   let fieldErrors = $state<Record<string, string>>({});
 
@@ -140,18 +140,25 @@
       onSuccess?.(resultData);
     } catch (err: any) {
       // Handle validation errors with field-specific details
-      if (err.details && Array.isArray(err.details)) {
+      // Backend returns: { error: { details: { info: { issues: [...] } } } }
+      const issues = err.details?.info?.issues ?? err.details?.issues ?? (Array.isArray(err.details) ? err.details : null);
+
+      if (issues && Array.isArray(issues)) {
         const newFieldErrors: Record<string, string> = {};
-        for (const detail of err.details) {
-          const fieldName = detail.path?.[0] ?? detail.field;
+        for (const issue of issues) {
+          const fieldName = issue.path?.[0] ?? issue.field;
           if (fieldName) {
-            newFieldErrors[fieldName] = detail.message;
+            newFieldErrors[fieldName] = issue.message;
           }
         }
         if (Object.keys(newFieldErrors).length > 0) {
           fieldErrors = newFieldErrors;
-          error = "Please fix the errors below";
-          toasts.error("Please fix the validation errors");
+          // Build a summary of all errors
+          const errorMessages = Object.entries(newFieldErrors)
+            .map(([field, msg]) => `${field}: ${msg}`)
+            .join("; ");
+          error = errorMessages || "Please fix the errors below";
+          toasts.error("Validation failed: " + errorMessages);
         } else {
           error = err.message ?? "Failed to save";
           toasts.error(error);
@@ -172,6 +179,7 @@
   onMount(() => {
     if (mode === "create") {
       formData = initializeFormData();
+      loadingData = false;
     } else {
       loadExistingData();
     }
