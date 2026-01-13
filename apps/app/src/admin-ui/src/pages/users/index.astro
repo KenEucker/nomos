@@ -1,8 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import ResourceListPage from "../../islands/ResourceListPage.svelte";
-import { usersResource } from "../../lib/resources";
+import ResourceView from "../../islands/ResourceView.svelte";
 ---
 <BaseLayout title="Users">
-  <ResourceListPage client:load resource={usersResource} />
+  <ResourceView client:load resourceId="users" view="List" />
 </BaseLayout>

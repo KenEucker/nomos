@@ -1,15 +1,15 @@
 <script lang="ts">
-  import TextField from "./fields/TextField.svelte";
-  import EmailField from "./fields/EmailField.svelte";
-  import PasswordField from "./fields/PasswordField.svelte";
-  import NumberField from "./fields/NumberField.svelte";
-  import TextareaField from "./fields/TextareaField.svelte";
-  import SelectField from "./fields/SelectField.svelte";
-  import BooleanField from "./fields/BooleanField.svelte";
-  import DateTimeField from "./fields/DateTimeField.svelte";
-  import JsonField from "./fields/JsonField.svelte";
-  import RelationSelectField from "./fields/RelationSelectField.svelte";
-  import RelationMultiSelectField from "./fields/RelationMultiSelectField.svelte";
+  import TextField from "../components/fields/TextField.svelte";
+  import EmailField from "../components/fields/EmailField.svelte";
+  import PasswordField from "../components/fields/PasswordField.svelte";
+  import NumberField from "../components/fields/NumberField.svelte";
+  import TextareaField from "../components/fields/TextareaField.svelte";
+  import SelectField from "../components/fields/SelectField.svelte";
+  import BooleanField from "../components/fields/BooleanField.svelte";
+  import DateTimeField from "../components/fields/DateTimeField.svelte";
+  import JsonField from "../components/fields/JsonField.svelte";
+  import RelationSelectField from "../components/fields/RelationSelectField.svelte";
+  import RelationMultiSelectField from "../components/fields/RelationMultiSelectField.svelte";
   import type { FieldDef } from "../lib/resources/types";
 
   interface Props {

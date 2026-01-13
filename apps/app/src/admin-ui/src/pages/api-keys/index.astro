@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import ApiKeysPage from "../../islands/ApiKeysPage.svelte";
+import ResourceView from "../../islands/ResourceView.svelte";
 ---
 <BaseLayout title="API Keys">
-  <ApiKeysPage client:load />
+  <ResourceView client:load resourceId="api-keys" view="List" />
 </BaseLayout>

@@ -1,6 +1,16 @@
 # Admin UI Inventory
 
-This document provides a comprehensive inventory of the Nomos admin UI system, including all core entities, existing endpoints, and what needs to be implemented for complete CRUD functionality.
+This document provides a comprehensive inventory of the Nomos admin UI system, documenting all admin-managed resources and their supported operations.
+
+## Architecture Overview
+
+The admin UI uses a **three-layer model**:
+
+1. **Resource Definitions** (shorthand input) - Declarative configuration for simple CRUD
+2. **Page Modules** (rendering contract) - The interface between data and templates
+3. **Templates** (Svelte renderers) - Overrideable UI components
+
+For detailed implementation guidance, see `docs/admin-ui-llm-guide.md`.
 
 ## Technology Stack
 
@@ -16,20 +26,46 @@ This document provides a comprehensive inventory of the Nomos admin UI system, i
 - **Zod 4.3** - Request validation
 - **bcryptjs** - Password hashing
 
-## Admin UI Structure
+## Admin UI File Structure
 
 ```
 apps/app/src/admin-ui/src/
-├── pages/                    # Astro page routes
-├── islands/                  # Svelte interactive components
-│   ├── AppShell.svelte       # Main layout with sidebar
-│   ├── fields/               # Form field components
-│   └── [Entity]Page.svelte   # Entity-specific pages
-├── components/ui/            # Reusable UI components
+├── pages/                    # Astro page routes (wrappers)
+│   └── <resource>/           # Per-resource routes
+├── islands/                  # Svelte interactive components (surfaces)
+│   ├── AdminResourceList.svelte
+│   ├── AdminResourceForm.svelte
+│   ├── AdminResourceShow.svelte
+│   └── FieldRenderer.svelte
+├── components/
+│   ├── ui/                   # Shadcn UI components
+│   └── fields/               # Form field components
+├── templates/                # View templates (overrideable)
+│   └── _default/             # Generic fallback templates
+├── lib/
+│   ├── resources/            # Resource definition system
+│   │   ├── definitions/      # Resource config files
+│   │   ├── registry.ts       # Central registry
+│   │   └── types.ts          # Type definitions
+│   ├── pages/                # Page module system
+│   │   ├── types.ts          # Page module interfaces
+│   │   ├── compileFromResource.ts
+│   │   └── resolvePageModule.ts
+│   ├── templates/            # Template resolution
+│   │   └── resolveTemplate.ts
+│   └── api.ts, session.ts, toast.ts
 ├── layouts/                  # HTML layouts
-├── lib/                      # Utilities (api.ts, session.ts)
 └── styles/                   # Global CSS
 ```
+
+## Registered Resources Summary
+
+| Resource ID | Label | List | Create | Edit | Show | Delete |
+|-------------|-------|------|--------|------|------|--------|
+| users | Users | Yes | Yes | Yes | Yes | Yes |
+| roles | Roles | Yes | Yes | Yes | Yes | Yes |
+| sessions | Sessions | Yes | No | No | Yes | Yes |
+| api-keys | API Keys | Yes | Yes | Yes | Yes | Yes |
 
 ## Core Entities
 
@@ -265,39 +301,99 @@ export const config = {
 
 ---
 
-## Implementation Plan
+## Resource Definition Details
 
-### Phase 1: Resource Framework
-1. Define `AdminResource` TypeScript types
-2. Create resource registry
-3. Build generic CRUD components:
-   - `AdminResourceList` - Table with pagination, search, sort
-   - `AdminResourceForm` - Create/Edit form
-   - `AdminResourceShow` - Detail view
-4. Add missing field components:
-   - `NumberField`
-   - `TextareaField`
-   - `JsonField`
-   - `RelationSelectField`
-   - `RelationMultiSelectField`
-5. Add `ConfirmDialog` for delete confirmation
+### users
 
-### Phase 2: Backend Endpoints
-1. Complete Role CRUD endpoints
-2. Add Session list/view/revoke endpoints
+**File**: `apps/app/src/admin-ui/src/lib/resources/definitions/users.ts`
 
-### Phase 3: Resource Definitions
-1. Define Users resource
-2. Define Roles resource
-3. Define Sessions resource
-4. Define API Keys resource
+**Endpoints**:
+- List: `GET /users`
+- Get: `GET /users/{id}`
+- Create: `POST /users`
+- Update: `PATCH /users/{id}`
+- Delete: `DELETE /users/{id}`
 
-### Phase 4: CRUD Pages
-1. Create dynamic Astro routes for resources
-2. Wire up generic components
-3. Update navigation
+**Columns**: name, email, roles (badge), createdAt (datetime)
 
-### Phase 5: Documentation
-1. Write "How to add a new admin resource" guide
-2. Document endpoint contracts
-3. Provide example resource definition
+**Fields**: name (text), email (email), password (password), roles (relation_many)
+
+---
+
+### roles
+
+**File**: `apps/app/src/admin-ui/src/lib/resources/definitions/roles.ts`
+
+**Endpoints**:
+- List: `GET /roles`
+- Get: `GET /roles/{id}`
+- Create: `POST /roles`
+- Update: `PATCH /roles/{id}`
+- Delete: `DELETE /roles/{id}`
+
+**Columns**: key, name, userCount
+
+**Fields**: key (text, readonly on edit), name (text)
+
+---
+
+### sessions
+
+**File**: `apps/app/src/admin-ui/src/lib/resources/definitions/sessions.ts`
+
+**Endpoints**:
+- List: `GET /admin/sessions`
+- Get: `GET /admin/sessions/{id}`
+- Delete: `DELETE /admin/sessions/{id}`
+
+**Note**: Sessions are read-only (no create/update). Custom "revoke" action deletes the session.
+
+**Columns**: id, userName, userEmail, createdAt, expiresAt, isExpired (badge)
+
+**Fields**: All read-only
+
+---
+
+### api-keys
+
+**File**: `apps/app/src/admin-ui/src/lib/resources/definitions/api-keys.ts`
+
+**Endpoints**:
+- List: `GET /admin/api/api-keys`
+- Get: `GET /admin/api/api-keys/{id}`
+- Create: `POST /admin/api/api-keys`
+- Update: `PATCH /admin/api/api-keys/{id}`
+- Delete: `DELETE /admin/api/api-keys/{id}`
+
+**Custom Actions**: `rotate` - POST to `/admin/api/api-keys/{id}/rotate`
+
+**Columns**: name, prefix, permissions (badge), createdAt, lastUsedAt
+
+**Fields**: name (text), permissions (relation_many), allowedHosts (textarea)
+
+---
+
+## View-Only Resources (Not Admin-Managed)
+
+These resources have specialized pages but do not use the generic CRUD framework:
+
+| Resource | Page | Notes |
+|----------|------|-------|
+| Jobs | JobsPage.svelte | System-managed, view + trigger only |
+| Webhooks | WebhooksPage.svelte | Platform-configured, view-only |
+| Audit Log | AuditPage.svelte | System-generated, view-only |
+| Error Log | ErrorsPage.svelte | System-generated, view-only |
+| Routes | RoutesPage.svelte | Runtime introspection, view-only |
+| Diagnostics | DiagnosticsPage.svelte | System health, view-only |
+
+## Adding New Resources
+
+To add a new admin-managed resource:
+
+1. Create a resource definition in `lib/resources/definitions/<resource>.ts`
+2. Register it in the registry (`lib/resources/registry.ts`)
+3. Create Astro pages in `pages/<resource>/` using the page wrappers
+4. Optionally create custom page modules in `lib/pages/<resource>/` for complex behavior
+5. Optionally create template overrides in `templates/<resource>/` for custom rendering
+
+See `docs/admin-ui-llm-guide.md` for complete examples and the three-layer architecture.
