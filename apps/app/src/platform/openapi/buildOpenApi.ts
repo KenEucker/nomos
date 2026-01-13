@@ -2,10 +2,23 @@ import type { RouteRegistry } from "../router/registry";
 
 const baseComponents = {
   securitySchemes: {
+    bearerAuth: {
+      type: "http",
+      scheme: "bearer",
+      bearerFormat: "JWT",
+      description: "JWT token from /api/auth/dev/token (dev) or /api/auth/login"
+    },
+    apiKeyAuth: {
+      type: "apiKey",
+      in: "header",
+      name: "X-API-Key",
+      description: "API key for programmatic access"
+    },
     cookieAuth: {
       type: "apiKey",
       in: "cookie",
-      name: "session_id"
+      name: "session_id",
+      description: "Session cookie (set by /api/auth/login)"
     }
   },
   schemas: {
@@ -94,7 +107,7 @@ export function buildOpenApi(registry: RouteRegistry) {
       };
     }
     if (route.path.startsWith("/api") && route.config.auth !== "none") {
-      operation.security = [{ cookieAuth: [] }];
+      operation.security = [{ bearerAuth: [] }, { apiKeyAuth: [] }, { cookieAuth: [] }];
     }
     if (route.config.openapi?.operation) {
       const customOperation = route.config.openapi.operation;
