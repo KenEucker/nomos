@@ -10,6 +10,7 @@
   import Tabs from "../components/ui/tabs.svelte";
   import { apiGet, apiPost } from "../lib/api";
   import { session, hasRole, type SessionUser } from "../lib/session";
+  import { toasts } from "../lib/toast";
 
   interface WebhookDestination {
     id: string;
@@ -49,11 +50,12 @@
   const loadWebhooks = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ destinations: WebhookDestination[]; deliveries: WebhookDelivery[] }>("/admin/api/hooks");
+      const response = await apiGet<{ destinations: WebhookDestination[]; deliveries: WebhookDelivery[] }>("/admin/webhooks");
       destinations = response.data?.destinations ?? [];
       deliveries = response.data?.deliveries ?? [];
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to load webhooks", e);
+      toasts.error(e.message ?? "Failed to load webhooks");
     }
     loading = false;
   };
@@ -69,7 +71,7 @@
           delayMs: parseInt(newRetryDelay) || 1000
         }
       };
-      await apiPost("/admin/api/hooks", body);
+      await apiPost("/admin/webhooks", body);
       showCreate = false;
       newUrl = "";
       newEvents = "";
@@ -77,8 +79,10 @@
       newRetryAttempts = "3";
       newRetryDelay = "1000";
       await loadWebhooks();
-    } catch (e) {
+      toasts.success("Webhook created successfully");
+    } catch (e: any) {
       console.error("Failed to create webhook", e);
+      toasts.error(e.message ?? "Failed to create webhook");
     }
   };
 

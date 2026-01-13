@@ -1,0 +1,10 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import ResourceShowPage from "../../../islands/ResourceShowPage.svelte";
+import { usersResource } from "../../../lib/resources";
+
+const { id } = Astro.params;
+---
+<BaseLayout title="User Details">
+  <ResourceShowPage client:load resource={usersResource} id={id!} />
+</BaseLayout>

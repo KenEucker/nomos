@@ -28,7 +28,7 @@
     {#if required}<span class="text-red-500">*</span>{/if}
   </label>
   <Input
-    type="email"
+    type="password"
     bind:value
     {placeholder}
     {readonly}

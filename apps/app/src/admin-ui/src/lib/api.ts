@@ -6,9 +6,15 @@ export type ApiResponse<T> = {
 };
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}) {
+  // Only set content-type for requests with a body
+  const headers: Record<string, string> = { ...(options.headers as Record<string, string> ?? {}) };
+  if (options.body) {
+    headers["content-type"] = "application/json";
+  }
+
   const res = await fetch(path, {
     credentials: "include",
-    headers: { "content-type": "application/json", ...(options.headers ?? {}) },
+    headers,
     ...options
   });
   const data = (await res.json()) as ApiResponse<T>;
@@ -16,6 +22,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}) {
     const message = data.error?.message ?? "Request failed";
     const error = new Error(message);
     (error as any).code = data.error?.code;
+    (error as any).details = data.error?.details;
     throw error;
   }
   return data;

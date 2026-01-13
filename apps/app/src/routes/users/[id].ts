@@ -10,7 +10,8 @@ const paramsSchema = z.object({ id: z.string() });
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email().optional(),
-  password: z.string().min(6).optional()
+  password: z.string().min(6).optional(),
+  roles: z.array(z.string()).optional()
 });
 
 export const config = {
@@ -92,12 +93,14 @@ export const patchConfig = {
 };
 
 export const patch = async (ctx: Ctx) => {
-  const { name, email, password } = ctx.body;
+  const { name, email, password, roles } = ctx.body;
   const existing = await ctx.prisma.user.findUnique({ where: { id: ctx.params.id } });
   if (!existing) {
     throw new HttpError(404, "not_found", "User not found");
   }
   const passwordHash = password ? await bcrypt.hash(password, 10) : undefined;
+
+  // Update user fields
   const updated = await ctx.prisma.user.update({
     where: { id: ctx.params.id },
     data: {
@@ -107,6 +110,33 @@ export const patch = async (ctx: Ctx) => {
     },
     include: { roles: { include: { role: true } } }
   });
+
+  // Update roles if provided
+  if (roles !== undefined) {
+    // Delete existing role associations
+    await ctx.prisma.userRole.deleteMany({
+      where: { userId: ctx.params.id }
+    });
+    // Create new role associations
+    if (roles.length > 0) {
+      const roleRecords = await ctx.prisma.role.findMany({
+        where: { key: { in: roles } }
+      });
+      await ctx.prisma.userRole.createMany({
+        data: roleRecords.map((role) => ({
+          userId: ctx.params.id,
+          roleId: role.id
+        }))
+      });
+    }
+    // Refetch with updated roles
+    const refreshed = await ctx.prisma.user.findUnique({
+      where: { id: ctx.params.id },
+      include: { roles: { include: { role: true } } }
+    });
+    return ctx.json({ user: serializeUser(refreshed!) });
+  }
+
   return ctx.json({ user: serializeUser(updated) });
 };
 

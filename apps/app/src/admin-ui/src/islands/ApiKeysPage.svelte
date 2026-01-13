@@ -9,6 +9,7 @@
   import Card from "../components/ui/card.svelte";
   import { apiGet, apiPost, apiPatch, apiDelete } from "../lib/api";
   import { session, hasRole, type SessionUser } from "../lib/session";
+  import { toasts } from "../lib/toast";
 
   interface ApiKey {
     id: string;
@@ -37,10 +38,11 @@
   const loadApiKeys = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ apiKeys: ApiKey[] }>("/admin/api/api-keys");
+      const response = await apiGet<{ apiKeys: ApiKey[] }>("/admin/api-keys");
       apiKeys = response.data?.apiKeys ?? [];
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to load API keys", e);
+      toasts.error(e.message ?? "Failed to load API keys");
     }
     loading = false;
   };
@@ -52,49 +54,57 @@
         permissions: newPermissions ? newPermissions.split(",").map((s) => s.trim()) : [],
         allowedHosts: newAllowedHosts ? newAllowedHosts.split(",").map((s) => s.trim()) : []
       };
-      const response = await apiPost<ApiKey>("/admin/api/api-keys", body);
+      const response = await apiPost<ApiKey>("/admin/api-keys", body);
       if (response.data?.token) {
         newToken = response.data.token;
         showCreate = false;
         showToken = true;
+        toasts.success("API key created successfully");
       }
       await loadApiKeys();
       newName = "";
       newPermissions = "";
       newAllowedHosts = "";
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to create API key", e);
+      toasts.error(e.message ?? "Failed to create API key");
     }
   };
 
   const rotateKey = async (id: string) => {
     try {
-      const response = await apiPatch<ApiKey>(`/admin/api/api-keys/${id}`, { action: "rotate" });
+      const response = await apiPatch<ApiKey>(`/admin/api-keys/${id}`, { action: "rotate" });
       if (response.data?.token) {
         newToken = response.data.token;
         showToken = true;
+        toasts.success("API key rotated successfully");
       }
       await loadApiKeys();
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to rotate API key", e);
+      toasts.error(e.message ?? "Failed to rotate API key");
     }
   };
 
   const revokeKey = async (id: string) => {
     try {
-      await apiPatch(`/admin/api/api-keys/${id}`, { action: "revoke" });
+      await apiPatch(`/admin/api-keys/${id}`, { action: "revoke" });
       await loadApiKeys();
-    } catch (e) {
+      toasts.success("API key revoked");
+    } catch (e: any) {
       console.error("Failed to revoke API key", e);
+      toasts.error(e.message ?? "Failed to revoke API key");
     }
   };
 
   const deleteKey = async (id: string) => {
     try {
-      await apiDelete(`/admin/api/api-keys/${id}`);
+      await apiDelete(`/admin/api-keys/${id}`);
       await loadApiKeys();
-    } catch (e) {
+      toasts.success("API key deleted");
+    } catch (e: any) {
       console.error("Failed to delete API key", e);
+      toasts.error(e.message ?? "Failed to delete API key");
     }
   };
 
