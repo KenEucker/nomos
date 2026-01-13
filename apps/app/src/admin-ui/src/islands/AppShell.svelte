@@ -12,7 +12,7 @@
   let loading = $state(true);
   let currentPath = $state("");
   let sidebarCollapsed = $state(false);
-  let mobileMenuOpen = $state(false);
+  let mobileMenuCollapsed = $state(true);
 
   const navItems = [
     { label: "Dashboard", path: "/", icon: "dashboard" },
@@ -58,6 +58,12 @@
       sidebarCollapsed = savedCollapsed === "true";
     }
 
+    // Load mobile menu collapsed state from localStorage
+    const savedMobileCollapsed = localStorage.getItem("mobile-menu-collapsed");
+    if (savedMobileCollapsed !== null) {
+      mobileMenuCollapsed = savedMobileCollapsed === "true";
+    }
+
     (async () => {
       try {
         currentPath = window.location.pathname;
@@ -78,11 +84,8 @@
   };
 
   const toggleMobileMenu = () => {
-    mobileMenuOpen = !mobileMenuOpen;
-  };
-
-  const closeMobileMenu = () => {
-    mobileMenuOpen = false;
+    mobileMenuCollapsed = !mobileMenuCollapsed;
+    localStorage.setItem("mobile-menu-collapsed", String(mobileMenuCollapsed));
   };
 
   const handleLogout = async () => {
@@ -104,90 +107,67 @@
   </div>
 {:else}
   <div class="min-h-screen bg-slate-950 text-slate-100">
-    <!-- Mobile header -->
-    <header class="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-slate-800 bg-slate-900/95 px-4 backdrop-blur lg:hidden">
-      <button
-        type="button"
-        class="inline-flex items-center justify-center rounded-md p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
-        onclick={toggleMobileMenu}
-        aria-label="Toggle menu"
-      >
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          {@html mobileMenuOpen ? icons.close : icons.menu}
-        </svg>
-      </button>
-      <div class="flex-1">
+    <!-- Mobile header with horizontal scrollable nav -->
+    <header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/95 backdrop-blur lg:hidden">
+      <!-- Top bar with branding and controls -->
+      <div class="flex h-12 items-center gap-2 px-3">
         <span class="text-lg font-semibold">Nomos</span>
-      </div>
-      <button
-        type="button"
-        class="inline-flex items-center justify-center rounded-md p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
-        onclick={handleLogout}
-        aria-label="Log out"
-      >
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          {@html icons.logout}
-        </svg>
-      </button>
-    </header>
-
-    <!-- Mobile menu overlay -->
-    {#if mobileMenuOpen}
-      <div
-        class="fixed inset-0 z-40 bg-black/60 lg:hidden"
-        onclick={closeMobileMenu}
-        onkeydown={(e) => e.key === "Escape" && closeMobileMenu()}
-        role="button"
-        tabindex="0"
-        aria-label="Close menu"
-      ></div>
-    {/if}
-
-    <!-- Mobile sidebar -->
-    <aside
-      class={
-        "fixed inset-y-0 left-0 z-50 w-64 transform border-r border-slate-800 bg-slate-900 transition-transform duration-200 ease-in-out lg:hidden " +
-        (mobileMenuOpen ? "translate-x-0" : "-translate-x-full")
-      }
-    >
-      <div class="flex h-14 items-center justify-between border-b border-slate-800 px-4">
-        <span class="text-lg font-semibold">Nomos Admin</span>
+        <div class="flex-1"></div>
         <button
           type="button"
-          class="rounded-md p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
-          onclick={closeMobileMenu}
-          aria-label="Close menu"
+          class="inline-flex items-center justify-center rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+          onclick={toggleMobileMenu}
+          aria-label={mobileMenuCollapsed ? "Expand menu" : "Collapse menu"}
+          title={mobileMenuCollapsed ? "Show labels" : "Hide labels"}
         >
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {@html icons.close}
+            {@html mobileMenuCollapsed ? icons.expand : icons.collapse}
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center justify-center rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+          onclick={handleLogout}
+          aria-label="Log out"
+          title="Log out"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {@html icons.logout}
           </svg>
         </button>
       </div>
-      <div class="p-4">
-        <div class="mb-4 text-sm text-slate-400">{user?.email}</div>
-        <nav class="space-y-1">
+
+      <!-- Horizontal scrollable navigation -->
+      <nav class="flex overflow-x-auto scrollbar-hide border-t border-slate-800/50">
+        <div class={
+          "flex gap-1 px-2 py-2 " +
+          (mobileMenuCollapsed ? "" : "min-w-max")
+        }>
           {#each navItems as item}
             {#if !item.role || hasRole(user, item.role)}
               <a
                 href={item.path}
-                onclick={closeMobileMenu}
                 class={
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition " +
+                  "flex items-center gap-2 rounded-md text-sm font-medium transition whitespace-nowrap flex-shrink-0 " +
+                  (mobileMenuCollapsed ? "p-2.5" : "px-3 py-2") + " " +
                   (currentPath === item.path
                     ? "bg-slate-800 text-white"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white")
+                    : "text-slate-400 hover:bg-slate-800 hover:text-white")
                 }
+                title={item.label}
               >
                 <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {@html icons[item.icon]}
                 </svg>
-                <span>{item.label}</span>
+                {#if !mobileMenuCollapsed}
+                  <span>{item.label}</span>
+                {/if}
               </a>
             {/if}
           {/each}
-        </nav>
-      </div>
-    </aside>
+        </div>
+      </nav>
+    </header>
 
     <div class="flex min-h-screen">
       <!-- Desktop sidebar -->
