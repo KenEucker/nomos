@@ -52,7 +52,7 @@
   const loadDiagnostics = async () => {
     try {
       error = null;
-      const response = await apiGet<DiagnosticsOverview>("/admin/api/diagnostics");
+      const response = await apiGet<DiagnosticsOverview>("/_/diagnostics");
       overview = response.data ?? null;
     } catch (e: any) {
       if (e.message?.includes("Diagnostics disabled")) {
@@ -66,7 +66,7 @@
 
   const loadRouteStats = async () => {
     try {
-      const response = await apiGet<RouteStats>("/admin/api/diagnostics/routes");
+      const response = await apiGet<RouteStats>("/_/diagnostics/routes");
       routeStats = response.data ?? null;
     } catch {
       // ignore
@@ -75,7 +75,7 @@
 
   const loadJobStats = async () => {
     try {
-      const response = await apiGet<JobStats>("/admin/api/diagnostics/jobs");
+      const response = await apiGet<JobStats>("/_/diagnostics/jobs");
       jobStats = response.data ?? null;
     } catch {
       // ignore
@@ -84,7 +84,7 @@
 
   const loadEventStats = async () => {
     try {
-      const response = await apiGet<EventStats>("/admin/api/diagnostics/events");
+      const response = await apiGet<EventStats>("/_/diagnostics/events");
       eventStats = response.data ?? null;
     } catch {
       // ignore

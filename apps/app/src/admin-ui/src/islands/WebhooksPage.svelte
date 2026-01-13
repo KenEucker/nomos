@@ -50,7 +50,7 @@
   const loadWebhooks = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ destinations: WebhookDestination[]; deliveries: WebhookDelivery[] }>("/admin/webhooks");
+      const response = await apiGet<{ destinations: WebhookDestination[]; deliveries: WebhookDelivery[] }>("/_/webhooks");
       destinations = response.data?.destinations ?? [];
       deliveries = response.data?.deliveries ?? [];
     } catch (e: any) {
@@ -71,7 +71,7 @@
           delayMs: parseInt(newRetryDelay) || 1000
         }
       };
-      await apiPost("/admin/webhooks", body);
+      await apiPost("/_/webhooks", body);
       showCreate = false;
       newUrl = "";
       newEvents = "";

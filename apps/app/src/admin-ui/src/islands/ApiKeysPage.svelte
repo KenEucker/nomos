@@ -38,7 +38,7 @@
   const loadApiKeys = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ apiKeys: ApiKey[] }>("/admin/api-keys");
+      const response = await apiGet<{ apiKeys: ApiKey[] }>("/_/api-keys");
       apiKeys = response.data?.apiKeys ?? [];
     } catch (e: any) {
       console.error("Failed to load API keys", e);
@@ -54,7 +54,7 @@
         permissions: newPermissions ? newPermissions.split(",").map((s) => s.trim()) : [],
         allowedHosts: newAllowedHosts ? newAllowedHosts.split(",").map((s) => s.trim()) : []
       };
-      const response = await apiPost<ApiKey>("/admin/api-keys", body);
+      const response = await apiPost<ApiKey>("/_/api-keys", body);
       if (response.data?.token) {
         newToken = response.data.token;
         showCreate = false;
@@ -73,7 +73,7 @@
 
   const rotateKey = async (id: string) => {
     try {
-      const response = await apiPatch<ApiKey>(`/admin/api-keys/${id}`, { action: "rotate" });
+      const response = await apiPatch<ApiKey>(`/_/api-keys/${id}`, { action: "rotate" });
       if (response.data?.token) {
         newToken = response.data.token;
         showToken = true;
@@ -88,7 +88,7 @@
 
   const revokeKey = async (id: string) => {
     try {
-      await apiPatch(`/admin/api-keys/${id}`, { action: "revoke" });
+      await apiPatch(`/_/api-keys/${id}`, { action: "revoke" });
       await loadApiKeys();
       toasts.success("API key revoked");
     } catch (e: any) {
@@ -99,7 +99,7 @@
 
   const deleteKey = async (id: string) => {
     try {
-      await apiDelete(`/admin/api-keys/${id}`);
+      await apiDelete(`/_/api-keys/${id}`);
       await loadApiKeys();
       toasts.success("API key deleted");
     } catch (e: any) {

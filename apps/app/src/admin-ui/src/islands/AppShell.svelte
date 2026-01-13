@@ -6,6 +6,7 @@
   import Button from "../components/ui/button.svelte";
   import ThemeToggle from "../components/ui/theme-toggle.svelte";
   import Toast from "../components/ui/toast.svelte";
+  import { fade } from "svelte/transition";
 
   type Props = { title?: string; children?: Snippet };
   let { title = "Dashboard", children }: Props = $props();
@@ -171,10 +172,11 @@
               </a>
             {/if}
           {/each}
-        </nav>
-        <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
-          <ThemeToggle collapsed={false} />
         </div>
+      </nav>
+      <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+        <ThemeToggle collapsed={false} />
+      </div>
     </header>
 
     <div class="flex min-h-screen">
@@ -271,7 +273,7 @@
       </aside>
 
       <!-- Main content -->
-      <main class="flex-1 overflow-x-hidden">
+      <main class="flex-1 overflow-x-hidden" transition:fade={{ duration: 160 }}>
         <div class="p-4 sm:p-6 md:p-8">
           <!-- Page header -->
           <div class="mb-6">

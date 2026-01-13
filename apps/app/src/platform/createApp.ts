@@ -173,7 +173,11 @@ export async function createApp() {
     ? sourceDir
     : path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-  const corePlugins: string[] = [];
+  const platformDir = path.dirname(fileURLToPath(import.meta.url));
+  const corePlugins: string[] = [
+    path.join(platformDir, "admin", "plugin.ts"),
+    path.join(platformDir, "auth", "plugin.ts")
+  ];
 
   const plugins = await loadPlugins(baseDir, corePlugins);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
@@ -281,7 +285,7 @@ export async function createApp() {
     events.on(listener.event, listener.handler, { mode: listener.mode });
   }
 
-  const routeRegistry = await loadRoutes(baseDir, []);
+  const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
   services.routeRegistry = routeRegistry;
 
   const openApi = buildOpenApi(routeRegistry);

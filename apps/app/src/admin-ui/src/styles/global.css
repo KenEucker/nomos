@@ -2,20 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
-}
+/* Theme-backed matte color for the whole document + transitions */
+:root { --app-bg: #f1f5f9; }     /* slate-100 */
+html.dark { --app-bg: #020617; } /* slate-950 */
 
-:root.dark {
-  color-scheme: dark;
+:root { color-scheme: light dark; }
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
+html {
+  background-color: var(--app-bg);
+  min-height: 100%;
 }
 
 body {
-  @apply bg-slate-100 text-slate-900 transition-colors duration-200;
+  min-height: 100%;
+  background-color: transparent; /* html is the matte */
+  @apply transition-colors duration-200 text-slate-900;
 }
 
-:root.dark body {
-  @apply bg-slate-950 text-slate-100;
+html.dark body {
+  @apply text-slate-100;
+}
+
+/* Ensure VT never mattes to white */
+::view-transition,
+::view-transition-group(*),
+::view-transition-image-pair(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  background: var(--app-bg);
 }
 
 /* Hide scrollbar while allowing scroll */

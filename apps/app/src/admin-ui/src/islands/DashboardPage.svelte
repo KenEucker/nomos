@@ -14,7 +14,7 @@
   onMount(async () => {
     try {
       const [jobsRes] = await Promise.all([
-        apiGet<{ jobs: any }>("/admin/api/jobs?page=1&pageSize=5")
+        apiGet<{ jobs: any }>("/_/jobs?page=1&pageSize=5")
       ]);
       let usersTotal: number | null = null;
       try {

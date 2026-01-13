@@ -1,8 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import ResourceCreatePage from "../../islands/ResourceCreatePage.svelte";
-import { rolesResource } from "../../lib/resources";
+import ResourceView from "../../islands/ResourceView.svelte";
 ---
 <BaseLayout title="Create Role">
-  <ResourceCreatePage client:load resource={rolesResource} />
+  <ResourceView client:load resourceId="roles" view="Form" params={{ mode: "create" }} />
 </BaseLayout>

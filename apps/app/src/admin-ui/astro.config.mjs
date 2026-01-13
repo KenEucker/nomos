@@ -9,6 +9,7 @@ export default defineConfig({
   integrations: [svelte(), tailwind({ applyBaseStyles: false })],
   output: "server",
   base: "/admin",
+  extends: "astro/tsconfigs/strict",
   adapter: node({ mode: "middleware" }),
   vite: {
     server: {

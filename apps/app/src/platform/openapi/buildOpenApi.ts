@@ -106,8 +106,15 @@ export function buildOpenApi(registry: RouteRegistry) {
         }
       };
     }
-    if (!route.path.startsWith("/admin") && route.config.auth !== "none") {
-      operation.security = [{ bearerAuth: [] }, { apiKeyAuth: [] }, { cookieAuth: [] }];
+    // Add security requirements for authenticated routes
+    if (route.config.auth !== "none") {
+      if (route.path.startsWith("/_/")) {
+        // Admin API routes (/_/*) prefer session cookie auth
+        operation.security = [{ cookieAuth: [] }, { bearerAuth: [] }];
+      } else {
+        // API routes support all auth methods
+        operation.security = [{ bearerAuth: [] }, { apiKeyAuth: [] }, { cookieAuth: [] }];
+      }
     }
     if (route.config.openapi?.operation) {
       const customOperation = route.config.openapi.operation;
