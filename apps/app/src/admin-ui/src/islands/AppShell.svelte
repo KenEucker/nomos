@@ -109,7 +109,7 @@
 {:else}
   <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
     <!-- Mobile header with horizontal scrollable nav -->
-    <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
+    <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
       <!-- Top bar with branding and controls -->
       <div class="flex h-12 items-center gap-2 px-3">
         <span class="text-lg font-semibold">Nomos</span>
@@ -123,7 +123,7 @@
           title={mobileMenuCollapsed ? "Show labels" : "Hide labels"}
         >
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {@html mobileMenuCollapsed ? icons.expand : icons.collapse}
+            {@html mobileMenuCollapsed ? icons.collapse : icons.expand}
           </svg>
         </button>
         <button
@@ -175,7 +175,7 @@
       <!-- Desktop sidebar -->
       <aside
         class={
-          "hidden border-r border-slate-200 bg-slate-50/40 transition-all duration-200 dark:border-slate-800 dark:bg-slate-900/40 lg:block " +
+          "hidden border-r border-slate-200 bg-slate-50/40 transition-all duration-200 dark:border-slate-800 dark:bg-slate-900/40 md:block " +
           (sidebarCollapsed ? "w-16" : "w-64")
         }
       >
@@ -266,7 +266,7 @@
 
       <!-- Main content -->
       <main class="flex-1 overflow-x-hidden">
-        <div class="p-4 sm:p-6 lg:p-8">
+        <div class="p-4 sm:p-6 md:p-8">
           <!-- Page header -->
           <div class="mb-6">
             <h1 class="text-xl font-semibold sm:text-2xl">{title}</h1>
