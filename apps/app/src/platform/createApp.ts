@@ -567,8 +567,14 @@ export async function createApp() {
 
   const astroDevPort = env.ASTRO_DEV_PORT;
 
-  const shouldSkipAstro = (url: string | undefined) => {
+  const shouldSkipAstro = (url: string | undefined, isDev: boolean) => {
     const p = (url ?? "/").split("?")[0] ?? "/";
+    // In dev mode, also proxy Vite internal paths to Astro dev server
+    if (isDev) {
+      if (p.startsWith("/@") || p.startsWith("/node_modules/") || p === "/__vite_ping") {
+        return false; // Don't skip - proxy these to Astro dev server
+      }
+    }
     // Only route /admin/* paths to Astro, everything else is API
     if (p === "/admin" || p.startsWith("/admin/")) {
       return false; // Don't skip Astro for admin routes
@@ -589,7 +595,7 @@ export async function createApp() {
     );
 
     const proxyToAstro = (req: IncomingMessage, res: ServerResponse, next: (err?: Error) => void) => {
-      if (shouldSkipAstro(req.url)) {
+      if (shouldSkipAstro(req.url, true)) {
         next();
         return;
       }
@@ -658,7 +664,7 @@ export async function createApp() {
         );
 
         app.use((req: IncomingMessage, res: ServerResponse, next: (err?: Error) => void) => {
-          if (shouldSkipAstro(req.url)) {
+          if (shouldSkipAstro(req.url, false)) {
             next();
             return;
           }
