@@ -571,7 +571,12 @@ export async function createApp() {
     const p = (url ?? "/").split("?")[0] ?? "/";
     // In dev mode, also proxy Vite internal paths to Astro dev server
     if (isDev) {
-      if (p.startsWith("/@") || p.startsWith("/node_modules/") || p === "/__vite_ping") {
+      if (
+        p.startsWith("/@") ||
+        p.startsWith("/src/") ||
+        p.startsWith("/node_modules/") ||
+        p === "/__vite_ping"
+      ) {
         return false; // Don't skip - proxy these to Astro dev server
       }
     }
