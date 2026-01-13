@@ -1,5 +1,5 @@
-import type { Ctx } from "../../../platform/ctx";
-import { HttpError } from "../../../platform/errors";
+import type { Ctx } from "../../platform/ctx";
+import { HttpError } from "../../platform/errors";
 import { modelSchemas, okResponse } from "../_openapi";
 import { serializeUser } from "../_serializers";
 

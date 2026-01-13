@@ -16,16 +16,16 @@
   let mobileMenuCollapsed = $state(true);
 
   const navItems = [
-    { label: "Dashboard", path: "/", icon: "dashboard" },
-    { label: "Users", path: "/users", role: "admin", icon: "users" },
-    { label: "API Keys", path: "/api-keys", role: "admin", icon: "key" },
-    { label: "Webhooks", path: "/webhooks", role: "admin", icon: "webhook" },
-    { label: "Jobs", path: "/jobs", role: "admin", icon: "clock" },
-    { label: "Audit Log", path: "/audit", role: "admin", icon: "scroll" },
-    { label: "Errors", path: "/errors", role: "admin", icon: "alert" },
-    { label: "Routes", path: "/routes", role: "admin", icon: "git-branch" },
-    { label: "Diagnostics", path: "/diagnostics", role: "admin", icon: "activity" },
-    { label: "API Docs", path: "/docs", icon: "book" }
+    { label: "Dashboard", path: "/admin", icon: "dashboard" },
+    { label: "Users", path: "/admin/users", role: "admin", icon: "users" },
+    { label: "API Keys", path: "/admin/api-keys", role: "admin", icon: "key" },
+    { label: "Webhooks", path: "/admin/webhooks", role: "admin", icon: "webhook" },
+    { label: "Jobs", path: "/admin/jobs", role: "admin", icon: "clock" },
+    { label: "Audit Log", path: "/admin/audit", role: "admin", icon: "scroll" },
+    { label: "Errors", path: "/admin/errors", role: "admin", icon: "alert" },
+    { label: "Routes", path: "/admin/routes", role: "admin", icon: "git-branch" },
+    { label: "Diagnostics", path: "/admin/diagnostics", role: "admin", icon: "activity" },
+    { label: "API Docs", path: "/admin/docs", icon: "book" }
   ];
 
   const icons: Record<string, string> = {
@@ -69,7 +69,7 @@
         currentPath = window.location.pathname;
         await loadSession();
       } catch {
-        window.location.href = "/login";
+        window.location.href = "/admin/login";
       } finally {
         loading = false;
       }
@@ -90,11 +90,11 @@
 
   const handleLogout = async () => {
     try {
-      await apiPost("/api/auth/logout");
+      await apiPost("/auth/logout");
     } catch {
       // ignore
     }
-    window.location.href = "/login";
+    window.location.href = "/admin/login";
   };
 </script>
 

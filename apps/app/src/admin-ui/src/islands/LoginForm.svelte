@@ -14,8 +14,8 @@
     loading = true;
 
     try {
-      await apiPost("/api/auth/login", { email, password });
-      window.location.href = "/";
+      await apiPost("/auth/login", { email, password });
+      window.location.href = "/admin";
     } catch (err) {
       error = (err as Error).message ?? "Login failed";
     } finally {

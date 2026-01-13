@@ -15,7 +15,7 @@
   const checkDocsAccess = async () => {
     loading = true;
     try {
-      const response = await fetch("/api/docs", {
+      const response = await fetch("/docs", {
         method: "HEAD",
         credentials: "include"
       });
@@ -81,7 +81,7 @@
         <h3 class="mb-4 text-lg font-semibold text-slate-100">Embedded Documentation</h3>
         <div class="overflow-hidden border rounded-lg bg-slate-900 border-slate-700">
           <iframe
-            src="/api/docs"
+            src="/docs"
             class="w-full h-[600px] border-0"
             title="API Documentation"
           ></iframe>
@@ -108,12 +108,12 @@
             <div class="text-xs text-slate-400">/openapi.json</div>
           </a>
           <a
-            href="/api/docs"
+            href="/docs"
             target="_blank"
             class="block p-4 transition border rounded-lg bg-slate-900/50 border-slate-800 hover:border-slate-600"
           >
             <div class="text-sm font-medium text-slate-100">API Docs</div>
-            <div class="text-xs text-slate-400">/api/docs</div>
+            <div class="text-xs text-slate-400">/docs</div>
           </a>
           <a
             href="/health"

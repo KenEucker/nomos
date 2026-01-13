@@ -1,5 +1,5 @@
-import type { Ctx } from "../../../platform/ctx";
-import { revokeSession } from "../../../platform/auth/sessions";
+import type { Ctx } from "../../platform/ctx";
+import { revokeSession } from "../../platform/auth/sessions";
 import { okResponse } from "../_openapi";
 
 export const config = {

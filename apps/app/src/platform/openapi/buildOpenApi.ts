@@ -6,7 +6,7 @@ const baseComponents = {
       type: "http",
       scheme: "bearer",
       bearerFormat: "JWT",
-      description: "JWT token from /api/auth/dev/token (dev) or /api/auth/login"
+      description: "JWT token from /auth/dev/token (dev) or /auth/login"
     },
     apiKeyAuth: {
       type: "apiKey",
@@ -18,7 +18,7 @@ const baseComponents = {
       type: "apiKey",
       in: "cookie",
       name: "session_id",
-      description: "Session cookie (set by /api/auth/login)"
+      description: "Session cookie (set by /auth/login)"
     }
   },
   schemas: {
@@ -106,7 +106,7 @@ export function buildOpenApi(registry: RouteRegistry) {
         }
       };
     }
-    if (route.path.startsWith("/api") && route.config.auth !== "none") {
+    if (!route.path.startsWith("/admin") && route.config.auth !== "none") {
       operation.security = [{ bearerAuth: [] }, { apiKeyAuth: [] }, { cookieAuth: [] }];
     }
     if (route.config.openapi?.operation) {

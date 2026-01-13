@@ -8,6 +8,7 @@ const astroDevPort = process.env.ASTRO_DEV_PORT ? parseInt(process.env.ASTRO_DEV
 export default defineConfig({
   integrations: [svelte(), tailwind({ applyBaseStyles: false })],
   output: "server",
+  base: "/admin",
   adapter: node({ mode: "middleware" }),
   vite: {
     server: {

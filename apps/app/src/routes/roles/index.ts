@@ -1,4 +1,4 @@
-import type { Ctx } from "../../../platform/ctx";
+import type { Ctx } from "../../platform/ctx";
 import { modelSchemas, okResponse } from "../_openapi";
 
 export const config = {

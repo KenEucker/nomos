@@ -11,7 +11,7 @@ export type SessionUser = {
 export const session = writable<SessionUser | null>(null);
 
 export async function loadSession() {
-  const response = await apiGet<{ user: SessionUser }>("/api/auth/me");
+  const response = await apiGet<{ user: SessionUser }>("/auth/me");
   session.set(response.data?.user ?? null);
   return response.data?.user ?? null;
 }

@@ -303,22 +303,7 @@ export async function createApp() {
     reply.send(openApi);
   });
 
-  // app.get("/docs", async (req, reply) => {
-  //   if (!(await canAccessDocs(req))) {
-  //     return reply.code(403).send({ error: "forbidden" });
-  //   }
-  //   reply.type("text/html").send(buildSwaggerUiHtml("/openapi.json"));
-  // });
-
-  app.get("/api", async (_req, reply) => {
-    reply.redirect("/api/docs", 302);
-  });
-
-  app.get("/api/", async (_req, reply) => {
-    reply.redirect("/api/docs", 302);
-  });
-
-  app.get("/api/docs", async (req, reply) => {
+  app.get("/docs", async (req, reply) => {
     if (!(await canAccessDocs(req))) {
       return reply.code(403).send({ error: "forbidden" });
     }
@@ -582,11 +567,24 @@ export async function createApp() {
 
   const astroDevPort = env.ASTRO_DEV_PORT;
 
-  const shouldSkipAstro = (url: string | undefined) => {
+  const shouldSkipAstro = (url: string | undefined, isDev: boolean) => {
     const p = (url ?? "/").split("?")[0] ?? "/";
-    const excludedExact = new Set(["/openapi.json", "/health", "/ready", "/version"]);
-    if (excludedExact.has(p)) return true;
-    return p === "/api" || p.startsWith("/api/") || p === "/hooks" || p.startsWith("/hooks/");
+    // In dev mode, also proxy Vite internal paths to Astro dev server
+    if (isDev) {
+      if (
+        p.startsWith("/@") ||
+        p.startsWith("/src/") ||
+        p.startsWith("/node_modules/") ||
+        p === "/__vite_ping"
+      ) {
+        return false; // Don't skip - proxy these to Astro dev server
+      }
+    }
+    // Only route /admin/* paths to Astro, everything else is API
+    if (p === "/admin" || p.startsWith("/admin/")) {
+      return false; // Don't skip Astro for admin routes
+    }
+    return true; // Skip Astro for all other routes (API routes at root)
   };
 
   if (astroDevPort) {
@@ -596,13 +594,13 @@ export async function createApp() {
       {
         mode: "development",
         astroDevServer: `http://localhost:${astroDevPort}`,
-        excluded: ["/openapi.json", "/health", "/ready", "/version", "/api/*", "/hooks/*"]
+        adminMount: "/admin/*"
       },
-      "Proxying to Astro dev server for hot reload."
+      "Proxying /admin/* to Astro dev server for hot reload."
     );
 
     const proxyToAstro = (req: IncomingMessage, res: ServerResponse, next: (err?: Error) => void) => {
-      if (shouldSkipAstro(req.url)) {
+      if (shouldSkipAstro(req.url, true)) {
         next();
         return;
       }
@@ -642,7 +640,7 @@ export async function createApp() {
     const adminAstroClient = path.join(adminClient, "_astro");
 
     if (fs.existsSync(adminAstroClient)) {
-      app.get("/_astro/*", async (req, reply) => {
+      app.get("/admin/_astro/*", async (req, reply) => {
         const assetPath = (req.params as { "*": string })["*"] ?? "";
         const resolved = path.normalize(path.join(adminAstroClient, assetPath));
         if (!resolved.startsWith(adminAstroClient)) {
@@ -665,14 +663,13 @@ export async function createApp() {
         adminLog.info(
           {
             mode: "production",
-            mount: "/",
-            excluded: ["/openapi.json", "/docs", "/health", "/ready", "/version", "/api/*", "/hooks/*"]
+            adminMount: "/admin/*"
           },
-          "Mounted Astro middleware."
+          "Mounted Astro middleware for admin UI."
         );
 
         app.use((req: IncomingMessage, res: ServerResponse, next: (err?: Error) => void) => {
-          if (shouldSkipAstro(req.url)) {
+          if (shouldSkipAstro(req.url, false)) {
             next();
             return;
           }
@@ -680,7 +677,7 @@ export async function createApp() {
         });
       } else {
         const handler = astroModule.handler ?? astroModule.default;
-        adminLog.info({ mount: "/" }, "Mounted Astro handler.");
+        adminLog.info({ adminMount: "/admin/*" }, "Mounted Astro handler for admin UI.");
         app.all("/", async (req, reply) => {
           reply.hijack();
           await handler(req.raw, reply.raw);
