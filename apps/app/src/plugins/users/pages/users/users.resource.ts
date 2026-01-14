@@ -1,4 +1,4 @@
-import type { AdminResourceInput } from "../../lib/resources/types";
+import type { AdminResourceInput } from "../../../../admin-ui/src/lib/resources/types";
 
 export const usersResource: AdminResourceInput = {
   id: "users",
