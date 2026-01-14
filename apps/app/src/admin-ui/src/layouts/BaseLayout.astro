@@ -36,6 +36,12 @@ const { title = "Nomos Admin" } = Astro.props;
           };
 
           window.swup.hooks.on("page:view", notifyPageView);
+          window.swup.hooks.on("page:view", () => {
+            console.log("[swup] page:view", window.location.pathname);
+          });
+          window.swup.hooks.on("animation:out:start", () => {
+            console.log("[swup] animation out");
+          });
           notifyPageView();
         };
 

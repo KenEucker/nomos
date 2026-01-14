@@ -77,6 +77,7 @@
   const fallbackActions = actions;
 
   onMount(() => {
+    console.log("[AppShell] mount");
     const unsubscribe = session.subscribe((value) => {
       user = value;
     });
@@ -119,6 +120,7 @@
     window.addEventListener("nomos:page-view", handlePageView);
 
     return () => {
+      console.log("[AppShell] destroy");
       window.removeEventListener("nomos:page-view", handlePageView);
       unsubscribeShell();
       unsubscribe();
