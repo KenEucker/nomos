@@ -2,4 +2,15 @@
   import LoginForm from "../../islands/LoginForm.svelte";
 </script>
 
-<LoginForm />
+<div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+  <div class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-8 sm:px-6">
+    <div class="mb-8 text-center">
+      <h1 class="text-2xl font-bold sm:text-3xl">Nomos Admin</h1>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white/40 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/40 sm:p-8">
+      <h2 class="text-xl font-semibold sm:text-2xl">Sign in</h2>
+      <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Use your credentials to access the admin UI.</p>
+      <LoginForm />
+    </div>
+  </div>
+</div>

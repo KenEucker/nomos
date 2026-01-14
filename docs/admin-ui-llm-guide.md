@@ -206,6 +206,7 @@ Page modules are the rendering contract between data and UI. They expose query f
 * **Page modules** = data loading, actions, and view configuration (columns/fields/navigation).
 * **Templates** = layout and rendering only (no business logic).
 * **Shared components** = reusable UI primitives (tables, forms, empty states, etc.).
+* **Islands** = interactive subcomponents only (not full-page wrappers).
 
 ### Canonical Page Module (Short Example)
 
@@ -253,6 +254,10 @@ Use handwritten page modules when:
 
 1. Check for handwritten module at `pages/<resource>/<View>.ts`
 2. If not found, compile default module from resource definition
+
+### Anti-pattern: Wrapper Templates
+
+Do **not** create templates that simply import an island and render it (for example, a 5-line `List.svelte` that only returns `<SomePage />`). Page structure belongs in page modules + templates; islands should be embedded only for interactive widgets inside the template.
 
 ### Structure: List Module
 

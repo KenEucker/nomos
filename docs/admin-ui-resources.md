@@ -59,6 +59,8 @@ import ResourceView from "../../islands/ResourceView.svelte";
 <ResourceView client:load resourceId="widgets" view="Form" params={{ id: "123", mode: "edit" }} />
 ```
 
+**Anti-pattern:** do not create `templates/<resource>/<View>.svelte` files that only render a single island component. Templates should declare the page structure and embed interactive islands only where needed.
+
 ## Resource Definition
 
 ### Location
