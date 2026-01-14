@@ -7,8 +7,6 @@
   import Input from "../components/ui/input.svelte";
   import Card from "../components/ui/card.svelte";
   import { apiGet, apiPost, apiPatch, apiDelete } from "../lib/api";
-  import { shell } from "../lib/shell";
-  import { session, hasRole, type SessionUser } from "../lib/session";
   import { toasts } from "../lib/toast";
 
   interface ApiKey {
@@ -24,7 +22,6 @@
 
   let apiKeys = $state<ApiKey[]>([]);
   let loading = $state(true);
-  let user = $state<SessionUser | null>(null);
   let showCreate = $state(false);
   let showToken = $state(false);
   let newToken = $state("");
@@ -32,12 +29,6 @@
   let newPermissions = $state("");
   let newAllowedHosts = $state("");
   let search = $state("");
-
-  $effect(() => {
-    shell.set({ title: "API Keys" });
-  });
-
-  const unsubscribe = session.subscribe((value) => (user = value));
 
   const loadApiKeys = async () => {
     loading = true;
@@ -131,19 +122,7 @@
   );
 
   onMount(() => {
-    const check = setInterval(async () => {
-      if (!user) return;
-      clearInterval(check);
-      if (!hasRole(user, "admin")) {
-        window.location.href = "/";
-        return;
-      }
-      await loadApiKeys();
-    }, 100);
-    return () => {
-      unsubscribe();
-      clearInterval(check);
-    };
+    loadApiKeys();
   });
 </script>
 

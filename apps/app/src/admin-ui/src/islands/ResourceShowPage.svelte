@@ -1,8 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import AdminResourceShow from "./AdminResourceShow.svelte";
-  import { shell } from "../lib/shell";
-  import { session, hasRole, type SessionUser } from "../lib/session";
   import type { AdminResource } from "../lib/resources/types";
 
   interface Props {
@@ -12,30 +9,7 @@
 
   let { resource, id }: Props = $props();
 
-  let user = $state<SessionUser | null>(null);
-  let ready = $state(false);
-
-  $effect(() => {
-    shell.set({ title: `${resource.label} Details` });
-  });
-
-  const unsubscribe = session.subscribe((value) => (user = value));
-
-  onMount(() => {
-    const check = setInterval(() => {
-      if (!user) return;
-      clearInterval(check);
-      if (resource.requiredRole && !hasRole(user, resource.requiredRole)) {
-        window.location.href = "/admin";
-        return;
-      }
-      ready = true;
-    }, 100);
-    return () => {
-      unsubscribe();
-      clearInterval(check);
-    };
-  });
+  let ready = $state(true);
 </script>
 
 {#if ready}

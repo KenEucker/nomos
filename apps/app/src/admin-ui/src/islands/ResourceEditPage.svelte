@@ -1,6 +1,5 @@
 <script lang="ts">
   import AdminResourceForm from "./AdminResourceForm.svelte";
-  import { shell } from "../lib/shell";
   import type { AdminResource } from "../lib/resources/types";
 
   interface Props {
@@ -9,10 +8,6 @@
   }
 
   let { resource, id }: Props = $props();
-
-  $effect(() => {
-    shell.set({ title: `Edit ${resource.label}` });
-  });
 
   const handleSuccess = () => {
     // Navigate to the show page after successful update

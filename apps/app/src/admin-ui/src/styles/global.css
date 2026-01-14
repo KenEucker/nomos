@@ -36,6 +36,63 @@ body.is-changing #swup {
   opacity: 0;
 }
 
+body:not(.sidebar-collapsed) .admin-sidebar {
+  width: 16rem;
+}
+
+body.sidebar-collapsed .admin-sidebar {
+  width: 4rem;
+}
+
+body.sidebar-collapsed .admin-sidebar-logo {
+  justify-content: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.admin-logo-short {
+  display: none;
+}
+
+body.sidebar-collapsed .admin-logo-short {
+  display: block;
+}
+
+body.sidebar-collapsed .admin-logo-full,
+body.sidebar-collapsed .admin-user-block,
+body.sidebar-collapsed .admin-nav-label,
+body.sidebar-collapsed .admin-collapse-label {
+  display: none;
+}
+
+body:not(.sidebar-collapsed) .admin-nav-item,
+body:not(.sidebar-collapsed) .admin-sidebar-toggle {
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+}
+
+body.sidebar-collapsed .admin-nav-item,
+body.sidebar-collapsed .admin-sidebar-toggle {
+  justify-content: center;
+  padding: 0.625rem;
+}
+
+body.mobile-menu-collapsed .mobile-nav-label {
+  display: none;
+}
+
+body.mobile-menu-collapsed .admin-mobile-nav-link {
+  padding: 0.625rem;
+}
+
+body:not(.mobile-menu-collapsed) .admin-mobile-nav-link {
+  padding: 0.5rem 0.75rem;
+}
+
+body:not(.mobile-menu-collapsed) .admin-mobile-nav-items {
+  min-width: max-content;
+}
+
 /* Hide scrollbar while allowing scroll */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE and Edge */

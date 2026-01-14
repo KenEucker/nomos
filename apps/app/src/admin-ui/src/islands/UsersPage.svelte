@@ -6,8 +6,6 @@
   import Badge from "../components/ui/badge.svelte";
   import Input from "../components/ui/input.svelte";
   import { apiGet, apiPut } from "../lib/api";
-  import { shell } from "../lib/shell";
-  import { session, hasRole, type SessionUser } from "../lib/session";
 
   let users = $state<Array<any>>([]);
   let roles = $state<Array<any>>([]);
@@ -15,14 +13,7 @@
   let showRoles = $state(false);
   let selectedUser = $state<any>(null);
   let selectedRoles = $state<string[]>([]);
-  let user = $state<SessionUser | null>(null);
   let search = $state("");
-
-  $effect(() => {
-    shell.set({ title: "Users" });
-  });
-
-  const unsubscribe = session.subscribe((value) => (user = value));
 
   const loadUsers = async () => {
     loading = true;
@@ -65,19 +56,7 @@
   };
 
   onMount(() => {
-    const check = setInterval(async () => {
-      if (!user) return;
-      clearInterval(check);
-      if (!hasRole(user, "admin")) {
-        window.location.href = "/admin";
-        return;
-      }
-      await loadUsers();
-    }, 100);
-    return () => {
-      unsubscribe();
-      clearInterval(check);
-    };
+    loadUsers();
   });
 </script>
 

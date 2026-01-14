@@ -1,6 +1,5 @@
 <script lang="ts">
   import AdminResourceForm from "./AdminResourceForm.svelte";
-  import { shell } from "../lib/shell";
   import type { AdminResource } from "../lib/resources/types";
 
   interface Props {
@@ -8,10 +7,6 @@
   }
 
   let { resource }: Props = $props();
-
-  $effect(() => {
-    shell.set({ title: `Create ${resource.label}` });
-  });
 
   const handleSuccess = (data: any) => {
     // Navigate to the show page after successful creation

@@ -1,7 +1,7 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
+import AdminLayout from "../../layouts/AdminLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
 ---
-<BaseLayout title="Create User">
+<AdminLayout title="Create User">
   <ResourceView client:load resourceId="users" view="Form" params={{ mode: "create" }} />
-</BaseLayout>
+</AdminLayout>

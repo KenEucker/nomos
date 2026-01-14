@@ -11,8 +11,6 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { session, hasRole, type SessionUser } from "../lib/session";
-  import { shell } from "../lib/shell";
   import { getResource } from "../lib/resources/registry";
   import { resolvePageModule, type ViewType, type FormMode, type PageModule } from "../lib/pages";
   import { resolveTemplate, type ResolvedTemplate } from "../lib/templates";
@@ -53,7 +51,6 @@
   }: Props = $props();
 
   // State
-  let user = $state<SessionUser | null>(null);
   let ready = $state(false);
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -83,30 +80,12 @@
   const breadcrumbs = $derived(pageModule?.breadcrumbs ?? []);
   const actions = $derived(pageModule?.pageActions ?? []);
 
-  $effect(() => {
-    shell.set({
-      title: title(),
-      subtitle,
-      breadcrumbs,
-      actions
-    });
-  });
-
-  // Session subscription
-  const unsubscribe = session.subscribe((value) => (user = value));
-
   // Load module and template
   async function loadResources() {
     loading = true;
     error = null;
 
     try {
-      // Check authentication and authorization
-      if (resource?.requiredRole && user && !hasRole(user, resource.requiredRole)) {
-        window.location.href = "/admin";
-        return;
-      }
-
       // Resolve page module
       pageModule = await resolvePageModule(resourceId, view);
 
@@ -133,27 +112,7 @@
   }
 
   onMount(() => {
-    // Wait for session to be available
-    const check = setInterval(() => {
-      if (user === null) {
-        // Still loading session, check if session store has initialized
-        return;
-      }
-      clearInterval(check);
-      loadResources();
-    }, 100);
-
-    // Fallback: if no user after 2s, assume public access
-    const timeout = setTimeout(() => {
-      clearInterval(check);
-      loadResources();
-    }, 2000);
-
-    return () => {
-      unsubscribe();
-      clearInterval(check);
-      clearTimeout(timeout);
-    };
+    loadResources();
   });
 
   // Get the template component

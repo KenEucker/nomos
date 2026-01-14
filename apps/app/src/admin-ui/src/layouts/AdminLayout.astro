@@ -1,0 +1,251 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import ThemeToggle from "../components/ui/theme-toggle.svelte";
+import Toast from "../components/ui/toast.svelte";
+import ShellState from "../islands/ShellState.svelte";
+import LogoutButton from "../islands/LogoutButton.svelte";
+import type { PageAction, PageBreadcrumb } from "../lib/pages/types";
+import type { SessionUser } from "../lib/session";
+import { requireAdminSession } from "../lib/server/session";
+
+type Props = {
+  title?: string;
+  subtitle?: string;
+  breadcrumbs?: PageBreadcrumb[];
+  actions?: PageAction[];
+};
+
+const {
+  title = "Dashboard",
+  subtitle,
+  breadcrumbs = [],
+  actions = []
+}: Props = Astro.props;
+
+const sessionResult = await requireAdminSession(Astro);
+if (sessionResult instanceof Response) {
+  return sessionResult;
+}
+const user = sessionResult as SessionUser;
+
+const activePath = Astro.url.pathname;
+
+const navItems = [
+  { label: "Dashboard", path: "/admin", icon: "dashboard" },
+  { label: "Users", path: "/admin/users", role: "admin", icon: "users" },
+  { label: "Roles", path: "/admin/roles", role: "admin", icon: "shield" },
+  { label: "Sessions", path: "/admin/sessions", role: "admin", icon: "lock" },
+  { label: "API Keys", path: "/admin/api-keys", role: "admin", icon: "key" },
+  { label: "Webhooks", path: "/admin/webhooks", role: "admin", icon: "webhook" },
+  { label: "Jobs", path: "/admin/jobs", role: "admin", icon: "clock" },
+  { label: "Audit Log", path: "/admin/audit", role: "admin", icon: "scroll" },
+  { label: "Errors", path: "/admin/errors", role: "admin", icon: "alert" },
+  { label: "Routes", path: "/admin/routes", role: "admin", icon: "git-branch" },
+  { label: "Diagnostics", path: "/admin/diagnostics", role: "admin", icon: "activity" },
+  { label: "API Docs", path: "/admin/docs", icon: "book" }
+];
+
+const icons: Record<string, string> = {
+  dashboard: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>`,
+  folder: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>`,
+  users: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>`,
+  shield: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>`,
+  lock: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>`,
+  key: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>`,
+  webhook: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>`,
+  clock: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>`,
+  scroll: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>`,
+  alert: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>`,
+  "git-branch": `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>`,
+  activity: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>`,
+  book: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>`,
+  menu: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>`,
+  collapse: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>`,
+  expand: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>`,
+  logout: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>`
+};
+
+const hasRole = (role?: string) => !role || user?.roles?.includes(role);
+
+const actionClass = (variant?: string) => {
+  switch (variant) {
+    case "secondary":
+      return "bg-slate-200 text-slate-900 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700";
+    case "outline":
+      return "border border-slate-300 text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-900";
+    case "ghost":
+      return "text-slate-900 hover:bg-slate-200 dark:text-slate-100 dark:hover:bg-slate-800";
+    case "destructive":
+      return "bg-red-500 text-white hover:bg-red-600";
+    default:
+      return "bg-slate-900 text-slate-100 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200";
+  }
+};
+---
+<BaseLayout title={title}>
+  <ShellState client:load />
+  <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <header class="admin-mobile-header sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+      <div class="flex items-center h-12 gap-2 px-3">
+        <span class="text-lg font-semibold">Nomos</span>
+        <div class="flex-1"></div>
+        <ThemeToggle client:load collapsed={true} />
+        <button
+          type="button"
+          class="inline-flex items-center justify-center rounded-md p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+          data-shell-toggle="mobile"
+          aria-label="Toggle menu"
+          title="Toggle menu"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <Fragment set:html={icons.menu} />
+          </svg>
+        </button>
+        <LogoutButton
+          client:load
+          showLabel={false}
+          label="Log out"
+          icon={icons.logout}
+          className="p-1 inline-flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+        />
+      </div>
+
+      <nav class="admin-mobile-nav flex overflow-x-auto border-t scrollbar-hide border-slate-200/50 dark:border-slate-800/50">
+        <div class="admin-mobile-nav-items flex gap-1 px-2 py-2">
+          {navItems.map((item) =>
+            hasRole(item.role) ? (
+              <a
+                href={item.path}
+                class={`admin-mobile-nav-link flex items-center gap-2 rounded-md text-sm font-medium transition whitespace-nowrap flex-shrink-0 ${
+                  activePath === item.path
+                    ? "bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-white"
+                    : "text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+                }`}
+              >
+                <svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <Fragment set:html={icons[item.icon]} />
+                </svg>
+                <span class="mobile-nav-label">{item.label}</span>
+              </a>
+            ) : null
+          )}
+        </div>
+      </nav>
+      <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+        <ThemeToggle client:load collapsed={false} />
+      </div>
+    </header>
+
+    <div class="flex min-h-screen">
+      <aside class="admin-sidebar hidden border-r border-slate-200 bg-slate-50/40 transition-all duration-200 dark:border-slate-800 dark:bg-slate-900/40 md:block">
+        <div class="sticky top-0 flex flex-col h-full">
+          <div class="admin-sidebar-logo flex h-14 items-center border-b border-slate-200 dark:border-slate-800 px-4">
+            <span class="admin-logo-short text-xl font-bold text-slate-900 dark:text-slate-100">N</span>
+            <span class="admin-logo-full text-lg font-semibold">Nomos Admin</span>
+          </div>
+
+          <div class="admin-user-block px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+            <div class="text-sm truncate text-slate-500 dark:text-slate-400">{user?.email}</div>
+          </div>
+
+          <nav class="flex-1 p-2 space-y-1">
+            {navItems.map((item) =>
+              hasRole(item.role) ? (
+                <a
+                  href={item.path}
+                  class={`admin-nav-item group flex items-center rounded-md text-sm font-medium transition ${
+                    activePath === item.path
+                      ? "bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-white"
+                      : "text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                  }`}
+                >
+                  <svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <Fragment set:html={icons[item.icon]} />
+                  </svg>
+                  <span class="admin-nav-label">{item.label}</span>
+                </a>
+              ) : null
+            )}
+          </nav>
+
+          <div class="p-2 border-t border-slate-200 dark:border-slate-800">
+            <ThemeToggle client:load collapsed={false} />
+            <button
+              type="button"
+              data-shell-toggle="sidebar"
+              class="admin-sidebar-toggle flex w-full items-center rounded-md text-sm font-medium text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+              title="Toggle sidebar"
+            >
+              <svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <Fragment set:html={icons.collapse} />
+              </svg>
+              <span class="admin-collapse-label">Collapse</span>
+            </button>
+            <LogoutButton
+              client:load
+              label="Log out"
+              icon={icons.logout}
+              className="admin-sidebar-toggle flex w-full items-center rounded-md text-sm font-medium text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+            />
+          </div>
+        </div>
+      </aside>
+
+      <main id="swup" class="admin-main flex-1 overflow-x-hidden">
+        <div class="p-4 sm:p-6 md:p-8">
+          <div class="mb-6 space-y-2">
+            {breadcrumbs.length > 0 ? (
+              <nav class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                {breadcrumbs.map((crumb, index) => (
+                  <>
+                    {crumb.href ? (
+                      <a class="hover:text-slate-900 dark:hover:text-slate-100" href={crumb.href}>
+                        {crumb.label}
+                      </a>
+                    ) : (
+                      <span>{crumb.label}</span>
+                    )}
+                    {index < breadcrumbs.length - 1 ? (
+                      <span class="text-slate-300 dark:text-slate-700">/</span>
+                    ) : null}
+                  </>
+                ))}
+              </nav>
+            ) : null}
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h1 class="text-xl font-semibold sm:text-2xl">{title}</h1>
+                {subtitle ? (
+                  <p class="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
+                ) : (
+                  <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Signed in as {user?.name}
+                  </p>
+                )}
+              </div>
+              {actions.length > 0 ? (
+                <div class="flex flex-wrap gap-2">
+                  {actions.map((action) => (
+                    <a
+                      href={action.href}
+                      class={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-white dark:ring-offset-slate-950 h-9 px-4 py-2 ${actionClass(
+                        action.variant
+                      )}`}
+                    >
+                      {action.label}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div class="min-w-0">
+            <slot />
+          </div>
+        </div>
+      </main>
+    </div>
+    <Toast client:load />
+  </div>
+</BaseLayout>

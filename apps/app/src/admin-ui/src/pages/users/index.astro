@@ -1,7 +1,7 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
+import AdminLayout from "../../layouts/AdminLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
 ---
-<BaseLayout title="Users">
+<AdminLayout title="Users">
   <ResourceView client:load resourceId="users" view="List" />
-</BaseLayout>
+</AdminLayout>
