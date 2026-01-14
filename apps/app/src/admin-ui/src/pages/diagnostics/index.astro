@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import DiagnosticsPage from "../../islands/DiagnosticsPage.svelte";
+import ResourceView from "../../islands/ResourceView.svelte";
 ---
 <BaseLayout title="Diagnostics">
-  <DiagnosticsPage client:load />
+  <ResourceView client:load resourceId="diagnostics" view="List" />
 </BaseLayout>

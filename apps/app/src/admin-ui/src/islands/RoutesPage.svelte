@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
   import Table from "../components/ui/table.svelte";
   import Button from "../components/ui/button.svelte";
   import Badge from "../components/ui/badge.svelte";
@@ -103,7 +102,7 @@
   });
 </script>
 
-<AppShell title="Routes">
+<div class="space-y-4">
   <div class="flex flex-wrap items-center gap-3 mb-4">
     <Input className="max-w-sm" placeholder="Search routes..." bind:value={search} />
     <select
@@ -197,4 +196,4 @@
       </div>
     {/each}
   {/if}
-</AppShell>
+</div>

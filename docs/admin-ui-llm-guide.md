@@ -202,6 +202,36 @@ registerResource(productsResource);
 
 Page modules are the rendering contract between data and UI. They expose query functions, actions, and configuration.
 
+**Separation of concerns:**
+* **Page modules** = data loading, actions, and view configuration (columns/fields/navigation).
+* **Templates** = layout and rendering only (no business logic).
+* **Shared components** = reusable UI primitives (tables, forms, empty states, etc.).
+
+### Canonical Page Module (Short Example)
+
+```typescript
+// apps/app/src/admin-ui/src/pages/jobs/List.ts
+import { createStaticListModule } from "../../lib/pages";
+
+export default createStaticListModule({
+  resourceId: "jobs",
+  title: "Jobs",
+  subtitle: "Monitor scheduled work and job runs.",
+});
+```
+
+Page modules are resolved automatically by `ResourceView` and rendered by a template. Register the resource definition so the module can be resolved, and add an Astro page that points at the module:
+
+```astro
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ResourceView from "../../islands/ResourceView.svelte";
+---
+<BaseLayout title="Jobs">
+  <ResourceView client:load resourceId="jobs" view="List" />
+</BaseLayout>
+```
+
 ### Location
 
 Handwritten page modules go in:
@@ -601,6 +631,21 @@ Templates can use `onOpenModal` to open modals programmatically:
 1. Create `lib/resources/definitions/<resource>.ts`
 2. Register in `lib/resources/registry.ts`
 3. Create Astro pages in `pages/<resource>/`
+
+### Registering Navigation + Routing (Required)
+
+* **Routing**: create Astro pages that render `ResourceView` (List/Form/Show). This is the entry point for page modules and templates.
+* **Navigation**: update `apps/app/src/admin-ui/src/islands/AppShell.svelte` `navItems` so the page appears in the sidebar.
+* **Templates**: use default templates for standard CRUD, or add `templates/<resource>/<View>.svelte` for a custom UI.
+
+### View-Only Pages (Non-CRUD Admin Screens)
+
+For pages like diagnostics, routes, or audit logs:
+
+1. Create a resource definition with empty `list.columns` and `form.fields`.
+2. Register it in the registry.
+3. Add a handwritten page module (often via `createStaticListModule`) to set title/subtitle.
+4. Add a template that renders a custom island component.
 
 ### Complex Workflow (Handwritten Page Module)
 

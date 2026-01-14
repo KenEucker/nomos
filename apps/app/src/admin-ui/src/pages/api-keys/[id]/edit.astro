@@ -1,0 +1,9 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import ResourceView from "../../../islands/ResourceView.svelte";
+
+const { id } = Astro.params;
+---
+<BaseLayout title="Edit API Key">
+  <ResourceView client:load resourceId="api-keys" view="Form" params={{ id, mode: "edit" }} />
+</BaseLayout>

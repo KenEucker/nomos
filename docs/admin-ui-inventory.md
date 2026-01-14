@@ -375,7 +375,7 @@ export const config = {
 
 ## View-Only Resources (Not Admin-Managed)
 
-These resources have specialized pages but do not use the generic CRUD framework:
+These resources use page modules + custom templates (not the generic CRUD renderer):
 
 | Resource | Page | Notes |
 |----------|------|-------|

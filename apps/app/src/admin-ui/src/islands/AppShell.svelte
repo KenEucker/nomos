@@ -8,8 +8,22 @@
   import Toast from "../components/ui/toast.svelte";
   import { fade } from "svelte/transition";
 
+  type PageBreadcrumb = {
+    label: string;
+    href?: string;
+  };
+
+  type PageAction = {
+    label: string;
+    href: string;
+    variant?: string;
+  };
+
   type Props = {
     title?: string;
+    subtitle?: string;
+    breadcrumbs?: PageBreadcrumb[];
+    actions?: PageAction[];
     children?: Snippet;
     initialUser?: SessionUser | null;
     initialPath?: string;
@@ -17,6 +31,9 @@
   };
   let {
     title = "Dashboard",
+    subtitle,
+    breadcrumbs = [],
+    actions = [],
     children,
     initialUser = null,
     initialPath = "",
@@ -113,6 +130,10 @@
       // ignore
     }
     window.location.href = "/admin/login";
+  };
+
+  const handleAction = (href: string) => {
+    window.location.href = href;
   };
 </script>
 
@@ -288,9 +309,48 @@
       <main class="flex-1 overflow-x-hidden" transition:fade={{ duration: 160 }}>
         <div class="p-4 sm:p-6 md:p-8">
           <!-- Page header -->
-          <div class="mb-6">
-            <h1 class="text-xl font-semibold sm:text-2xl">{title}</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400">Signed in as {user?.name}</p>
+          <div class="mb-6 space-y-2">
+            {#if breadcrumbs.length > 0}
+              <nav class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                {#each breadcrumbs as crumb, index}
+                  {#if crumb.href}
+                    <a class="hover:text-slate-900 dark:hover:text-slate-100" href={crumb.href}>
+                      {crumb.label}
+                    </a>
+                  {:else}
+                    <span>{crumb.label}</span>
+                  {/if}
+                  {#if index < breadcrumbs.length - 1}
+                    <span class="text-slate-300 dark:text-slate-700">/</span>
+                  {/if}
+                {/each}
+              </nav>
+            {/if}
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h1 class="text-xl font-semibold sm:text-2xl">{title}</h1>
+                {#if subtitle}
+                  <p class="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
+                {:else}
+                  <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Signed in as {user?.name}
+                  </p>
+                {/if}
+              </div>
+              {#if actions.length > 0}
+                <div class="flex flex-wrap gap-2">
+                  {#each actions as action}
+                    <Button
+                      type="button"
+                      variant={action.variant ?? "default"}
+                      onclick={() => handleAction(action.href)}
+                    >
+                      {action.label}
+                    </Button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
           </div>
 
           <!-- Page content -->

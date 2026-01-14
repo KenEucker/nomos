@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
   import Table from "../components/ui/table.svelte";
   import Button from "../components/ui/button.svelte";
   import Dialog from "../components/ui/dialog.svelte";
@@ -140,7 +139,7 @@
   });
 </script>
 
-<AppShell title="Jobs">
+<div class="space-y-4">
   <!-- Controls -->
   <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
     <Tabs tabs={[
@@ -332,4 +331,4 @@
       </div>
     </div>
   </Dialog>
-</AppShell>
+</div>

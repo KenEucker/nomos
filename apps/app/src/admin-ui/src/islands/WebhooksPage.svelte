@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
   import Table from "../components/ui/table.svelte";
   import Button from "../components/ui/button.svelte";
   import Dialog from "../components/ui/dialog.svelte";
@@ -119,7 +118,7 @@
   });
 </script>
 
-<AppShell title="Webhooks">
+<div class="space-y-4">
   <div class="flex items-center justify-between mb-4">
     <Tabs tabs={[
       { id: "destinations", label: "Destinations" },
@@ -253,4 +252,4 @@
       </div>
     </div>
   </Dialog>
-</AppShell>
+</div>

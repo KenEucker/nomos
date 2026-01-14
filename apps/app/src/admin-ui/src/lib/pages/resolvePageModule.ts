@@ -10,7 +10,7 @@
  */
 
 import type { ViewType, PageModule, ListPageModule, FormPageModule, ShowPageModule } from "./types";
-import { getResource, hasResource } from "../resources/registry";
+import { getAllResources, getResource, hasResource } from "../resources/registry";
 import { compileListModule, compileFormModule, compileShowModule } from "./compileFromResource";
 
 // ============================================================================
@@ -100,10 +100,9 @@ function compileModule(resourceId: string, view: ViewType): PageModule {
   const resource = getResource(resourceId);
 
   if (!resource) {
+    const availableResources = getAllResources().map((item) => item.id);
     throw new PageModuleError(
-      `Resource "${resourceId}" not found. Available resources: ${Array.from(
-        getResource("users") ? ["users", "roles", "sessions", "api-keys"] : []
-      ).join(", ")}`,
+      `Resource "${resourceId}" not found. Available resources: ${availableResources.join(", ")}`,
       "RESOURCE_NOT_FOUND"
     );
   }

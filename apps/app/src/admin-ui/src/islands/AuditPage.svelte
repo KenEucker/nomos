@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
   import Table from "../components/ui/table.svelte";
   import Button from "../components/ui/button.svelte";
   import Badge from "../components/ui/badge.svelte";
@@ -110,7 +109,7 @@
   });
 </script>
 
-<AppShell title="Audit Log">
+<div class="space-y-4">
   <!-- Filters -->
   <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:flex-wrap">
     <div class="flex flex-1 gap-2">
@@ -237,4 +236,4 @@
       </Table>
     </div>
   {/if}
-</AppShell>
+</div>

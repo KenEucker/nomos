@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
   import Button from "../components/ui/button.svelte";
   import Card from "../components/ui/card.svelte";
   import { session, type SessionUser } from "../lib/session";
@@ -50,7 +49,7 @@
   });
 </script>
 
-<AppShell title="API Documentation">
+<div class="space-y-6">
   {#if loading}
     <div class="text-slate-400">Checking documentation access...</div>
   {:else if error}
@@ -127,4 +126,4 @@
       </Card>
     </div>
   {/if}
-</AppShell>
+</div>

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
   import Card from "../components/ui/card.svelte";
   import Button from "../components/ui/button.svelte";
   import Badge from "../components/ui/badge.svelte";
@@ -132,7 +131,7 @@
   });
 </script>
 
-<AppShell title="Diagnostics">
+<div class="space-y-4">
   <div class="flex items-center justify-between mb-4">
     <Tabs tabs={[
       { id: "overview", label: "Overview" },
@@ -273,4 +272,4 @@
       </div>
     {/if}
   {/if}
-</AppShell>
+</div>

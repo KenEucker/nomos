@@ -1,0 +1,9 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import ResourceView from "../../../islands/ResourceView.svelte";
+
+const { id } = Astro.params;
+---
+<BaseLayout title="API Key Details">
+  <ResourceView client:load resourceId="api-keys" view="Show" params={{ id }} />
+</BaseLayout>

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import JobsPage from "../../islands/JobsPage.svelte";
+import ResourceView from "../../islands/ResourceView.svelte";
 ---
 <BaseLayout title="Jobs">
-  <JobsPage client:load />
+  <ResourceView client:load resourceId="jobs" view="List" />
 </BaseLayout>

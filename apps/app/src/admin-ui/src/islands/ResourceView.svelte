@@ -65,16 +65,26 @@
 
   const resource = $derived(getResource(resourceId));
   const title = $derived(() => {
+    if (pageModule?.view === "Form" && resource) {
+      return params.mode === "edit" ? `Edit ${resource.label}` : `Create ${resource.label}`;
+    }
     if (pageModule) return pageModule.title;
     if (resource) {
       switch (view) {
-        case "List": return resource.labelPlural;
-        case "Form": return params.mode === "edit" ? `Edit ${resource.label}` : `Create ${resource.label}`;
-        case "Show": return resource.label;
+        case "List":
+          return resource.labelPlural;
+        case "Form":
+          return params.mode === "edit" ? `Edit ${resource.label}` : `Create ${resource.label}`;
+        case "Show":
+          return resource.label;
       }
     }
     return view;
   });
+
+  const subtitle = $derived(pageModule?.subtitle);
+  const breadcrumbs = $derived(pageModule?.breadcrumbs ?? []);
+  const actions = $derived(pageModule?.pageActions ?? []);
 
   // Session subscription
   const unsubscribe = session.subscribe((value) => (user = value));
@@ -145,7 +155,7 @@
 </script>
 
 {#if withShell}
-  <AppShell title={title()}>
+  <AppShell title={title()} {subtitle} {breadcrumbs} actions={actions}>
     {#if loading}
       <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
         <div class="flex flex-col items-center gap-2">
