@@ -1,9 +1,9 @@
 ---
-import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import ResourceView from "../../../islands/ResourceView.svelte";
 
 const { id } = Astro.params;
 ---
-<BaseLayout title="Role Details">
+<AdminLayout title="Role Details">
   <ResourceView client:load resourceId="roles" view="Show" params={{ id }} />
-</BaseLayout>
+</AdminLayout>

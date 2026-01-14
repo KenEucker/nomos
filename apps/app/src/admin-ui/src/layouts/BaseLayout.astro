@@ -1,6 +1,5 @@
 ---
 import "../styles/global.css";
-import { ClientRouter } from "astro:transitions";
 const { title = "Nomos Admin" } = Astro.props;
 ---
 <html lang="en" class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -22,11 +21,8 @@ const { title = "Nomos Admin" } = Astro.props;
       html.dark { background: #020617; }
       :root { color-scheme: light dark; }
     </style>
-
-    <ClientRouter />
-
   </head>
-  <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100" transition:animate="fade">
+  <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 mobile-menu-collapsed">
     <slot />
   </body>
 </html>

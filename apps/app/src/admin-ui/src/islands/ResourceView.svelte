@@ -11,8 +11,6 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
-  import { session, hasRole, type SessionUser } from "../lib/session";
   import { getResource } from "../lib/resources/registry";
   import { resolvePageModule, type ViewType, type FormMode, type PageModule } from "../lib/pages";
   import { resolveTemplate, type ResolvedTemplate } from "../lib/templates";
@@ -39,8 +37,6 @@
     onSuccess?: (result?: unknown) => void;
     /** Error callback */
     onError?: (error: Error | unknown) => void;
-    /** Whether to wrap in AppShell (default: true) */
-    withShell?: boolean;
   }
 
   let {
@@ -51,12 +47,10 @@
     onOpenModal,
     onCloseModal,
     onSuccess,
-    onError,
-    withShell = true,
+    onError
   }: Props = $props();
 
   // State
-  let user = $state<SessionUser | null>(null);
   let ready = $state(false);
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -86,21 +80,12 @@
   const breadcrumbs = $derived(pageModule?.breadcrumbs ?? []);
   const actions = $derived(pageModule?.pageActions ?? []);
 
-  // Session subscription
-  const unsubscribe = session.subscribe((value) => (user = value));
-
   // Load module and template
   async function loadResources() {
     loading = true;
     error = null;
 
     try {
-      // Check authentication and authorization
-      if (resource?.requiredRole && user && !hasRole(user, resource.requiredRole)) {
-        window.location.href = "/admin";
-        return;
-      }
-
       // Resolve page module
       pageModule = await resolvePageModule(resourceId, view);
 
@@ -127,83 +112,34 @@
   }
 
   onMount(() => {
-    // Wait for session to be available
-    const check = setInterval(() => {
-      if (user === null) {
-        // Still loading session, check if session store has initialized
-        return;
-      }
-      clearInterval(check);
-      loadResources();
-    }, 100);
-
-    // Fallback: if no user after 2s, assume public access
-    const timeout = setTimeout(() => {
-      clearInterval(check);
-      loadResources();
-    }, 2000);
-
-    return () => {
-      unsubscribe();
-      clearInterval(check);
-      clearTimeout(timeout);
-    };
+    loadResources();
   });
 
   // Get the template component
   const TemplateComponent = $derived(template?.component);
 </script>
 
-{#if withShell}
-  <AppShell title={title()} {subtitle} {breadcrumbs} actions={actions}>
-    {#if loading}
-      <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
-        <div class="flex flex-col items-center gap-2">
-          <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
-          <span>Loading...</span>
-        </div>
-      </div>
-    {:else if error}
-      <div class="p-4 text-red-700 border border-red-200 rounded-lg bg-red-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
-        <strong>Error:</strong> {error}
-      </div>
-    {:else if ready && TemplateComponent && pageModule}
-      <svelte:component
-        this={TemplateComponent}
-        module={pageModule}
-        {resource}
-        {params}
-        onNavigate={handleNavigate}
-        {onOpenModal}
-        {onCloseModal}
-        {onSuccess}
-        {onError}
-      />
-    {/if}
-  </AppShell>
-{:else}
-  {#if loading}
-    <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
-      <div class="flex flex-col items-center gap-2">
-        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
-        <span>Loading...</span>
-      </div>
+{#if loading}
+  <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
+    <div class="flex flex-col items-center gap-2">
+      <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
+      <span>Loading...</span>
     </div>
-  {:else if error}
-    <div class="p-4 text-red-700 border border-red-200 rounded-lg bg-red-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
-      <strong>Error:</strong> {error}
-    </div>
-  {:else if ready && TemplateComponent && pageModule}
-    <svelte:component
-      this={TemplateComponent}
-      module={pageModule}
-      {resource}
-      {params}
-      onNavigate={handleNavigate}
-      {onOpenModal}
-      {onCloseModal}
-      {onSuccess}
-      {onError}
-    />
-  {/if}
+  </div>
+{:else if error}
+  <div class="p-4 text-red-700 border border-red-200 rounded-lg bg-red-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+    <strong>Error:</strong> {error}
+  </div>
+{:else if ready && TemplateComponent && pageModule}
+  <svelte:component
+    this={TemplateComponent}
+    module={pageModule}
+    {resource}
+    {params}
+    onNavigate={handleNavigate}
+    {onOpenModal}
+    {onCloseModal}
+    {onSuccess}
+    {onError}
+  />
 {/if}
