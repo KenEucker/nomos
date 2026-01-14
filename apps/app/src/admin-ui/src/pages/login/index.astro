@@ -10,5 +10,5 @@ export const pageModule = createStaticListModule({
 });
 ---
 <BaseLayout title={pageModule.title}>
-  <ResourceView client:load resourceId={pageModule.resourceId} view="List" withShell={false} />
+  <ResourceView client:load resourceId={pageModule.resourceId} view="List" />
 </BaseLayout>

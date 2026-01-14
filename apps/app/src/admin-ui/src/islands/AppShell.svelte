@@ -2,20 +2,11 @@
   import { onMount } from "svelte";
   import type { Snippet } from "../lib/utils";
   import { session, loadSession, hasRole, type SessionUser } from "../lib/session";
+  import { shell, type PageAction, type PageBreadcrumb } from "../lib/shell";
   import { apiPost } from "../lib/api";
   import Button from "../components/ui/button.svelte";
   import ThemeToggle from "../components/ui/theme-toggle.svelte";
   import Toast from "../components/ui/toast.svelte";
-  type PageBreadcrumb = {
-    label: string;
-    href?: string;
-  };
-
-  type PageAction = {
-    label: string;
-    href: string;
-    variant?: string;
-  };
 
   type Props = {
     title?: string;
@@ -80,9 +71,20 @@
     logout: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>`
   };
 
+  const fallbackTitle = title;
+  const fallbackSubtitle = subtitle;
+  const fallbackBreadcrumbs = breadcrumbs;
+  const fallbackActions = actions;
+
   onMount(() => {
     const unsubscribe = session.subscribe((value) => {
       user = value;
+    });
+    const unsubscribeShell = shell.subscribe((value) => {
+      title = value.title ?? fallbackTitle;
+      subtitle = value.subtitle ?? fallbackSubtitle;
+      breadcrumbs = value.breadcrumbs ?? fallbackBreadcrumbs;
+      actions = value.actions ?? fallbackActions;
     });
 
     // Load collapsed state from localStorage
@@ -108,8 +110,9 @@
       }
     })();
 
-    const handlePageView = () => {
-      currentPath = window.location.pathname;
+    const handlePageView = (event: Event) => {
+      const detail = event instanceof CustomEvent ? event.detail : null;
+      currentPath = detail?.path ?? window.location.pathname;
       mobileMenuCollapsed = true;
     };
 
@@ -117,6 +120,7 @@
 
     return () => {
       window.removeEventListener("nomos:page-view", handlePageView);
+      unsubscribeShell();
       unsubscribe();
     };
   });

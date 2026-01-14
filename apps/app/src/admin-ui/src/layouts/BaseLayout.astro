@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import AppShell from "../islands/AppShell.svelte";
 const { title = "Nomos Admin" } = Astro.props;
 ---
 <html lang="en" class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -49,8 +50,10 @@ const { title = "Nomos Admin" } = Astro.props;
   </head>
   <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
     <!-- Swup swaps the #swup container; hooks dispatch nomos:page-view for persistent UI. -->
-    <main id="swup" class="transition-main">
-      <slot />
-    </main>
+    <AppShell client:load {title}>
+      <main id="swup" class="transition-main">
+        <slot />
+      </main>
+    </AppShell>
   </body>
 </html>

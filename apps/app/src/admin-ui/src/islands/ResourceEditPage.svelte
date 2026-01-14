@@ -1,6 +1,6 @@
 <script lang="ts">
-  import AppShell from "./AppShell.svelte";
   import AdminResourceForm from "./AdminResourceForm.svelte";
+  import { shell } from "../lib/shell";
   import type { AdminResource } from "../lib/resources/types";
 
   interface Props {
@@ -9,6 +9,10 @@
   }
 
   let { resource, id }: Props = $props();
+
+  $effect(() => {
+    shell.set({ title: `Edit ${resource.label}` });
+  });
 
   const handleSuccess = () => {
     // Navigate to the show page after successful update
@@ -20,22 +24,20 @@
   };
 </script>
 
-<AppShell title={`Edit ${resource.label}`}>
-  <div class="mb-4">
-    <a href={`${resource.routeBase}/${id}`} class="text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
-      &larr; Back to {resource.label}
-    </a>
-  </div>
-  <div class="border rounded-lg border-slate-200 bg-white/40 p-6 dark:border-slate-800 dark:bg-slate-900/40">
-    <h2 class="text-lg font-semibold mb-6 text-slate-900 dark:text-slate-100">
-      Edit {resource.label}
-    </h2>
-    <AdminResourceForm
-      {resource}
-      {id}
-      mode="edit"
-      onSuccess={handleSuccess}
-      onCancel={handleCancel}
-    />
-  </div>
-</AppShell>
+<div class="mb-4">
+  <a href={`${resource.routeBase}/${id}`} class="text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
+    &larr; Back to {resource.label}
+  </a>
+</div>
+<div class="border rounded-lg border-slate-200 bg-white/40 p-6 dark:border-slate-800 dark:bg-slate-900/40">
+  <h2 class="text-lg font-semibold mb-6 text-slate-900 dark:text-slate-100">
+    Edit {resource.label}
+  </h2>
+  <AdminResourceForm
+    {resource}
+    {id}
+    mode="edit"
+    onSuccess={handleSuccess}
+    onCancel={handleCancel}
+  />
+</div>

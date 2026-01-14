@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
   import Table from "../components/ui/table.svelte";
   import Button from "../components/ui/button.svelte";
   import Dialog from "../components/ui/dialog.svelte";
   import Badge from "../components/ui/badge.svelte";
   import Input from "../components/ui/input.svelte";
   import { apiGet, apiPut } from "../lib/api";
+  import { shell } from "../lib/shell";
   import { session, hasRole, type SessionUser } from "../lib/session";
 
   let users = $state<Array<any>>([]);
@@ -17,6 +17,10 @@
   let selectedRoles = $state<string[]>([]);
   let user = $state<SessionUser | null>(null);
   let search = $state("");
+
+  $effect(() => {
+    shell.set({ title: "Users" });
+  });
 
   const unsubscribe = session.subscribe((value) => (user = value));
 
@@ -77,108 +81,106 @@
   });
 </script>
 
-<AppShell title="Users">
-  <!-- Search -->
-  <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center">
-    <div class="flex flex-1 gap-2">
-      <Input className="flex-1 sm:max-w-sm" placeholder="Search users" bind:value={search} />
-      <Button variant="secondary" onclick={loadUsers}>Search</Button>
+<!-- Search -->
+<div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center">
+  <div class="flex flex-1 gap-2">
+    <Input className="flex-1 sm:max-w-sm" placeholder="Search users" bind:value={search} />
+    <Button variant="secondary" onclick={loadUsers}>Search</Button>
+  </div>
+</div>
+
+{#if loading}
+  <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
+    <div class="flex flex-col items-center gap-2">
+      <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
+      <span>Loading users...</span>
     </div>
   </div>
-
-  {#if loading}
-    <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
-      <div class="flex flex-col items-center gap-2">
-        <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
-        <span>Loading users...</span>
+{:else if users.length === 0}
+  <div class="py-12 text-center border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
+    <div class="text-slate-500 dark:text-slate-400">No users found.</div>
+  </div>
+{:else}
+  <!-- Mobile: Card layout -->
+  <div class="space-y-3 sm:hidden">
+    {#each users as entry}
+      <div class="p-4 border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-slate-900 dark:text-slate-100">{entry.name}</div>
+            <div class="text-sm truncate text-slate-500">{entry.email}</div>
+            <div class="flex flex-wrap gap-1 mt-2">
+              {#each entry.roles as role}
+                <Badge variant={role === "admin" ? "success" : "secondary"}>{role}</Badge>
+              {/each}
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onclick={() => openRoles(entry)}>
+            Edit
+          </Button>
+        </div>
       </div>
-    </div>
-  {:else if users.length === 0}
-    <div class="py-12 text-center border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
-      <div class="text-slate-500 dark:text-slate-400">No users found.</div>
-    </div>
-  {:else}
-    <!-- Mobile: Card layout -->
-    <div class="space-y-3 sm:hidden">
-      {#each users as entry}
-        <div class="p-4 border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex-1 min-w-0">
+    {/each}
+  </div>
+
+  <!-- Desktop: Table layout -->
+  <div class="hidden border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40 sm:block">
+    <Table>
+      <thead class="text-xs text-left uppercase text-slate-500 dark:text-slate-400">
+        <tr>
+          <th class="px-4 py-3">User</th>
+          <th class="px-4 py-3">Roles</th>
+          <th class="px-4 py-3">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="text-sm">
+        {#each users as entry}
+          <tr class="border-t border-slate-200 hover:bg-slate-100/50 dark:border-slate-800 dark:hover:bg-slate-800/30">
+            <td class="px-4 py-3">
               <div class="font-medium text-slate-900 dark:text-slate-100">{entry.name}</div>
-              <div class="text-sm truncate text-slate-500">{entry.email}</div>
-              <div class="flex flex-wrap gap-1 mt-2">
+              <div class="text-xs text-slate-500">{entry.email}</div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex flex-wrap gap-2">
                 {#each entry.roles as role}
                   <Badge variant={role === "admin" ? "success" : "secondary"}>{role}</Badge>
                 {/each}
               </div>
-            </div>
-            <Button variant="outline" size="sm" onclick={() => openRoles(entry)}>
-              Edit
-            </Button>
-          </div>
-        </div>
+            </td>
+            <td class="px-4 py-3">
+              <Button variant="ghost" size="sm" onclick={() => openRoles(entry)}>
+                Edit roles
+              </Button>
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </Table>
+  </div>
+{/if}
+
+<Dialog bind:open={showRoles} onClose={() => (showRoles = false)}>
+  <div class="space-y-4">
+    <div>
+      <h2 class="text-lg font-semibold">Update roles</h2>
+      {#if selectedUser}
+        <p class="text-sm text-slate-500 dark:text-slate-400">{selectedUser.name} ({selectedUser.email})</p>
+      {/if}
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {#each roles as role}
+        <Button
+          variant={selectedRoles.includes(role.key) ? "secondary" : "outline"}
+          size="sm"
+          onclick={() => toggleRole(role.key)}
+        >
+          {role.name}
+        </Button>
       {/each}
     </div>
-
-    <!-- Desktop: Table layout -->
-    <div class="hidden border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40 sm:block">
-      <Table>
-        <thead class="text-xs text-left uppercase text-slate-500 dark:text-slate-400">
-          <tr>
-            <th class="px-4 py-3">User</th>
-            <th class="px-4 py-3">Roles</th>
-            <th class="px-4 py-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="text-sm">
-          {#each users as entry}
-            <tr class="border-t border-slate-200 hover:bg-slate-100/50 dark:border-slate-800 dark:hover:bg-slate-800/30">
-              <td class="px-4 py-3">
-                <div class="font-medium text-slate-900 dark:text-slate-100">{entry.name}</div>
-                <div class="text-xs text-slate-500">{entry.email}</div>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex flex-wrap gap-2">
-                  {#each entry.roles as role}
-                    <Badge variant={role === "admin" ? "success" : "secondary"}>{role}</Badge>
-                  {/each}
-                </div>
-              </td>
-              <td class="px-4 py-3">
-                <Button variant="ghost" size="sm" onclick={() => openRoles(entry)}>
-                  Edit roles
-                </Button>
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </Table>
+    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <Button variant="ghost" onclick={() => (showRoles = false)}>Cancel</Button>
+      <Button onclick={saveRoles}>Save</Button>
     </div>
-  {/if}
-
-  <Dialog bind:open={showRoles} onClose={() => (showRoles = false)}>
-    <div class="space-y-4">
-      <div>
-        <h2 class="text-lg font-semibold">Update roles</h2>
-        {#if selectedUser}
-          <p class="text-sm text-slate-500 dark:text-slate-400">{selectedUser.name} ({selectedUser.email})</p>
-        {/if}
-      </div>
-      <div class="flex flex-wrap gap-2">
-        {#each roles as role}
-          <Button
-            variant={selectedRoles.includes(role.key) ? "secondary" : "outline"}
-            size="sm"
-            onclick={() => toggleRole(role.key)}
-          >
-            {role.name}
-          </Button>
-        {/each}
-      </div>
-      <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="ghost" onclick={() => (showRoles = false)}>Cancel</Button>
-        <Button onclick={saveRoles}>Save</Button>
-      </div>
-    </div>
-  </Dialog>
-</AppShell>
+  </div>
+</Dialog>
