@@ -1,7 +1,14 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
+import { createStaticListModule } from "../../lib/pages";
+
+export const pageModule = createStaticListModule({
+  resourceId: "docs",
+  title: "API Documentation",
+  subtitle: "Browse the OpenAPI reference for Nomos.",
+});
 ---
-<BaseLayout title="API Docs">
-  <ResourceView client:load resourceId="docs" view="List" />
+<BaseLayout title={pageModule.title}>
+  <ResourceView client:load resourceId={pageModule.resourceId} view="List" />
 </BaseLayout>

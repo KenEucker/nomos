@@ -210,28 +210,28 @@ Page modules are the rendering contract between data and UI. They expose query f
 
 ### Canonical Page Module (Short Example)
 
-```typescript
-// apps/app/src/admin-ui/src/pages/jobs/List.ts
+Use the Astro route file as the single source of truth:
+
+```astro
+---
+// apps/app/src/admin-ui/src/pages/jobs/index.astro
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ResourceView from "../../islands/ResourceView.svelte";
 import { createStaticListModule } from "../../lib/pages";
 
-export default createStaticListModule({
+export const pageModule = createStaticListModule({
   resourceId: "jobs",
   title: "Jobs",
   subtitle: "Monitor scheduled work and job runs.",
 });
-```
-
-Page modules are resolved automatically by `ResourceView` and rendered by a template. Register the resource definition so the module can be resolved, and add an Astro page that points at the module:
-
-```astro
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
----
-<BaseLayout title="Jobs">
-  <ResourceView client:load resourceId="jobs" view="List" />
+
+<BaseLayout title={pageModule.title}>
+  <ResourceView client:load resourceId={pageModule.resourceId} view="List" />
 </BaseLayout>
 ```
+
+Page modules are resolved automatically by `ResourceView` and rendered by a template. For internal admin pages, export `pageModule` directly from the route’s `index.astro`.
 
 ### Location
 
@@ -255,11 +255,14 @@ Use handwritten page modules when:
 1. Check for handwritten module at `pages/<resource>/<View>.ts`
 2. If not found, compile default module from resource definition
 
-### Anti-pattern: Wrapper Templates
+### Anti-patterns
 
-Do **not** create templates that simply import an island and render it (for example, a 5-line `List.svelte` that only returns `<SomePage />`). Page structure belongs in page modules + templates; islands should be embedded only for interactive widgets inside the template.
+* **Wrapper templates:** do **not** create templates that only import an island and render it (for example, a 5-line `List.svelte` that only returns `<SomePage />`).
+* **Split route modules:** do **not** create adjacent `List.ts` / `Detail.ts` files for simple routes. Export `pageModule` from `index.astro` instead.
 
 ### Structure: List Module
+
+Use standalone `List.ts` modules only when you need complex overrides (custom data fetching, workflow logic, etc.). For simple routes, keep the module in `index.astro` as shown above.
 
 ```typescript
 // apps/app/src/admin-ui/src/pages/orders/List.ts

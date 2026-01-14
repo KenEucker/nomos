@@ -46,6 +46,13 @@ const handwrittenModules = import.meta.glob<{ default: PageModule }>(
   { eager: false }
 );
 
+// Discover Astro page modules that export `pageModule`
+// Astro route files live at: pages/<resource>/index.astro
+const astroPageModules = import.meta.glob<{ pageModule?: PageModule }>(
+  "../../pages/**/index.astro",
+  { eager: false }
+);
+
 // Normalize paths to resourceId/View format
 function normalizeModulePath(path: string): string | null {
   // Expected formats:
@@ -66,6 +73,21 @@ for (const [path, loader] of Object.entries(handwrittenModules)) {
   }
 }
 
+// Build lookup map for Astro index.astro exports (List view only)
+const astroModuleMap = new Map<string, () => Promise<{ pageModule?: PageModule }>>();
+let rootAstroLoader: (() => Promise<{ pageModule?: PageModule }>) | null = null;
+
+for (const [path, loader] of Object.entries(astroPageModules)) {
+  const match = path.match(/pages\/([^/]+)\/index\.astro$/);
+  if (match) {
+    astroModuleMap.set(match[1], loader as () => Promise<{ pageModule?: PageModule }>);
+    continue;
+  }
+  if (path.endsWith("/pages/index.astro")) {
+    rootAstroLoader = loader as () => Promise<{ pageModule?: PageModule }>;
+  }
+}
+
 /**
  * Try to load a handwritten module
  */
@@ -77,6 +99,30 @@ async function loadHandwrittenModule(
   const loader = handwrittenModuleMap.get(key);
 
   if (!loader) {
+    if (view === "List") {
+      const astroLoader = astroModuleMap.get(resourceId);
+      if (astroLoader) {
+        try {
+          const mod = await astroLoader();
+          return mod.pageModule ?? null;
+        } catch (error) {
+          console.warn(`Failed to load Astro page module for ${resourceId}:`, error);
+          return null;
+        }
+      }
+      if (rootAstroLoader) {
+        try {
+          const mod = await rootAstroLoader();
+          if (mod.pageModule?.resourceId === resourceId) {
+            return mod.pageModule;
+          }
+        } catch (error) {
+          console.warn(`Failed to load root Astro page module:`, error);
+          return null;
+        }
+      }
+      return null;
+    }
     return null;
   }
 

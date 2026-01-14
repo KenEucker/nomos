@@ -44,10 +44,19 @@ export const widgetsResource: AdminResource = {
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
+import { createStaticListModule } from "../../lib/pages";
+
+export const pageModule = createStaticListModule({
+  resourceId: "widgets",
+  title: "Widgets",
+  subtitle: "Manage widgets.",
+});
 ---
 
 <!-- List -->
-<ResourceView client:load resourceId="widgets" view="List" />
+<BaseLayout title={pageModule.title}>
+  <ResourceView client:load resourceId={pageModule.resourceId} view="List" />
+</BaseLayout>
 
 <!-- Create -->
 <ResourceView client:load resourceId="widgets" view="Form" params={{ mode: "create" }} />
@@ -59,7 +68,9 @@ import ResourceView from "../../islands/ResourceView.svelte";
 <ResourceView client:load resourceId="widgets" view="Form" params={{ id: "123", mode: "edit" }} />
 ```
 
-**Anti-pattern:** do not create `templates/<resource>/<View>.svelte` files that only render a single island component. Templates should declare the page structure and embed interactive islands only where needed.
+**Anti-patterns:**
+* Do not create `templates/<resource>/<View>.svelte` files that only render a single island component.
+* Do not create adjacent `List.ts` / `Detail.ts` files for the same route; keep `pageModule` in the route’s `index.astro`.
 
 ## Resource Definition
 
