@@ -21,8 +21,28 @@ const buildHeaders = (request: Request, options: RequestInit) => {
   return headers;
 };
 
+const resolveServerUrl = (request: Request, path: string) => {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  const requestUrl = new URL(request.url);
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") ?? requestUrl.protocol.replace(":", "");
+  const host = forwardedHost ?? request.headers.get("host") ?? requestUrl.host;
+  let origin = `${forwardedProto}://${host}`;
+
+  const astroDevPort = Number(process.env.ASTRO_DEV_PORT ?? 4321);
+  const appPort = process.env.PORT ?? "3001";
+  if (host.endsWith(`:${astroDevPort}`)) {
+    origin = `${forwardedProto}://localhost:${appPort}`;
+  }
+
+  return new URL(path, origin).toString();
+};
+
 export async function serverApiFetch<T>(request: Request, path: string, options: RequestInit = {}) {
-  const res = await fetch(path, {
+  const res = await fetch(resolveServerUrl(request, path), {
     ...options,
     headers: buildHeaders(request, options)
   });

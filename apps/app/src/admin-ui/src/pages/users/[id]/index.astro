@@ -20,8 +20,8 @@ let user:
 let errorMessage: string | null = null;
 
 try {
-  const userUrl = new URL(usersResource.endpoints.get.replace("{id}", id ?? ""), Astro.request.url);
-  const response = await serverApiGet<{ user: typeof user }>(Astro.request, userUrl.toString());
+  const userUrl = usersResource.endpoints.get.replace("{id}", id ?? "");
+  const response = await serverApiGet<{ user: typeof user }>(Astro.request, userUrl);
   const dataKey = usersResource.singleDataKey ?? "user";
   user = response.data?.[dataKey] ?? null;
 } catch (error) {

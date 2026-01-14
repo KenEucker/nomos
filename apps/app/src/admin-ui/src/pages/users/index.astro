@@ -27,9 +27,8 @@ let total = 0;
 let errorMessage: string | null = null;
 
 try {
-  const listUrl = new URL(usersResource.endpoints.list, Astro.request.url);
-  listUrl.search = params.toString();
-  const response = await serverApiGet<{ users: typeof users }>(Astro.request, listUrl.toString());
+  const listUrl = `${usersResource.endpoints.list}?${params.toString()}`;
+  const response = await serverApiGet<{ users: typeof users }>(Astro.request, listUrl);
   const dataKey = usersResource.dataKey ?? usersResource.id;
   users = response.data?.[dataKey] ?? [];
   total = response.meta?.total ?? users.length;
