@@ -8,12 +8,24 @@
   import Toast from "../components/ui/toast.svelte";
   import { fade } from "svelte/transition";
 
-  type Props = { title?: string; children?: Snippet };
-  let { title = "Dashboard", children }: Props = $props();
+  type Props = {
+    title?: string;
+    children?: Snippet;
+    initialUser?: SessionUser | null;
+    initialPath?: string;
+    initialLoading?: boolean;
+  };
+  let {
+    title = "Dashboard",
+    children,
+    initialUser = null,
+    initialPath = "",
+    initialLoading = true
+  }: Props = $props();
 
-  let user = $state<SessionUser | null>(null);
-  let loading = $state(true);
-  let currentPath = $state("");
+  let user = $state<SessionUser | null>(initialUser);
+  let loading = $state(initialLoading);
+  let currentPath = $state(initialPath);
   let sidebarCollapsed = $state(false);
   let mobileMenuCollapsed = $state(true);
 

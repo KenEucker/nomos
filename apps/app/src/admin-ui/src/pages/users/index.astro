@@ -1,7 +1,171 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
+import AppShell from "../../islands/AppShell.svelte";
+import UsersListActions from "../../islands/UsersListActions.svelte";
+import Table from "../../components/ui/table.svelte";
+import Badge from "../../components/ui/badge.svelte";
+import Input from "../../components/ui/input.svelte";
+import Button from "../../components/ui/button.svelte";
+import { usersResource } from "../../lib/resources/definitions/users";
+import { serverApiGet, ServerApiError } from "../../lib/server/api";
+import type { SessionUser } from "../../lib/session";
+
+const search = Astro.url.searchParams.get("search") ?? "";
+const page = Astro.url.searchParams.get("page") ?? "1";
+const pageSize = usersResource.list.pageSize ?? 20;
+
+const params = new URLSearchParams({
+  page,
+  pageSize: String(pageSize)
+});
+if (search) {
+  params.set("search", search);
+}
+if (usersResource.list.defaultSort) {
+  params.set("sort", `${usersResource.list.defaultSort.key}:${usersResource.list.defaultSort.dir}`);
+}
+
+let sessionUser: SessionUser | null = null;
+let users: Array<{ id: string; name: string; email: string; roles: string[]; createdAt?: string }> = [];
+let total = 0;
+let errorMessage: string | null = null;
+
+const formatErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof ServerApiError) {
+    const details = error.details ? `: ${JSON.stringify(error.details)}` : "";
+    const code = error.code ? ` (${error.code})` : "";
+    return `${error.message}${code}${details}`;
+  }
+  if (error instanceof Error) return error.message;
+  return fallback;
+};
+
+try {
+  const sessionResponse = await serverApiGet<{ user: SessionUser }>(Astro.request, "/auth/me");
+  sessionUser = sessionResponse.data?.user ?? null;
+
+  const listUrl = `${usersResource.endpoints.list}?${params.toString()}`;
+  const response = await serverApiGet<{ users: typeof users }>(Astro.request, listUrl);
+  const dataKey = usersResource.dataKey ?? usersResource.id;
+  users = response.data?.[dataKey] ?? [];
+  total = response.meta?.total ?? users.length;
+} catch (error) {
+  if (error instanceof ServerApiError && error.status === 401) {
+    return Astro.redirect("/admin/login");
+  }
+  errorMessage = formatErrorMessage(error, "Failed to load users.");
+}
+
+const formatDateTime = (value?: string) => {
+  if (!value) return "-";
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+};
 ---
 <BaseLayout title="Users">
-  <ResourceView client:load resourceId="users" view="List" />
+  <AppShell
+    client:idle
+    title="Users"
+    initialUser={sessionUser}
+    initialPath={Astro.url.pathname}
+    initialLoading={false}
+  >
+    <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div class="text-sm text-slate-500 dark:text-slate-400">
+          {total} total
+        </div>
+        <a
+          href="/admin/users/new"
+          class="inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+        >
+          New user
+        </a>
+      </div>
+
+      <form method="get" action={Astro.url.pathname} class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div class="flex flex-1 gap-2">
+          <Input
+            className="flex-1 sm:max-w-sm"
+            name="search"
+            value={search}
+            placeholder={usersResource.list.searchPlaceholder ?? "Search users"}
+          />
+          <Button type="submit" variant="secondary">Search</Button>
+        </div>
+      </form>
+
+      {errorMessage ? (
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
+          {errorMessage}
+        </div>
+      ) : users.length === 0 ? (
+        <div class="rounded-lg border border-slate-200 bg-white/40 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-400">
+          No users found.
+        </div>
+      ) : (
+        <UsersListActions client:idle>
+          <div class="rounded-lg border border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
+            <Table>
+              <thead class="text-xs uppercase text-slate-500 dark:text-slate-400">
+                <tr>
+                  <th class="px-4 py-3 text-left">Name</th>
+                  <th class="px-4 py-3 text-left">Email</th>
+                  <th class="px-4 py-3 text-left">Roles</th>
+                  <th class="px-4 py-3 text-left">Created</th>
+                  <th class="px-4 py-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="text-sm">
+                {users.map((user) => (
+                  <tr class="border-t border-slate-200 hover:bg-slate-100/50 dark:border-slate-800 dark:hover:bg-slate-800/30">
+                    <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{user.name}</td>
+                    <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{user.email}</td>
+                    <td class="px-4 py-3">
+                      <div class="flex flex-wrap gap-2">
+                        {(user.roles ?? []).map((role) => (
+                          <Badge variant={role === "admin" ? "success" : "secondary"}>{role}</Badge>
+                        ))}
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-slate-500 dark:text-slate-400">
+                      {formatDateTime(user.createdAt)}
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex flex-wrap gap-2">
+                        <a
+                          href={`/admin/users/${user.id}`}
+                          class="text-sm font-medium text-slate-900 hover:underline dark:text-slate-100"
+                        >
+                          View
+                        </a>
+                        <a
+                          href={`/admin/users/${user.id}/edit`}
+                          class="text-sm font-medium text-slate-500 hover:underline dark:text-slate-400"
+                        >
+                          Edit
+                        </a>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          data-delete-user={user.id}
+                          data-delete-name={user.name}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+        </UsersListActions>
+      )}
+    </div>
+  </AppShell>
 </BaseLayout>
