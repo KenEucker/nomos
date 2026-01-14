@@ -10,7 +10,11 @@ export default defineConfig({
   integrations: [
     svelte(),
     tailwind({ applyBaseStyles: false }),
-    swup({ globalInstance: true, containers: ["#swup"] })
+    swup({
+      globalInstance: true,
+      containers: ["#swup"],
+      animationSelector: "#swup"
+    })
   ],
   output: "server",
   base: "/admin",
