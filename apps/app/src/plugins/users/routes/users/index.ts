@@ -1,10 +1,10 @@
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import type { Ctx } from "../../platform/ctx";
-import { HttpError } from "../../platform/errors";
-import { paginationQuery, parseSort } from "../../platform/validation";
-import { modelSchemas, okResponse } from "../_openapi";
-import { serializeUser } from "../_serializers";
+import type { Ctx } from "../../../../platform/ctx";
+import { HttpError } from "../../../../platform/errors";
+import { paginationQuery, parseSort } from "../../../../platform/validation";
+import { modelSchemas, okResponse } from "../../../../routes/_openapi";
+import { serializeUser } from "../../../../routes/_serializers";
 
 const querySchema = paginationQuery.extend({
   search: z.string().optional(),

@@ -1,10 +1,10 @@
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import type { Ctx } from "../../platform/ctx";
-import { createSession } from "../../platform/auth/sessions";
-import { HttpError } from "../../platform/errors";
-import { modelSchemas, okResponse } from "../_openapi";
-import { serializeUser } from "../_serializers";
+import type { Ctx } from "../../../ctx";
+import { createSession } from "../../sessions";
+import { HttpError } from "../../../errors";
+import { modelSchemas, okResponse } from "../../../../routes/_openapi";
+import { serializeUser } from "../../../../routes/_serializers";
 
 const bodySchema = z.object({
   email: z.string().email(),

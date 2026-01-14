@@ -1,7 +1,7 @@
-import type { Ctx } from "../../platform/ctx";
-import { HttpError } from "../../platform/errors";
-import { modelSchemas, okResponse } from "../_openapi";
-import { serializeUser } from "../_serializers";
+import type { Ctx } from "../../../ctx";
+import { HttpError } from "../../../errors";
+import { modelSchemas, okResponse } from "../../../../routes/_openapi";
+import { serializeUser } from "../../../../routes/_serializers";
 
 export const config = {
   auth: "required",

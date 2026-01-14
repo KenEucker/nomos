@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { Ctx } from "../../../platform/ctx";
-import { HttpError } from "../../../platform/errors";
-import { modelSchemas, okResponse } from "../../_openapi";
-import { serializeUser } from "../../_serializers";
+import type { Ctx } from "../../../../../platform/ctx";
+import { HttpError } from "../../../../../platform/errors";
+import { modelSchemas, okResponse } from "../../../../../routes/_openapi";
+import { serializeUser } from "../../../../../routes/_serializers";
 
 const paramsSchema = z.object({ id: z.string() });
 const bodySchema = z.object({ roles: z.array(z.string()) });
