@@ -20,6 +20,6 @@ export const get = async (ctx: Ctx) => {
   const unique = new Set([...pluginEvents, ...listenerEvents]);
   const events = Array.from(unique)
     .sort()
-    .map((event) => ({ key: event, name: formatName(event) }));
+    .map((event) => ({ key: event, name: formatName(event as string) }));
   return ctx.json({ events });
 };

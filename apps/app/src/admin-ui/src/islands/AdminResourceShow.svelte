@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import Button from "../components/ui/button.svelte";
   import Badge from "../components/ui/badge.svelte";
-  import ConfirmDialog from "./ConfirmDialog.svelte";
+  import ConfirmDialog from "../components/ConfirmDialog.svelte";
   import { apiGet, apiDelete, apiPatch, apiPost, apiPut } from "../lib/api";
   import { toasts } from "../lib/toast";
   import type { AdminResource, FieldDef } from "../lib/resources/types";
@@ -217,7 +217,7 @@
   </div>
 
   {#if error}
-    <div class="p-4 border rounded-lg border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+    <div class="p-4 text-red-700 border border-red-200 rounded-lg bg-red-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
       {error}
     </div>
   {/if}
@@ -248,7 +248,7 @@
                   {/if}
                 </div>
               {:else if field.type === "json" && data[field.name]}
-                <pre class="p-2 text-xs bg-slate-100 dark:bg-slate-800 rounded overflow-auto max-h-48">{formatValue(field, data[field.name])}</pre>
+                <pre class="p-2 overflow-auto text-xs rounded bg-slate-100 dark:bg-slate-800 max-h-48">{formatValue(field, data[field.name])}</pre>
               {:else if field.type === "boolean"}
                 <Badge variant={data[field.name] ? "success" : "secondary"}>
                   {formatValue(field, data[field.name])}

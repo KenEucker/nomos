@@ -4,7 +4,7 @@
   import Button from "../components/ui/button.svelte";
   import Badge from "../components/ui/badge.svelte";
   import Input from "../components/ui/input.svelte";
-  import ConfirmDialog from "./ConfirmDialog.svelte";
+  import ConfirmDialog from "../components/ConfirmDialog.svelte";
   import { apiGet, apiDelete, apiPatch, apiPost, apiPut } from "../lib/api";
   import { toasts } from "../lib/toast";
   import type { AdminResource, ColumnDef } from "../lib/resources/types";
@@ -301,7 +301,7 @@
 
   <!-- Error state -->
   {#if error}
-    <div class="p-4 border rounded-lg border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+    <div class="p-4 text-red-700 border border-red-200 rounded-lg bg-red-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
       {error}
     </div>
   {/if}
