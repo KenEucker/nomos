@@ -81,7 +81,14 @@ export const apiKeysResource: AdminResource = {
         label: "Allowed Hosts",
         type: "textarea",
         placeholder: "One host per line, e.g.:\napi.example.com\n*.example.com",
-        help: "Leave blank to allow all hosts. Supports wildcards."
+        help: "Leave blank to allow all hosts. Supports wildcards.",
+        submitTransform: (value) =>
+          typeof value === "string"
+            ? value
+                .split(/[\n,]+/)
+                .map((entry) => entry.trim())
+                .filter(Boolean)
+            : value
       }
     ]
   },
