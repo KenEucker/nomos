@@ -1,6 +1,5 @@
 ---
 import "../styles/global.css";
-import { ClientRouter } from "astro:transitions";
 const { title = "Nomos Admin" } = Astro.props;
 ---
 <html lang="en" class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -22,11 +21,36 @@ const { title = "Nomos Admin" } = Astro.props;
       html.dark { background: #020617; }
       :root { color-scheme: light dark; }
     </style>
+    <script is:inline>
+      (function() {
+        if (window.__nomosSwupHooksRegistered) return;
+        const register = () => {
+          if (window.__nomosSwupHooksRegistered || !window.swup) return;
+          window.__nomosSwupHooksRegistered = true;
 
-    <ClientRouter />
+          const notifyPageView = () => {
+            window.dispatchEvent(
+              new CustomEvent("nomos:page-view", { detail: { path: window.location.pathname } })
+            );
+          };
+
+          window.swup.hooks.on("page:view", notifyPageView);
+          notifyPageView();
+        };
+
+        if (window.swup) {
+          register();
+        } else {
+          document.addEventListener("swup:enable", register, { once: true });
+        }
+      })();
+    </script>
 
   </head>
-  <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100" transition:animate="fade">
-    <slot />
+  <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <!-- Swup swaps the #swup container; hooks dispatch nomos:page-view for persistent UI. -->
+    <main id="swup" class="transition-main">
+      <slot />
+    </main>
   </body>
 </html>

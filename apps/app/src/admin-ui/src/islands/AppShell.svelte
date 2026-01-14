@@ -6,8 +6,6 @@
   import Button from "../components/ui/button.svelte";
   import ThemeToggle from "../components/ui/theme-toggle.svelte";
   import Toast from "../components/ui/toast.svelte";
-  import { fade } from "svelte/transition";
-
   type PageBreadcrumb = {
     label: string;
     href?: string;
@@ -110,7 +108,17 @@
       }
     })();
 
-    return () => unsubscribe();
+    const handlePageView = () => {
+      currentPath = window.location.pathname;
+      mobileMenuCollapsed = true;
+    };
+
+    window.addEventListener("nomos:page-view", handlePageView);
+
+    return () => {
+      window.removeEventListener("nomos:page-view", handlePageView);
+      unsubscribe();
+    };
   });
 
   const toggleSidebar = () => {
@@ -306,7 +314,7 @@
       </aside>
 
       <!-- Main content -->
-      <main class="flex-1 overflow-x-hidden" transition:fade={{ duration: 160 }}>
+      <main class="flex-1 overflow-x-hidden">
         <div class="p-4 sm:p-6 md:p-8">
           <!-- Page header -->
           <div class="mb-6 space-y-2">

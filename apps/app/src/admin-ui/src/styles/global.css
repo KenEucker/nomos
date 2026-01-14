@@ -25,13 +25,12 @@ html.dark body {
   @apply text-slate-100;
 }
 
-/* Ensure VT never mattes to white */
-::view-transition,
-::view-transition-group(*),
-::view-transition-image-pair(*),
-::view-transition-old(*),
-::view-transition-new(*) {
-  background: var(--app-bg);
+#swup {
+  transition: opacity 150ms ease;
+}
+
+html.is-animating #swup {
+  opacity: 0;
 }
 
 /* Hide scrollbar while allowing scroll */
