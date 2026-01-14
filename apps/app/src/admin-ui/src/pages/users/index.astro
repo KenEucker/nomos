@@ -1,7 +1,16 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
+const turboFrame =
+  Astro.request.headers.get("Turbo-Frame") ??
+  Astro.request.headers.get("turbo-frame");
+const frameParam = Astro.url.searchParams.get("frame");
+const isFrameRequest = turboFrame === "resource-table" || frameParam === "resource-table";
 ---
-<BaseLayout title="Users">
-  <ResourceView client:load resourceId="users" view="List" />
-</BaseLayout>
+{isFrameRequest ? (
+  <ResourceView client:load resourceId="users" view="List" withShell={false} />
+) : (
+  <BaseLayout title="Users">
+    <ResourceView client:load resourceId="users" view="List" />
+  </BaseLayout>
+)}

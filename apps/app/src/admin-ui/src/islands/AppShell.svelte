@@ -86,6 +86,14 @@
     const unsubscribe = session.subscribe((value) => {
       user = value;
     });
+    const handleTurboLoad = () => {
+      currentPath = window.location.pathname;
+    };
+    const handleTurboBeforeCache = () => {
+      mobileMenuCollapsed = true;
+    };
+    document.addEventListener("turbo:load", handleTurboLoad);
+    document.addEventListener("turbo:before-cache", handleTurboBeforeCache);
 
     // Load collapsed state from localStorage
     const savedCollapsed = localStorage.getItem("sidebar-collapsed");
@@ -110,7 +118,11 @@
       }
     })();
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      document.removeEventListener("turbo:load", handleTurboLoad);
+      document.removeEventListener("turbo:before-cache", handleTurboBeforeCache);
+    };
   });
 
   const toggleSidebar = () => {

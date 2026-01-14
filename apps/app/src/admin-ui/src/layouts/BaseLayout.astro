@@ -1,12 +1,12 @@
 ---
 import "../styles/global.css";
-import { ClientRouter } from "astro:transitions";
 const { title = "Nomos Admin" } = Astro.props;
 ---
 <html lang="en" class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="turbo-cache-control" content="no-cache" />
     <title>{title}</title>
 
     <script is:inline>
@@ -17,16 +17,20 @@ const { title = "Nomos Admin" } = Astro.props;
         }
       })();
     </script>
-    <style is:inline>
-      html { background: #f1f5f9; }
-      html.dark { background: #020617; }
-      :root { color-scheme: light dark; }
-    </style>
-
-    <ClientRouter />
-
+    <script type="module">import "@hotwired/turbo";</script>
+    <script is:inline>
+      (function() {
+        if (window.__turboFadeInit) return;
+        window.__turboFadeInit = true;
+        const root = document.documentElement;
+        const start = () => root.classList.add("is-navigating");
+        const end = () => root.classList.remove("is-navigating");
+        document.addEventListener("turbo:visit", start);
+        document.addEventListener("turbo:load", end);
+      })();
+    </script>
   </head>
-  <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100" transition:animate="fade">
+  <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
     <slot />
   </body>
 </html>

@@ -1,0 +1,172 @@
+<!--
+  Users List Template
+
+  Adds a Turbo Frame wrapper around the list to enable frame refreshes
+  without replacing the surrounding shell.
+-->
+<script lang="ts">
+  import AdminResourceList from "../../islands/AdminResourceList.svelte";
+  import ResourceModal from "../../islands/ResourceModal.svelte";
+  import type { AdminResource } from "../../lib/resources/types";
+  import type { ListPageModule, ViewType, FormMode } from "../../lib/pages/types";
+
+  interface Props {
+    /** The resolved page module */
+    module: ListPageModule;
+    /** The underlying resource definition */
+    resource?: AdminResource;
+    /** Route parameters */
+    params?: { id?: string; mode?: FormMode };
+    /** Navigation callback */
+    onNavigate?: (to: string) => void;
+    /** Modal open callback (external modal host) */
+    onOpenModal?: (view: ViewType, id?: string, mode?: FormMode) => void;
+    /** Modal close callback */
+    onCloseModal?: () => void;
+    /** Success callback */
+    onSuccess?: (result?: unknown) => void;
+    /** Error callback */
+    onError?: (error: Error | unknown) => void;
+    /** Enable modal mode for Show/Form (default: false for full-page navigation) */
+    useModals?: boolean;
+  }
+
+  let {
+    module,
+    resource,
+    params,
+    onNavigate,
+    onOpenModal,
+    onCloseModal,
+    onSuccess,
+    onError,
+    useModals = false,
+  }: Props = $props();
+
+  // Internal modal state (used when useModals=true and no external onOpenModal)
+  let modalOpen = $state(false);
+  let modalView = $state<ViewType>("Show");
+  let modalParams = $state<{ id?: string; mode?: FormMode }>({});
+
+  // Create a synthetic resource from the module if not provided
+  const effectiveResource = $derived(resource ?? createResourceFromModule(module));
+
+  function createResourceFromModule(mod: ListPageModule): AdminResource {
+    return {
+      id: mod.resourceId,
+      label: mod.title.replace(/s$/, ""), // Rough singular
+      labelPlural: mod.title,
+      routeBase: mod.navigation?.createUrl?.()?.replace("/new", "") ?? `/${mod.resourceId}`,
+      primaryKey: "id",
+      endpoints: {
+        list: `/${mod.resourceId}`,
+        get: `/${mod.resourceId}/{id}`,
+        create: `/${mod.resourceId}`,
+        update: `/${mod.resourceId}/{id}`,
+        delete: `/${mod.resourceId}/{id}`,
+      },
+      list: {
+        columns: mod.list.columns,
+        defaultSort: mod.list.defaultSort,
+        filters: mod.list.filters,
+        searchable: mod.list.searchable,
+        searchPlaceholder: mod.list.searchPlaceholder,
+        pageSize: mod.list.pageSize,
+      },
+      form: {
+        fields: [],
+      },
+      actions: {
+        create: true,
+        view: true,
+        update: true,
+        delete: !!mod.actions?.delete,
+      },
+    };
+  }
+
+  function handleNavigate(path: string) {
+    // Check if we should intercept navigation for modal mode
+    if (useModals) {
+      const resourceBase = effectiveResource.routeBase;
+
+      // Check if path is a show page: /resource/:id
+      const showMatch = path.match(new RegExp(`^${resourceBase}/([^/]+)$`));
+      if (showMatch) {
+        openModal("Show", showMatch[1]);
+        return;
+      }
+
+      // Check if path is an edit page: /resource/:id/edit
+      const editMatch = path.match(new RegExp(`^${resourceBase}/([^/]+)/edit$`));
+      if (editMatch) {
+        openModal("Form", editMatch[1], "edit");
+        return;
+      }
+
+      // Check if path is a create page: /resource/new
+      if (path === `${resourceBase}/new`) {
+        openModal("Form", undefined, "create");
+        return;
+      }
+    }
+
+    // Default navigation behavior
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      window.location.href = path;
+    }
+  }
+
+  function openModal(view: ViewType, id?: string, mode?: FormMode) {
+    // Use external modal handler if provided
+    if (onOpenModal) {
+      onOpenModal(view, id, mode);
+      return;
+    }
+
+    // Use internal modal
+    modalView = view;
+    modalParams = { id, mode };
+    modalOpen = true;
+  }
+
+  function handleModalClose() {
+    modalOpen = false;
+    onCloseModal?.();
+  }
+
+  function handleModalSuccess(result?: unknown) {
+    modalOpen = false;
+    onSuccess?.(result);
+  }
+</script>
+
+<turbo-frame id="resource-table">
+  <div class="flex items-center justify-end pb-3">
+    <a
+      href="/admin/users?frame=resource-table"
+      class="text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+    >
+      Refresh
+    </a>
+  </div>
+  <AdminResourceList
+    resource={effectiveResource}
+    onNavigate={handleNavigate}
+  />
+</turbo-frame>
+
+<!-- Internal modal host (used when useModals=true) -->
+{#if useModals && !onOpenModal}
+  <ResourceModal
+    resourceId={module.resourceId}
+    view={modalView}
+    params={modalParams}
+    bind:open={modalOpen}
+    onClose={handleModalClose}
+    onSuccess={handleModalSuccess}
+    {onError}
+  />
+{/if}
