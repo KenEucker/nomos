@@ -7,6 +7,7 @@
   import Input from "../../components/ui/input.svelte";
   import Card from "../../components/ui/card.svelte";
   import Tabs from "../../components/ui/tabs.svelte";
+  import RelationMultiSelectField from "../../components/fields/RelationMultiSelectField.svelte";
   import { apiGet, apiPost } from "../../lib/api";
   import { session, hasRole, type SessionUser } from "../../lib/session";
   import { toasts } from "../../lib/toast";
@@ -39,7 +40,7 @@
   let activeTab = $state("destinations");
 
   let newUrl = $state("");
-  let newEvents = $state("");
+  let newEvents = $state<string[]>([]);
   let newSecret = $state("");
   let newRetryAttempts = $state("3");
   let newRetryDelay = $state("1000");
@@ -63,7 +64,7 @@
     try {
       const body = {
         url: newUrl,
-        events: newEvents.split(",").map((s) => s.trim()).filter(Boolean),
+        events: newEvents,
         secret: newSecret || undefined,
         retryPolicy: {
           attempts: parseInt(newRetryAttempts) || 3,
@@ -73,7 +74,7 @@
       await apiPost("/_/webhooks", body);
       showCreate = false;
       newUrl = "";
-      newEvents = "";
+      newEvents = [];
       newSecret = "";
       newRetryAttempts = "3";
       newRetryDelay = "1000";
@@ -227,10 +228,16 @@
           <label for="newUrl" class="block mb-1 text-sm text-slate-400">URL *</label>
           <Input placeholder="https://example.com/webhook" bind:value={newUrl} />
         </div>
-        <div>
-          <label for="newEvents" class="block mb-1 text-sm text-slate-400">Events (comma-separated) *</label>
-          <Input placeholder="users.created, tasks.updated" bind:value={newEvents} />
-        </div>
+        <RelationMultiSelectField
+          label="Events"
+          bind:value={newEvents}
+          placeholder="Select events..."
+          help="Choose the events that should trigger this webhook."
+          optionsEndpoint="/_/webhooks/events"
+          valueKey="key"
+          labelKey="name"
+          dataKey="events"
+        />
         <div>
           <label for="newSecret" class="block mb-1 text-sm text-slate-400">Secret (for HMAC signing)</label>
           <Input type="password" placeholder="Optional secret" bind:value={newSecret} />

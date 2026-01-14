@@ -185,6 +185,9 @@ export async function createApp() {
   for (const perm of plugins.registry.permissions) {
     db.permissions.add(perm);
   }
+  if (!db.roles.has("admin")) {
+    db.roles.set("admin", Array.from(db.permissions));
+  }
 
   const middlewareRegistry = createMiddlewareRegistry();
   middlewareRegistry.set("requestContext", requestContext);

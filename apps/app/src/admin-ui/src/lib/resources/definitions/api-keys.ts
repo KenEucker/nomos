@@ -71,6 +71,7 @@ export const apiKeysResource: AdminResource = {
         label: "Permissions",
         type: "relation_many",
         relationResource: "permissions",
+        optionsEndpoint: "/_/permissions",
         valueKey: "key",
         labelKey: "name",
         help: "Select which permissions this API key should have"

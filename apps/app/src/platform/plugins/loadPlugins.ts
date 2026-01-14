@@ -70,6 +70,7 @@ export async function loadPlugins(baseDir: string, corePluginPaths: string[]): P
   for (const { name, manifest } of sorted) {
     manifest.permissions?.forEach((perm) => registry.permissions.add(perm));
     manifest.roles?.forEach((role) => registry.roles.add(role));
+    manifest.events?.forEach((event) => registry.events.add(event));
     if (manifest.middleware) {
       for (const [key, value] of Object.entries(manifest.middleware)) {
         registry.middleware.set(key, value);
