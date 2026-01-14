@@ -34,13 +34,9 @@
   };
 
   const scheduleSync = () => {
-    setTimeout(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          syncState();
-        });
-      });
-    }, 0);
+    requestAnimationFrame(() => {
+      syncState();
+    });
   };
 
   onMount(() => {
@@ -61,15 +57,21 @@
       if (toggle === "mobile") toggleState(MOBILE_KEY, "mobile-menu-collapsed");
     };
 
+    const observer = new MutationObserver(() => {
+      scheduleSync();
+    });
+
     document.addEventListener("click", handler);
     document.addEventListener("swup:contentReplaced", swupHandler);
     document.addEventListener("swup:pageView", swupHandler);
     document.addEventListener("swup:animationInDone", swupHandler);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
     return () => {
       document.removeEventListener("click", handler);
       document.removeEventListener("swup:contentReplaced", swupHandler);
       document.removeEventListener("swup:pageView", swupHandler);
       document.removeEventListener("swup:animationInDone", swupHandler);
+      observer.disconnect();
     };
   });
 </script>
