@@ -1,12 +1,15 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AppShell from "../../../islands/AppShell.svelte";
 import Card from "../../../components/ui/card.svelte";
 import Badge from "../../../components/ui/badge.svelte";
 import { usersResource } from "../../../lib/resources/definitions/users";
 import { serverApiGet, ServerApiError } from "../../../lib/server/api";
+import type { SessionUser } from "../../../lib/session";
 
 const { id } = Astro.params;
 
+let sessionUser: SessionUser | null = null;
 let user:
   | {
       id: string;
@@ -20,6 +23,9 @@ let user:
 let errorMessage: string | null = null;
 
 try {
+  const sessionResponse = await serverApiGet<{ user: SessionUser }>(Astro.request, "/auth/me");
+  sessionUser = sessionResponse.data?.user ?? null;
+
   const userUrl = usersResource.endpoints.get.replace("{id}", id ?? "");
   const response = await serverApiGet<{ user: typeof user }>(Astro.request, userUrl);
   const dataKey = usersResource.singleDataKey ?? "user";
@@ -41,13 +47,16 @@ const formatDateTime = (value?: string) => {
 };
 ---
 <BaseLayout title="User Details">
-  <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-    <div class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
+  <AppShell
+    client:idle
+    title="User Details"
+    initialUser={sessionUser}
+    initialPath={Astro.url.pathname}
+    initialLoading={false}
+  >
+    <div class="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 class="text-2xl font-semibold">User Details</h1>
-          <p class="text-sm text-slate-500 dark:text-slate-400">User record and roles</p>
-        </div>
+        <p class="text-sm text-slate-500 dark:text-slate-400">User record and roles</p>
         {user ? (
           <a
             href={`/admin/users/${user.id}/edit`}
@@ -101,5 +110,5 @@ const formatDateTime = (value?: string) => {
         </a>
       </div>
     </div>
-  </div>
+  </AppShell>
 </BaseLayout>
