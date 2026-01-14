@@ -1,12 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
-  import Table from "../components/ui/table.svelte";
-  import Button from "../components/ui/button.svelte";
-  import Badge from "../components/ui/badge.svelte";
-  import Card from "../components/ui/card.svelte";
-  import { apiGet } from "../lib/api";
-  import { session, hasRole, type SessionUser } from "../lib/session";
+  import Table from "../../components/ui/table.svelte";
+  import Button from "../../components/ui/button.svelte";
+  import Badge from "../../components/ui/badge.svelte";
+  import Card from "../../components/ui/card.svelte";
+  import { apiGet } from "../../lib/api";
+  import { session, hasRole, type SessionUser } from "../../lib/session";
 
   interface ErrorEntry {
     timestamp: string;
@@ -91,7 +90,7 @@
   });
 </script>
 
-<AppShell title="Errors">
+<div class="space-y-4">
   <div class="flex flex-wrap items-center gap-3 mb-4">
     <select
       class="px-3 py-2 text-sm border rounded bg-slate-900 border-slate-700 text-slate-100"
@@ -170,4 +169,4 @@
       </tbody>
     </Table>
   {/if}
-</AppShell>
+</div>

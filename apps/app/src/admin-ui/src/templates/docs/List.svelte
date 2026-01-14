@@ -1,9 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
-  import Button from "../components/ui/button.svelte";
-  import Card from "../components/ui/card.svelte";
-  import { session, type SessionUser } from "../lib/session";
+  import Button from "../../components/ui/button.svelte";
+  import Card from "../../components/ui/card.svelte";
+  import { session, type SessionUser } from "../../lib/session";
 
   let user = $state<SessionUser | null>(null);
   let loading = $state(true);
@@ -50,7 +49,7 @@
   });
 </script>
 
-<AppShell title="API Documentation">
+<div class="space-y-6">
   {#if loading}
     <div class="text-slate-400">Checking documentation access...</div>
   {:else if error}
@@ -120,11 +119,11 @@
             target="_blank"
             class="block p-4 transition border rounded-lg bg-slate-900/50 border-slate-800 hover:border-slate-600"
           >
-            <div class="text-sm font-medium text-slate-100">Health Check</div>
+            <div class="text-sm font-medium text-slate-100">Health</div>
             <div class="text-xs text-slate-400">/health</div>
           </a>
         </div>
       </Card>
     </div>
   {/if}
-</AppShell>
+</div>

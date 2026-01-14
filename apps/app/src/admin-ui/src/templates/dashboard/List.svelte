@@ -1,10 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
-  import Card from "../components/ui/card.svelte";
-  import Table from "../components/ui/table.svelte";
-  import Badge from "../components/ui/badge.svelte";
-  import { apiGet } from "../lib/api";
+  import Card from "../../components/ui/card.svelte";
+  import Table from "../../components/ui/table.svelte";
+  import Badge from "../../components/ui/badge.svelte";
+  import { apiGet } from "../../lib/api";
 
   let counts = $state({ jobs: 0 });
   let usersCount = $state<number | null>(null);
@@ -34,7 +33,7 @@
   });
 </script>
 
-<AppShell title="Dashboard">
+<div class="space-y-6">
   {#if loading}
     <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
       <div class="flex flex-col items-center gap-2">
@@ -129,4 +128,4 @@
       </div>
     </div>
   {/if}
-</AppShell>
+</div>

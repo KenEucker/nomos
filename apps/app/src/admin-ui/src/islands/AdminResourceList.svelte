@@ -5,7 +5,7 @@
   import Badge from "../components/ui/badge.svelte";
   import Input from "../components/ui/input.svelte";
   import ConfirmDialog from "./ConfirmDialog.svelte";
-  import { apiGet, apiDelete } from "../lib/api";
+  import { apiGet, apiDelete, apiPatch, apiPost, apiPut } from "../lib/api";
   import { toasts } from "../lib/toast";
   import type { AdminResource, ColumnDef } from "../lib/resources/types";
   import { resolveEndpoint } from "../lib/resources/types";
@@ -27,10 +27,19 @@
   let sortKey = $state(resource.list.defaultSort?.key ?? "");
   let sortDir = $state<"asc" | "desc">(resource.list.defaultSort?.dir ?? "desc");
 
+  type ResourceCustomAction = NonNullable<AdminResource["actions"]>["custom"][number];
+
   // Delete confirmation
   let deleteId = $state<string | null>(null);
   let deleteDialogOpen = $state(false);
   let deleting = $state(false);
+
+  let customActionDialogOpen = $state(false);
+  let customActionLoading = $state(false);
+  let pendingCustomAction = $state<{
+    action: ResourceCustomAction;
+    id: string;
+  } | null>(null);
 
   const loadData = async () => {
     loading = true;
@@ -112,6 +121,58 @@
     deleteDialogOpen = true;
   };
 
+  const confirmCustomAction = (action: ResourceCustomAction, id: string) => {
+    if (action.confirm) {
+      pendingCustomAction = { action, id };
+      customActionDialogOpen = true;
+      return;
+    }
+    void runCustomAction(action, id);
+  };
+
+  const runCustomAction = async (action: ResourceCustomAction, id: string) => {
+    customActionLoading = true;
+    try {
+      const endpoint =
+        typeof action.endpoint === "function"
+          ? action.endpoint(id)
+          : resolveEndpoint(action.endpoint, id);
+
+      const method = action.method ?? "POST";
+
+      switch (method) {
+        case "DELETE":
+          await apiDelete(endpoint);
+          break;
+        case "PATCH":
+          await apiPatch(endpoint, {});
+          break;
+        case "PUT":
+          await apiPut(endpoint, {});
+          break;
+        default:
+          await apiPost(endpoint, {});
+          break;
+      }
+
+      toasts.success(`${action.label} completed`);
+      customActionDialogOpen = false;
+      pendingCustomAction = null;
+      loadData();
+    } catch (err: any) {
+      const message = err?.message ?? "Failed to run action";
+      error = message;
+      toasts.error(message);
+    } finally {
+      customActionLoading = false;
+    }
+  };
+
+  const handleCustomActionConfirm = async () => {
+    if (!pendingCustomAction) return;
+    await runCustomAction(pendingCustomAction.action, pendingCustomAction.id);
+  };
+
   const handleDelete = async () => {
     if (!deleteId) return;
     deleting = true;
@@ -188,7 +249,9 @@
   };
 
   const totalPages = $derived(Math.ceil(total / pageSize));
+  const customActions = $derived(resource.actions?.custom ?? []);
   const hasActions = $derived(
+    customActions.length > 0 ||
     resource.actions?.view !== false ||
     resource.actions?.update !== false ||
     resource.actions?.delete !== false
@@ -279,7 +342,16 @@
               {/each}
             </div>
             {#if hasActions}
-              <div class="flex gap-1">
+              <div class="flex flex-wrap gap-1">
+                {#each customActions as action}
+                  <Button
+                    variant={action.variant ?? "outline"}
+                    size="sm"
+                    onclick={() => confirmCustomAction(action, item[resource.primaryKey])}
+                  >
+                    {action.label}
+                  </Button>
+                {/each}
                 {#if resource.actions?.view !== false}
                   <Button variant="ghost" size="sm" onclick={() => handleView(item[resource.primaryKey])}>
                     View
@@ -357,7 +429,16 @@
               {/each}
               {#if hasActions}
                 <td class="px-4 py-3">
-                  <div class="flex gap-1">
+                  <div class="flex flex-wrap gap-1">
+                    {#each customActions as action}
+                      <Button
+                        variant={action.variant ?? "outline"}
+                        size="sm"
+                        onclick={() => confirmCustomAction(action, item[resource.primaryKey])}
+                      >
+                        {action.label}
+                      </Button>
+                    {/each}
                     {#if resource.actions?.view !== false}
                       <Button variant="ghost" size="sm" onclick={() => handleView(item[resource.primaryKey])}>
                         View
@@ -411,4 +492,15 @@
   loading={deleting}
   onConfirm={handleDelete}
   onCancel={() => { deleteDialogOpen = false; deleteId = null; }}
+/>
+
+<ConfirmDialog
+  bind:open={customActionDialogOpen}
+  title={pendingCustomAction?.action.label ?? "Confirm action"}
+  message={pendingCustomAction?.action.confirm ?? "Are you sure you want to continue?"}
+  confirmLabel={pendingCustomAction?.action.label ?? "Confirm"}
+  confirmVariant={pendingCustomAction?.action.variant === "destructive" ? "destructive" : "default"}
+  loading={customActionLoading}
+  onConfirm={handleCustomActionConfirm}
+  onCancel={() => { customActionDialogOpen = false; pendingCustomAction = null; }}
 />

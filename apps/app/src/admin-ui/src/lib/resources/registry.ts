@@ -12,6 +12,15 @@ import { usersResource } from "./definitions/users";
 import { rolesResource } from "./definitions/roles";
 import { sessionsResource } from "./definitions/sessions";
 import { apiKeysResource } from "./definitions/api-keys";
+import { dashboardResource } from "./definitions/dashboard";
+import { auditResource } from "./definitions/audit";
+import { errorsResource } from "./definitions/errors";
+import { jobsResource } from "./definitions/jobs";
+import { webhooksResource } from "./definitions/webhooks";
+import { routesResource } from "./definitions/routes";
+import { diagnosticsResource } from "./definitions/diagnostics";
+import { docsResource } from "./definitions/docs";
+import { loginResource } from "./definitions/login";
 
 /**
  * Map of all registered resources
@@ -58,6 +67,29 @@ registerResource(usersResource);
 registerResource(rolesResource);
 registerResource(sessionsResource);
 registerResource(apiKeysResource);
+registerResource(dashboardResource);
+registerResource(auditResource);
+registerResource(errorsResource);
+registerResource(jobsResource);
+registerResource(webhooksResource);
+registerResource(routesResource);
+registerResource(diagnosticsResource);
+registerResource(docsResource);
+registerResource(loginResource);
 
 // Export all resources for direct access
-export { usersResource, rolesResource, sessionsResource, apiKeysResource };
+export {
+  usersResource,
+  rolesResource,
+  sessionsResource,
+  apiKeysResource,
+  dashboardResource,
+  auditResource,
+  errorsResource,
+  jobsResource,
+  webhooksResource,
+  routesResource,
+  diagnosticsResource,
+  docsResource,
+  loginResource,
+};

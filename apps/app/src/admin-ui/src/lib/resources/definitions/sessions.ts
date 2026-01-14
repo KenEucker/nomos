@@ -107,7 +107,7 @@ export const sessionsResource: AdminResource = {
     create: false, // Sessions are created via login
     view: true,
     update: false, // Sessions cannot be edited
-    delete: true, // Allow revoking sessions
+    delete: false, // Use explicit revoke action instead
     custom: [
       {
         id: "revoke",

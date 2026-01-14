@@ -4,6 +4,6 @@ import ResourceView from "../../../islands/ResourceView.svelte";
 
 const { id } = Astro.params;
 ---
-<BaseLayout title="Edit Role">
-  <ResourceView client:load resourceId="roles" view="Form" params={{ id, mode: "edit" }} />
+<BaseLayout title="API Key Details">
+  <ResourceView client:load resourceId="api-keys" view="Show" params={{ id }} />
 </BaseLayout>

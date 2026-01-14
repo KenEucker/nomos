@@ -12,6 +12,66 @@ To add a new admin CRUD resource:
 4. Create Astro pages
 5. Add navigation entry
 
+### Canonical Resource Definition (Short Example)
+
+```typescript
+import type { AdminResource } from "../types";
+
+export const widgetsResource: AdminResource = {
+  id: "widgets",
+  label: "Widget",
+  labelPlural: "Widgets",
+  routeBase: "/admin/widgets",
+  primaryKey: "id",
+  icon: "folder",
+  endpoints: {
+    list: "/widgets",
+    get: "/widgets/{id}",
+    create: "/widgets",
+    update: "/widgets/{id}",
+    delete: "/widgets/{id}",
+  },
+  list: { columns: [{ key: "name", label: "Name", sortable: true }] },
+  form: { fields: [{ name: "name", label: "Name", type: "text", required: true }] },
+  actions: { create: true, view: true, update: true, delete: true },
+  requiredRole: "admin",
+};
+```
+
+### Canonical Resource Screens (Short Example)
+
+```astro
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ResourceView from "../../islands/ResourceView.svelte";
+import { createStaticListModule } from "../../lib/pages";
+
+export const pageModule = createStaticListModule({
+  resourceId: "widgets",
+  title: "Widgets",
+  subtitle: "Manage widgets.",
+});
+---
+
+<!-- List -->
+<BaseLayout title={pageModule.title}>
+  <ResourceView client:load resourceId={pageModule.resourceId} view="List" />
+</BaseLayout>
+
+<!-- Create -->
+<ResourceView client:load resourceId="widgets" view="Form" params={{ mode: "create" }} />
+
+<!-- Show -->
+<ResourceView client:load resourceId="widgets" view="Show" params={{ id: "123" }} />
+
+<!-- Edit -->
+<ResourceView client:load resourceId="widgets" view="Form" params={{ id: "123", mode: "edit" }} />
+```
+
+**Anti-patterns:**
+* Do not create `templates/<resource>/<View>.svelte` files that only render a single island component.
+* Do not create adjacent `List.ts` / `Detail.ts` files for the same route; keep `pageModule` in the route’s `index.astro`.
+
 ## Resource Definition
 
 ### Location

@@ -1,7 +1,14 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import AuditPage from "../../islands/AuditPage.svelte";
+import ResourceView from "../../islands/ResourceView.svelte";
+import { createStaticListModule } from "../../lib/pages";
+
+export const pageModule = createStaticListModule({
+  resourceId: "audit",
+  title: "Audit Log",
+  subtitle: "Review recent admin events and actions.",
+});
 ---
-<BaseLayout title="Audit Log">
-  <AuditPage client:load />
+<BaseLayout title={pageModule.title}>
+  <ResourceView client:load resourceId={pageModule.resourceId} view="List" />
 </BaseLayout>

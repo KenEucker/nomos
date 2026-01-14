@@ -1,13 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
-  import Card from "../components/ui/card.svelte";
-  import Button from "../components/ui/button.svelte";
-  import Badge from "../components/ui/badge.svelte";
-  import Tabs from "../components/ui/tabs.svelte";
-  import Table from "../components/ui/table.svelte";
-  import { apiGet } from "../lib/api";
-  import { session, hasRole, type SessionUser } from "../lib/session";
+  import Card from "../../components/ui/card.svelte";
+  import Button from "../../components/ui/button.svelte";
+  import Badge from "../../components/ui/badge.svelte";
+  import Tabs from "../../components/ui/tabs.svelte";
+  import Table from "../../components/ui/table.svelte";
+  import { apiGet } from "../../lib/api";
+  import { session, hasRole, type SessionUser } from "../../lib/session";
 
   interface DiagnosticsOverview {
     status: string;
@@ -132,7 +131,7 @@
   });
 </script>
 
-<AppShell title="Diagnostics">
+<div class="space-y-4">
   <div class="flex items-center justify-between mb-4">
     <Tabs tabs={[
       { id: "overview", label: "Overview" },
@@ -223,11 +222,9 @@
         <tbody class="text-sm">
           {#each routeStats.routes as route}
             <tr class="border-t border-slate-800">
-              <td class="py-2">
-                <Badge variant="secondary">{route.method}</Badge>
-              </td>
-              <td class="py-2 font-mono text-slate-100">{route.path}</td>
-              <td class="py-2 text-xs text-slate-400">{route.id}</td>
+              <td class="py-3 text-xs text-slate-400">{route.method}</td>
+              <td class="py-3 font-mono text-xs text-slate-100">{route.path}</td>
+              <td class="py-3 font-mono text-xs text-slate-400">{route.id}</td>
             </tr>
           {/each}
         </tbody>
@@ -250,27 +247,25 @@
         <tbody class="text-sm">
           {#each jobStats.jobs as job}
             <tr class="border-t border-slate-800">
-              <td class="py-2 font-mono text-slate-100">{job.id}</td>
-              <td class="py-2 text-slate-400">{job.queue ?? "default"}</td>
-              <td class="py-2 font-mono text-xs text-slate-400">{job.schedule ?? "-"}</td>
+              <td class="py-3 font-mono text-xs text-slate-100">{job.id}</td>
+              <td class="py-3 text-xs text-slate-400">{job.queue ?? "default"}</td>
+              <td class="py-3 font-mono text-xs text-slate-400">{job.schedule ?? "-"}</td>
             </tr>
           {/each}
         </tbody>
       </Table>
     {/if}
-  {:else if activeTab === "events"}
+  {:else}
     {#if !eventStats?.events?.length}
       <Card>
         <div class="py-8 text-center text-slate-400">No event data available.</div>
       </Card>
     {:else}
-      <div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
+      <div class="flex flex-wrap gap-2">
         {#each eventStats.events as event}
-          <div class="px-3 py-2 font-mono text-sm border rounded bg-slate-900/50 border-slate-800 text-slate-300">
-            {event}
-          </div>
+          <Badge variant="secondary">{event}</Badge>
         {/each}
       </div>
     {/if}
   {/if}
-</AppShell>
+</div>

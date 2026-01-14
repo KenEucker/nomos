@@ -24,34 +24,21 @@
   };
 </script>
 
-<form class="login-form" onsubmit={submit}>
-  <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-    <div class="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-8 sm:px-6">
-      <div class="mb-8 text-center">
-        <h1 class="text-2xl font-bold sm:text-3xl">Nomos Admin</h1>
-      </div>
-      <div class="rounded-xl border border-slate-200 bg-white/40 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/40 sm:p-8">
-        <h2 class="text-xl font-semibold sm:text-2xl">Sign in</h2>
-        <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Use your credentials to access the admin UI.</p>
-        <div class="space-y-4">
-          <div>
-            <label for="email" class="mb-1 block text-sm text-slate-600 dark:text-slate-300">Email</label>
-            <Input id="email" type="email" bind:value={email} placeholder="admin@nomos.local" />
-          </div>
-          <div>
-            <label for="password" class="mb-1 block text-sm text-slate-600 dark:text-slate-300">Password</label>
-            <Input id="password" type="password" bind:value={password} placeholder="••••••" />
-          </div>
-          {#if error}
-            <div class="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-200">
-              {error}
-            </div>
-          {/if}
-          <Button className="w-full" type="submit" disabled={loading}>
-            {loading ? "Signing in..." : "Sign in"}
-          </Button>
-        </div>
-      </div>
-    </div>
+<form class="space-y-4" onsubmit={submit}>
+  <div>
+    <label for="email" class="mb-1 block text-sm text-slate-600 dark:text-slate-300">Email</label>
+    <Input id="email" type="email" bind:value={email} placeholder="admin@nomos.local" />
   </div>
+  <div>
+    <label for="password" class="mb-1 block text-sm text-slate-600 dark:text-slate-300">Password</label>
+    <Input id="password" type="password" bind:value={password} placeholder="••••••" />
+  </div>
+  {#if error}
+    <div class="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-200">
+      {error}
+    </div>
+  {/if}
+  <Button className="w-full" type="submit" disabled={loading}>
+    {loading ? "Signing in..." : "Sign in"}
+  </Button>
 </form>

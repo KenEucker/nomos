@@ -5,5 +5,5 @@ import ResourceView from "../../../islands/ResourceView.svelte";
 const { id } = Astro.params;
 ---
 <BaseLayout title="Session Details">
-  <ResourceView client:load resourceId="sessions" view="Show" params={{ id: id! }} />
+  <ResourceView client:load resourceId="sessions" view="Show" params={{ id }} />
 </BaseLayout>

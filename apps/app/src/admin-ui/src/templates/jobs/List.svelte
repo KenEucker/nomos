@@ -1,14 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
-  import Table from "../components/ui/table.svelte";
-  import Button from "../components/ui/button.svelte";
-  import Dialog from "../components/ui/dialog.svelte";
-  import Badge from "../components/ui/badge.svelte";
-  import Card from "../components/ui/card.svelte";
-  import Tabs from "../components/ui/tabs.svelte";
-  import { apiGet, apiPost } from "../lib/api";
-  import { session, hasRole, type SessionUser } from "../lib/session";
+  import Table from "../../components/ui/table.svelte";
+  import Button from "../../components/ui/button.svelte";
+  import Dialog from "../../components/ui/dialog.svelte";
+  import Badge from "../../components/ui/badge.svelte";
+  import Card from "../../components/ui/card.svelte";
+  import Tabs from "../../components/ui/tabs.svelte";
+  import { apiGet, apiPost } from "../../lib/api";
+  import { session, hasRole, type SessionUser } from "../../lib/session";
 
   interface Job {
     id: string;
@@ -140,7 +139,7 @@
   });
 </script>
 
-<AppShell title="Jobs">
+<div class="space-y-4">
   <!-- Controls -->
   <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
     <Tabs tabs={[
@@ -221,9 +220,9 @@
                 <td class="px-4 py-3 text-slate-400">{job.queue ?? "default"}</td>
                 <td class="hidden px-4 py-3 text-slate-400 md:table-cell">{job.concurrency ?? 1}</td>
                 <td class="hidden px-4 py-3 text-slate-400 md:table-cell">{job.retries ?? 0}</td>
-                <td class="hidden px-4 py-3 font-mono text-xs text-slate-400 lg:table-cell">{job.schedule ?? "-"}</td>
+                <td class="hidden px-4 py-3 text-xs font-mono text-slate-400 lg:table-cell">{job.schedule ?? "-"}</td>
                 <td class="px-4 py-3">
-                  <Button variant="ghost" size="sm" onclick={() => openTrigger(job.id)}>
+                  <Button variant="outline" size="sm" onclick={() => openTrigger(job.id)}>
                     Trigger
                   </Button>
                 </td>
@@ -241,69 +240,36 @@
         </div>
       </Card>
     {:else}
-      <!-- Mobile: Card layout -->
-      <div class="space-y-3 sm:hidden">
-        {#each runs.slice(-50).reverse() as run}
-          <div class="p-4 border rounded-lg border-slate-800 bg-slate-900/40">
-            <div class="flex items-start justify-between gap-2">
-              <div class="flex-1 min-w-0">
-                <div class="font-mono text-sm truncate text-slate-100">{run.jobId}</div>
-                <div class="mt-1 text-xs text-slate-500">{formatDate(run.startedAt)}</div>
-              </div>
-              <Badge variant={getStatusColor(run.status)}>{run.status}</Badge>
-            </div>
-            <div class="flex items-center justify-between mt-2">
-              <span class="text-xs text-slate-400">Duration: {getDuration(run)}</span>
-              {#if run.status === "failed"}
-                <Button variant="outline" size="sm" onclick={() => retryJob(run)}>
-                  Retry
-                </Button>
-              {/if}
-            </div>
-            {#if run.error}
-              <div class="mt-2 text-xs text-red-400 truncate">{run.error}</div>
-            {/if}
-          </div>
-        {/each}
-      </div>
-
-      <!-- Desktop: Table layout -->
-      <div class="hidden border rounded-lg border-slate-800 bg-slate-900/40 sm:block">
-        <Table>
-          <thead class="text-xs text-left uppercase text-slate-400">
-            <tr>
-              <th class="px-4 py-3">Job ID</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3">Started</th>
-              <th class="hidden px-4 py-3 md:table-cell">Duration</th>
-              <th class="hidden px-4 py-3 lg:table-cell">Error</th>
-              <th class="px-4 py-3">Actions</th>
+      <Table>
+        <thead class="text-xs text-left uppercase text-slate-400">
+          <tr>
+            <th class="pb-2">Job ID</th>
+            <th class="pb-2">Status</th>
+            <th class="pb-2">Started</th>
+            <th class="pb-2">Duration</th>
+            <th class="pb-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="text-sm">
+          {#each runs.slice(-50).reverse() as run}
+            <tr class="border-t border-slate-800">
+              <td class="py-3 font-mono text-xs text-slate-400">{run.jobId}</td>
+              <td class="py-3">
+                <Badge variant={getStatusColor(run.status)}>{run.status}</Badge>
+              </td>
+              <td class="py-3 text-xs text-slate-400">{formatDate(run.startedAt)}</td>
+              <td class="py-3 text-xs text-slate-400">{getDuration(run)}</td>
+              <td class="py-3">
+                {#if run.status === "failed"}
+                  <Button variant="outline" size="sm" onclick={() => retryJob(run)}>
+                    Retry
+                  </Button>
+                {/if}
+              </td>
             </tr>
-          </thead>
-          <tbody class="text-sm">
-            {#each runs.slice(-50).reverse() as run}
-              <tr class="border-t border-slate-800 hover:bg-slate-800/30">
-                <td class="px-4 py-3 font-mono text-slate-100">{run.jobId}</td>
-                <td class="px-4 py-3">
-                  <Badge variant={getStatusColor(run.status)}>{run.status}</Badge>
-                </td>
-                <td class="px-4 py-3 text-xs text-slate-400">{formatDate(run.startedAt)}</td>
-                <td class="hidden px-4 py-3 text-slate-400 md:table-cell">{getDuration(run)}</td>
-                <td class="hidden max-w-xs px-4 py-3 text-xs text-red-400 truncate lg:table-cell">
-                  {run.error ?? "-"}
-                </td>
-                <td class="px-4 py-3">
-                  {#if run.status === "failed"}
-                    <Button variant="ghost" size="sm" onclick={() => retryJob(run)}>
-                      Retry
-                    </Button>
-                  {/if}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </Table>
-      </div>
+          {/each}
+        </tbody>
+      </Table>
     {/if}
   {/if}
 
@@ -332,4 +298,4 @@
       </div>
     </div>
   </Dialog>
-</AppShell>
+</div>

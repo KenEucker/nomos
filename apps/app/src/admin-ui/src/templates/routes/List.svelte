@@ -1,13 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
-  import Table from "../components/ui/table.svelte";
-  import Button from "../components/ui/button.svelte";
-  import Badge from "../components/ui/badge.svelte";
-  import Input from "../components/ui/input.svelte";
-  import Card from "../components/ui/card.svelte";
-  import { apiGet } from "../lib/api";
-  import { session, hasRole, type SessionUser } from "../lib/session";
+  import Table from "../../components/ui/table.svelte";
+  import Button from "../../components/ui/button.svelte";
+  import Badge from "../../components/ui/badge.svelte";
+  import Input from "../../components/ui/input.svelte";
+  import Card from "../../components/ui/card.svelte";
+  import { apiGet } from "../../lib/api";
+  import { session, hasRole, type SessionUser } from "../../lib/session";
 
   interface RouteEntry {
     id: string;
@@ -103,7 +102,7 @@
   });
 </script>
 
-<AppShell title="Routes">
+<div class="space-y-4">
   <div class="flex flex-wrap items-center gap-3 mb-4">
     <Input className="max-w-sm" placeholder="Search routes..." bind:value={search} />
     <select
@@ -136,65 +135,43 @@
       </div>
     </Card>
   {:else}
-    <div class="mb-4 text-xs text-slate-500">
-      {filteredRoutes.length} routes across {Object.keys(groupedRoutes).length} owners
-    </div>
-
     {#each Object.entries(groupedRoutes) as [owner, ownerRoutes]}
-      <div class="mb-6">
-        <h3 class="flex items-center gap-2 mb-2 text-sm font-semibold text-slate-300">
-          <Badge variant="secondary">{owner}</Badge>
-          <span class="text-slate-500">{ownerRoutes.length} routes</span>
-        </h3>
-        <Table>
-          <thead class="text-xs text-left uppercase text-slate-400">
-            <tr>
-              <th class="w-20 pb-2">Method</th>
-              <th class="pb-2">Path</th>
-              <th class="pb-2">Auth</th>
-              <th class="pb-2">Permissions</th>
-              <th class="pb-2">Middleware</th>
-              <th class="pb-2">Summary</th>
-            </tr>
-          </thead>
-          <tbody class="text-sm">
-            {#each ownerRoutes as route}
-              <tr class="border-t border-slate-800" class:opacity-50={route.config.deprecated}>
-                <td class="py-2">
-                  <span class={"px-2 py-0.5 rounded text-xs font-mono text-white " + getMethodColor(route.method)}>
-                    {route.method.toUpperCase()}
-                  </span>
-                </td>
-                <td class="py-2 font-mono text-sm text-slate-100">
-                  {route.path}
-                  {#if route.config.deprecated}
-                    <Badge variant="secondary">deprecated</Badge>
-                  {/if}
-                </td>
-                <td class="py-2 text-xs text-slate-400">
-                  {route.config.auth ?? "required"}
-                </td>
-                <td class="py-2">
-                  <div class="flex flex-wrap gap-1">
-                    {#each (route.config.permissions ?? []).slice(0, 2) as perm}
-                      <Badge variant="secondary">{perm}</Badge>
-                    {/each}
-                    {#if (route.config.permissions ?? []).length > 2}
-                      <Badge variant="secondary">+{(route.config.permissions ?? []).length - 2}</Badge>
-                    {/if}
-                  </div>
-                </td>
-                <td class="py-2 text-xs text-slate-400">
-                  {(route.config.middleware ?? []).join(", ") || "-"}
-                </td>
-                <td class="max-w-xs py-2 text-xs truncate text-slate-400">
-                  {route.config.summary ?? "-"}
-                </td>
+      <div class="space-y-2">
+        <div class="text-xs uppercase text-slate-500">{owner}</div>
+        <div class="border rounded-lg border-slate-800 bg-slate-900/40">
+          <Table>
+            <thead class="text-xs text-left uppercase text-slate-400">
+              <tr>
+                <th class="px-4 py-3">Method</th>
+                <th class="px-4 py-3">Path</th>
+                <th class="hidden px-4 py-3 md:table-cell">Summary</th>
+                <th class="px-4 py-3">Auth</th>
               </tr>
-            {/each}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody class="text-sm">
+              {#each ownerRoutes as route}
+                <tr class="border-t border-slate-800">
+                  <td class="px-4 py-3">
+                    <Badge variant="secondary">
+                      <span class={`inline-block h-2 w-2 rounded-full mr-2 ${getMethodColor(route.method)}`}></span>
+                      {route.method.toUpperCase()}
+                    </Badge>
+                  </td>
+                  <td class="px-4 py-3 font-mono text-xs text-slate-100">
+                    {route.path}
+                  </td>
+                  <td class="hidden px-4 py-3 text-slate-400 md:table-cell">
+                    {route.config.summary ?? "—"}
+                  </td>
+                  <td class="px-4 py-3 text-xs text-slate-400">
+                    {route.config.auth ?? "public"}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </Table>
+        </div>
       </div>
     {/each}
   {/if}
-</AppShell>
+</div>

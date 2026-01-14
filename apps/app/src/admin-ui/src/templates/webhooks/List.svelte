@@ -1,16 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AppShell from "./AppShell.svelte";
-  import Table from "../components/ui/table.svelte";
-  import Button from "../components/ui/button.svelte";
-  import Dialog from "../components/ui/dialog.svelte";
-  import Badge from "../components/ui/badge.svelte";
-  import Input from "../components/ui/input.svelte";
-  import Card from "../components/ui/card.svelte";
-  import Tabs from "../components/ui/tabs.svelte";
-  import { apiGet, apiPost } from "../lib/api";
-  import { session, hasRole, type SessionUser } from "../lib/session";
-  import { toasts } from "../lib/toast";
+  import Table from "../../components/ui/table.svelte";
+  import Button from "../../components/ui/button.svelte";
+  import Dialog from "../../components/ui/dialog.svelte";
+  import Badge from "../../components/ui/badge.svelte";
+  import Input from "../../components/ui/input.svelte";
+  import Card from "../../components/ui/card.svelte";
+  import Tabs from "../../components/ui/tabs.svelte";
+  import { apiGet, apiPost } from "../../lib/api";
+  import { session, hasRole, type SessionUser } from "../../lib/session";
+  import { toasts } from "../../lib/toast";
 
   interface WebhookDestination {
     id: string;
@@ -119,7 +118,7 @@
   });
 </script>
 
-<AppShell title="Webhooks">
+<div class="space-y-4">
   <div class="flex items-center justify-between mb-4">
     <Tabs tabs={[
       { id: "destinations", label: "Destinations" },
@@ -253,4 +252,4 @@
       </div>
     </div>
   </Dialog>
-</AppShell>
+</div>

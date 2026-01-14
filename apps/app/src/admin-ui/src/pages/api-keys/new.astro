@@ -2,6 +2,6 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
 ---
-<BaseLayout title="Users">
-  <ResourceView client:load resourceId="users" view="List" />
+<BaseLayout title="Create API Key">
+  <ResourceView client:load resourceId="api-keys" view="Form" params={{ mode: "create" }} />
 </BaseLayout>

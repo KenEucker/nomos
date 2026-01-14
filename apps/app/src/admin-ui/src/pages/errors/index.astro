@@ -1,7 +1,14 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import ErrorsPage from "../../islands/ErrorsPage.svelte";
+import ResourceView from "../../islands/ResourceView.svelte";
+import { createStaticListModule } from "../../lib/pages";
+
+export const pageModule = createStaticListModule({
+  resourceId: "errors",
+  title: "Errors",
+  subtitle: "Review recent error reports and stack traces.",
+});
 ---
-<BaseLayout title="Errors">
-  <ErrorsPage client:load />
+<BaseLayout title={pageModule.title}>
+  <ResourceView client:load resourceId={pageModule.resourceId} view="List" />
 </BaseLayout>

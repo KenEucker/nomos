@@ -110,6 +110,17 @@ export interface ValidationError {
   message: string;
 }
 
+export interface PageBreadcrumb {
+  label: string;
+  href?: string;
+}
+
+export interface PageAction {
+  label: string;
+  href: string;
+  variant?: "default" | "secondary" | "outline" | "ghost" | "destructive";
+}
+
 export interface ErrorContext {
   error: Error | unknown;
   context: PageContext;
@@ -136,6 +147,12 @@ export interface BasePageModule {
 
   /** Optional subtitle */
   subtitle?: string;
+
+  /** Optional breadcrumbs for the page header */
+  breadcrumbs?: PageBreadcrumb[];
+
+  /** Optional page-level actions */
+  pageActions?: PageAction[];
 
   /** Optional Zod schema for validation */
   schema?: z.ZodTypeAny;
