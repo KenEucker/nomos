@@ -34,6 +34,14 @@ const toTitleCase = (value: string) =>
 
 const isDynamicRoute = (route: string) => route.includes("[");
 
+const getTopLevelRoute = (route: string) => {
+  if (route === "/") return "/";
+  const [segment] = route.split("/").filter(Boolean);
+  return segment ? `/${segment}` : "/";
+};
+
+const EXCLUDED_ROUTES = new Set(["/login"]);
+
 const buildResourceMetadata = () => {
   const resourceModules = import.meta.glob("../pages/**/*.resource.ts", { eager: true });
   const resourceMetadata = new Map<string, ResourceMeta>();
@@ -93,22 +101,33 @@ const buildAdminNavOnce = async ({ basePath, adminUiRoot }: BuildNavOptions): Pr
     getCorePageRoutes({ adminUiRoot })
   ]);
 
+  const indexRoutes = new Set(
+    [...coreRoutes, ...pluginRoutes]
+      .filter((routeEntry) => path.basename(routeEntry.entrypoint) === "index.astro")
+      .map((routeEntry) => routeEntry.route)
+  );
+
   const seen = new Set<string>();
   const navItems: NavItem[] = [];
 
   for (const routeEntry of [...coreRoutes, ...pluginRoutes]) {
     const route = routeEntry.route;
-    if (isDynamicRoute(route)) continue;
-    if (seen.has(route)) continue;
+    const topRoute = getTopLevelRoute(route);
 
-    seen.add(route);
+    if (EXCLUDED_ROUTES.has(topRoute)) continue;
+    if (!indexRoutes.has(topRoute)) continue;
+    if (seen.has(topRoute)) continue;
 
-    const resourceMeta = getResourceMetaForRoute(resourceMetadata, route, basePath);
-    const label = resourceMeta?.label ?? (route === "/" ? "Dashboard" : toTitleCase(route.slice(1)));
+    if (isDynamicRoute(route) && topRoute === route) continue;
+
+    seen.add(topRoute);
+
+    const resourceMeta = getResourceMetaForRoute(resourceMetadata, topRoute, basePath);
+    const label = resourceMeta?.label ?? (topRoute === "/" ? "Dashboard" : toTitleCase(topRoute.slice(1)));
     const icon = resourceMeta?.icon ?? DEFAULT_ICON;
-    const order = route === "/" ? -1 : 0;
+    const order = topRoute === "/" ? -1 : 0;
     const normalizedBase = stripTrailingSlash(basePath);
-    const path = route === "/" ? normalizedBase || "/" : `${normalizedBase}${route}`;
+    const path = topRoute === "/" ? normalizedBase || "/" : `${normalizedBase}${topRoute}`;
 
     navItems.push({ label, path, icon, order });
   }
