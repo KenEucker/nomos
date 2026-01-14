@@ -168,7 +168,7 @@ const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
     const bHasOrder = typeof b.order === "number";
 
     if (aHasOrder && bHasOrder && a.order !== b.order) {
-      return a.order - b.order;
+      return a.order! - b.order!;
     }
 
     if (aHasOrder !== bHasOrder) {

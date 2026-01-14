@@ -8,6 +8,11 @@
     document.body.classList.toggle(className, value);
   };
 
+  const readStored = (key: string, defaultValue: boolean) => {
+    const stored = localStorage.getItem(key);
+    return stored !== null ? stored === "true" : defaultValue;
+  };
+
   const initState = (key: string, className: string, defaultValue: boolean) => {
     const stored = localStorage.getItem(key);
     const value = stored !== null ? stored === "true" : defaultValue;
@@ -23,9 +28,24 @@
     localStorage.setItem(key, String(next));
   };
 
+  const syncState = () => {
+    applyState("sidebar-collapsed", readStored(SIDEBAR_KEY, false));
+    applyState("mobile-menu-collapsed", readStored(MOBILE_KEY, true));
+  };
+
+  const scheduleSync = () => {
+    requestAnimationFrame(() => {
+      syncState();
+    });
+  };
+
   onMount(() => {
     initState(SIDEBAR_KEY, "sidebar-collapsed", false);
     initState(MOBILE_KEY, "mobile-menu-collapsed", true);
+
+    const swupHandler = () => {
+      scheduleSync();
+    };
 
     const handler = (event: Event) => {
       const target = event.target;
@@ -37,9 +57,21 @@
       if (toggle === "mobile") toggleState(MOBILE_KEY, "mobile-menu-collapsed");
     };
 
+    const observer = new MutationObserver(() => {
+      scheduleSync();
+    });
+
     document.addEventListener("click", handler);
+    document.addEventListener("swup:contentReplaced", swupHandler);
+    document.addEventListener("swup:pageView", swupHandler);
+    document.addEventListener("swup:animationInDone", swupHandler);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
     return () => {
       document.removeEventListener("click", handler);
+      document.removeEventListener("swup:contentReplaced", swupHandler);
+      document.removeEventListener("swup:pageView", swupHandler);
+      document.removeEventListener("swup:animationInDone", swupHandler);
+      observer.disconnect();
     };
   });
 </script>
