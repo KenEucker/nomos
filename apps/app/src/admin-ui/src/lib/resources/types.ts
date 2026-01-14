@@ -227,6 +227,9 @@ export interface AdminResourceInput {
   /** Navigation order (lower appears first) */
   menuOrder?: number;
 
+  /** Navigation group label (optional) */
+  menuGroup?: string;
+
   /** Full SVG markup string for navigation (optional) */
   icon?: string;
 
@@ -310,6 +313,9 @@ export interface AdminResource {
   /** Navigation order (lower appears first) */
   menuOrder?: number;
 
+  /** Navigation group label (optional) */
+  menuGroup?: string;
+
   /** Full SVG markup string for navigation (optional) */
   icon?: string;
 
@@ -383,6 +389,7 @@ export function normalizeResource(input: AdminResourceInput): AdminResource {
     routeBase: input.routeBase ?? `/admin/${input.id}`,
     primaryKey: input.primaryKey ?? "id",
     menuOrder: input.menuOrder,
+    menuGroup: input.menuGroup,
     icon: input.icon,
     endpoints: {
       list: endpoints.list,

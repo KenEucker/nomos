@@ -6,6 +6,7 @@ type NavItem = {
   path: string;
   icon: string;
   order?: number;
+  group?: string;
 };
 
 type BuildNavOptions = {
@@ -16,6 +17,7 @@ type ResourceMeta = {
   label: string;
   icon?: string;
   order?: number;
+  group?: string;
 };
 
 const DEFAULT_ICON =
@@ -62,7 +64,8 @@ const buildResourceMetadata = () => {
     resourceMetadata.set(resourceExport.id, {
       label,
       icon: resourceExport.icon,
-      order: resourceExport.menuOrder
+      order: resourceExport.menuOrder,
+      group: resourceExport.menuGroup
     });
 
     if (resourceExport.routeBase) {
@@ -70,7 +73,8 @@ const buildResourceMetadata = () => {
       resourceMetadata.set(normalizedRoute, {
         label,
         icon: resourceExport.icon,
-        order: resourceExport.menuOrder
+        order: resourceExport.menuOrder,
+        group: resourceExport.menuGroup
       });
     }
   }
@@ -152,10 +156,11 @@ const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
     const label = resourceMeta?.label ?? (topRoute === "/" ? "Dashboard" : toTitleCase(topRoute.slice(1)));
     const icon = resourceMeta?.icon ?? DEFAULT_ICON;
     const order = resourceMeta?.order ?? (topRoute === "/" ? -1 : undefined);
+    const group = resourceMeta?.group;
     const normalizedBase = stripTrailingSlash(basePath);
     const path = topRoute === "/" ? normalizedBase || "/" : `${normalizedBase}${topRoute}`;
 
-    navItems.push({ label, path, icon, order });
+    navItems.push({ label, path, icon, order, group });
   }
 
   return navItems.sort((a, b) => {
