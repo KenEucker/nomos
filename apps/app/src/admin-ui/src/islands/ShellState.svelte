@@ -34,9 +34,13 @@
   };
 
   const scheduleSync = () => {
-    requestAnimationFrame(() => {
-      syncState();
-    });
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          syncState();
+        });
+      });
+    }, 0);
   };
 
   onMount(() => {
@@ -60,10 +64,12 @@
     document.addEventListener("click", handler);
     document.addEventListener("swup:contentReplaced", swupHandler);
     document.addEventListener("swup:pageView", swupHandler);
+    document.addEventListener("swup:animationInDone", swupHandler);
     return () => {
       document.removeEventListener("click", handler);
       document.removeEventListener("swup:contentReplaced", swupHandler);
       document.removeEventListener("swup:pageView", swupHandler);
+      document.removeEventListener("swup:animationInDone", swupHandler);
     };
   });
 </script>
