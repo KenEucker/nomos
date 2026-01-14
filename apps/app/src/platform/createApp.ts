@@ -19,7 +19,11 @@ import { rateLimit } from "./middleware/builtins/rateLimit";
 import { requestContext } from "./middleware/builtins/requestContext";
 import { loadPlugins } from "./plugins/loadPlugins";
 import { loadRoutes } from "./router/loadRoutes";
-import { buildOpenApi } from "./openapi/buildOpenApi";
+import {
+  buildOpenApiSpec,
+  OPENAPI_DOCS_PATH,
+  OPENAPI_JSON_PATH
+} from "./openapi/spec";
 import { buildSwaggerUiHtml } from "./openapi/swaggerUi";
 import { EventBus } from "./events/bus";
 import { createHookRegistry } from "./events/hooks";
@@ -291,8 +295,9 @@ export async function createApp() {
   const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
   services.routeRegistry = routeRegistry;
 
-  const openApi = buildOpenApi(routeRegistry);
+  const openApi = buildOpenApiSpec(routeRegistry);
   openApiLog.info("OpenAPI schema built.");
+  services.openApi = openApi;
 
   const canAccessDocs = async (req: FastifyRequest) => {
     if (env.NODE_ENV !== "production" || env.SWAGGER_PUBLIC) {
@@ -303,18 +308,18 @@ export async function createApp() {
     return Boolean(session);
   };
 
-  app.get("/openapi.json", async (_req, reply) => {
+  app.get(OPENAPI_JSON_PATH, async (_req, reply) => {
     if (!env.SWAGGER_PUBLIC && env.NODE_ENV === "production") {
       return reply.code(403).send({ error: "forbidden" });
     }
     reply.send(openApi);
   });
 
-  app.get("/docs", async (req, reply) => {
+  app.get(OPENAPI_DOCS_PATH, async (req, reply) => {
     if (!(await canAccessDocs(req))) {
       return reply.code(403).send({ error: "forbidden" });
     }
-    reply.type("text/html").send(buildSwaggerUiHtml("/openapi.json"));
+    reply.type("text/html").send(buildSwaggerUiHtml(OPENAPI_JSON_PATH));
   });
 
   for (const route of routeRegistry.routes) {
