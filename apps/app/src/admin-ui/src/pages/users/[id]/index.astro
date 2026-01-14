@@ -22,6 +22,16 @@ let user:
   | null = null;
 let errorMessage: string | null = null;
 
+const formatErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof ServerApiError) {
+    const details = error.details ? `: ${JSON.stringify(error.details)}` : "";
+    const code = error.code ? ` (${error.code})` : "";
+    return `${error.message}${code}${details}`;
+  }
+  if (error instanceof Error) return error.message;
+  return fallback;
+};
+
 try {
   const sessionResponse = await serverApiGet<{ user: SessionUser }>(Astro.request, "/auth/me");
   sessionUser = sessionResponse.data?.user ?? null;
@@ -34,7 +44,7 @@ try {
   if (error instanceof ServerApiError && error.status === 401) {
     return Astro.redirect("/admin/login");
   }
-  errorMessage = error instanceof Error ? error.message : "Failed to load user.";
+  errorMessage = formatErrorMessage(error, "Failed to load user.");
 }
 
 const formatDateTime = (value?: string) => {

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import AppShell from "../../islands/AppShell.svelte";
+import UsersListActions from "../../islands/UsersListActions.svelte";
 import Table from "../../components/ui/table.svelte";
 import Badge from "../../components/ui/badge.svelte";
 import Input from "../../components/ui/input.svelte";
@@ -29,6 +30,16 @@ let users: Array<{ id: string; name: string; email: string; roles: string[]; cre
 let total = 0;
 let errorMessage: string | null = null;
 
+const formatErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof ServerApiError) {
+    const details = error.details ? `: ${JSON.stringify(error.details)}` : "";
+    const code = error.code ? ` (${error.code})` : "";
+    return `${error.message}${code}${details}`;
+  }
+  if (error instanceof Error) return error.message;
+  return fallback;
+};
+
 try {
   const sessionResponse = await serverApiGet<{ user: SessionUser }>(Astro.request, "/auth/me");
   sessionUser = sessionResponse.data?.user ?? null;
@@ -42,7 +53,7 @@ try {
   if (error instanceof ServerApiError && error.status === 401) {
     return Astro.redirect("/admin/login");
   }
-  errorMessage = error instanceof Error ? error.message : "Failed to load users.";
+  errorMessage = formatErrorMessage(error, "Failed to load users.");
 }
 
 const formatDateTime = (value?: string) => {
@@ -75,7 +86,7 @@ const formatDateTime = (value?: string) => {
         </a>
       </div>
 
-      <form method="get" class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <form method="get" action={Astro.url.pathname} class="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div class="flex flex-1 gap-2">
           <Input
             className="flex-1 sm:max-w-sm"
@@ -96,53 +107,64 @@ const formatDateTime = (value?: string) => {
           No users found.
         </div>
       ) : (
-        <div class="rounded-lg border border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
-          <Table>
-            <thead class="text-xs uppercase text-slate-500 dark:text-slate-400">
-              <tr>
-                <th class="px-4 py-3 text-left">Name</th>
-                <th class="px-4 py-3 text-left">Email</th>
-                <th class="px-4 py-3 text-left">Roles</th>
-                <th class="px-4 py-3 text-left">Created</th>
-                <th class="px-4 py-3 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="text-sm">
-              {users.map((user) => (
-                <tr class="border-t border-slate-200 hover:bg-slate-100/50 dark:border-slate-800 dark:hover:bg-slate-800/30">
-                  <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{user.name}</td>
-                  <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{user.email}</td>
-                  <td class="px-4 py-3">
-                    <div class="flex flex-wrap gap-2">
-                      {(user.roles ?? []).map((role) => (
-                        <Badge variant={role === "admin" ? "success" : "secondary"}>{role}</Badge>
-                      ))}
-                    </div>
-                  </td>
-                  <td class="px-4 py-3 text-slate-500 dark:text-slate-400">
-                    {formatDateTime(user.createdAt)}
-                  </td>
-                  <td class="px-4 py-3">
-                    <div class="flex flex-wrap gap-2">
-                      <a
-                        href={`/admin/users/${user.id}`}
-                        class="text-sm font-medium text-slate-900 hover:underline dark:text-slate-100"
-                      >
-                        View
-                      </a>
-                      <a
-                        href={`/admin/users/${user.id}/edit`}
-                        class="text-sm font-medium text-slate-500 hover:underline dark:text-slate-400"
-                      >
-                        Edit
-                      </a>
-                    </div>
-                  </td>
+        <UsersListActions client:idle>
+          <div class="rounded-lg border border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
+            <Table>
+              <thead class="text-xs uppercase text-slate-500 dark:text-slate-400">
+                <tr>
+                  <th class="px-4 py-3 text-left">Name</th>
+                  <th class="px-4 py-3 text-left">Email</th>
+                  <th class="px-4 py-3 text-left">Roles</th>
+                  <th class="px-4 py-3 text-left">Created</th>
+                  <th class="px-4 py-3 text-left">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
-        </div>
+              </thead>
+              <tbody class="text-sm">
+                {users.map((user) => (
+                  <tr class="border-t border-slate-200 hover:bg-slate-100/50 dark:border-slate-800 dark:hover:bg-slate-800/30">
+                    <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{user.name}</td>
+                    <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{user.email}</td>
+                    <td class="px-4 py-3">
+                      <div class="flex flex-wrap gap-2">
+                        {(user.roles ?? []).map((role) => (
+                          <Badge variant={role === "admin" ? "success" : "secondary"}>{role}</Badge>
+                        ))}
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-slate-500 dark:text-slate-400">
+                      {formatDateTime(user.createdAt)}
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex flex-wrap gap-2">
+                        <a
+                          href={`/admin/users/${user.id}`}
+                          class="text-sm font-medium text-slate-900 hover:underline dark:text-slate-100"
+                        >
+                          View
+                        </a>
+                        <a
+                          href={`/admin/users/${user.id}/edit`}
+                          class="text-sm font-medium text-slate-500 hover:underline dark:text-slate-400"
+                        >
+                          Edit
+                        </a>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          data-delete-user={user.id}
+                          data-delete-name={user.name}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+        </UsersListActions>
       )}
     </div>
   </AppShell>
