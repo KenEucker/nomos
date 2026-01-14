@@ -29,7 +29,8 @@ html.dark body {
   transition: opacity 150ms ease;
 }
 
-html.is-animating #swup {
+.is-animating #swup,
+.is-changing #swup {
   opacity: 0;
 }
 
