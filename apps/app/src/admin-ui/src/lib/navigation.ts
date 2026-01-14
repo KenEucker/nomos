@@ -5,7 +5,7 @@ type NavItem = {
   label: string;
   path: string;
   icon: string;
-  order: number;
+  order?: number;
 };
 
 type BuildNavOptions = {
@@ -151,7 +151,7 @@ const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
     const resourceMeta = getResourceMetaForRoute(resourceMetadata, topRoute, basePath);
     const label = resourceMeta?.label ?? (topRoute === "/" ? "Dashboard" : toTitleCase(topRoute.slice(1)));
     const icon = resourceMeta?.icon ?? DEFAULT_ICON;
-    const order = resourceMeta?.order ?? (topRoute === "/" ? -1 : 0);
+    const order = resourceMeta?.order ?? (topRoute === "/" ? -1 : undefined);
     const normalizedBase = stripTrailingSlash(basePath);
     const path = topRoute === "/" ? normalizedBase || "/" : `${normalizedBase}${topRoute}`;
 
@@ -159,7 +159,17 @@ const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
   }
 
   return navItems.sort((a, b) => {
-    if (a.order !== b.order) return a.order - b.order;
+    const aHasOrder = typeof a.order === "number";
+    const bHasOrder = typeof b.order === "number";
+
+    if (aHasOrder && bHasOrder && a.order !== b.order) {
+      return a.order - b.order;
+    }
+
+    if (aHasOrder !== bHasOrder) {
+      return aHasOrder ? -1 : 1;
+    }
+
     return a.label.localeCompare(b.label);
   });
 };
