@@ -22,12 +22,17 @@ export const get = async (ctx: Ctx) => {
 
   const where = search
     ? {
-        user: {
-          OR: [
-            { email: { contains: search } },
-            { name: { contains: search } }
-          ]
-        }
+        OR: [
+          { id: { contains: search } },
+          {
+            user: {
+              OR: [
+                { email: { contains: search } },
+                { name: { contains: search } }
+              ]
+            }
+          }
+        ]
       }
     : undefined;
 
