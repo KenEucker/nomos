@@ -24,8 +24,8 @@ export const get = async (ctx: Ctx) => {
     ? {
         user: {
           OR: [
-            { email: { contains: search, mode: "insensitive" as const } },
-            { name: { contains: search, mode: "insensitive" as const } }
+            { email: { contains: search } },
+            { name: { contains: search } }
           ]
         }
       }
