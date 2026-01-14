@@ -156,7 +156,7 @@ const actionClass = (variant?: string) => {
             </div>
             {navGroups.map((group) => (
               <details class="space-y-2" open={group.items.some((item) => isActive(item.path))}>
-                <summary class="px-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 cursor-pointer select-none">
+                <summary class="admin-nav-group-label px-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 cursor-pointer select-none">
                   {group.label}
                 </summary>
                 <div class="space-y-1 pl-2">

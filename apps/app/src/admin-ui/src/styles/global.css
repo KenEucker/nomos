@@ -61,6 +61,7 @@ body.sidebar-collapsed .admin-logo-short {
 body.sidebar-collapsed .admin-logo-full,
 body.sidebar-collapsed .admin-user-block,
 body.sidebar-collapsed .admin-nav-label,
+body.sidebar-collapsed .admin-nav-group-label,
 body.sidebar-collapsed .admin-collapse-label {
   display: none;
 }
