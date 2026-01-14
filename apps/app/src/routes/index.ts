@@ -15,15 +15,6 @@ type Resource = {
 
 const METHOD_KEYS = ["get", "post", "put", "patch", "delete", "head", "options"] as const;
 
-export function isHtmlPreferred(accept?: string): boolean {
-  if (!accept) return false;
-  const lower = accept.toLowerCase();
-  const htmlIndex = lower.indexOf("text/html");
-  if (htmlIndex === -1) return false;
-  const jsonIndex = lower.indexOf("application/json");
-  return jsonIndex === -1 || htmlIndex < jsonIndex;
-}
-
 export function extractResourcesFromOpenApi(spec: { paths?: Record<string, any> }): Resource[] {
   const resources = new Map<string, Set<string>>();
   const paths = spec.paths ?? {};
@@ -88,15 +79,14 @@ const renderHtml = (name: string, version: string | undefined, resources: Resour
 };
 
 export const get = async (ctx: Ctx) => {
-  const acceptHeader = Array.isArray(ctx.headers.accept)
-    ? ctx.headers.accept.join(",")
-    : ctx.headers.accept;
   const spec = getOpenApiSpec();
   const name = spec.info?.title ?? "API";
   const version = spec.info?.version;
   const resources = extractResourcesFromOpenApi(spec);
+  const outputParam =
+    typeof ctx.query.output === "string" ? ctx.query.output.toLowerCase() : undefined;
 
-  if (isHtmlPreferred(acceptHeader)) {
+  if (outputParam === "html") {
     ctx.reply.type("text/html; charset=utf-8").send(renderHtml(name, version, resources));
     return;
   }
