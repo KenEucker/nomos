@@ -1,9 +1,10 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import ResourceView from "../../../islands/ResourceView.svelte";
+import { apiKeysResource } from "../api-keys.resource";
 
 const { id } = Astro.params;
 ---
 <AdminLayout title="API Key Details">
-  <ResourceView client:load resourceId="api-keys" view="Show" params={{ id }} />
+  <ResourceView client:load definition={apiKeysResource} view="Show" params={{ id }} />
 </AdminLayout>

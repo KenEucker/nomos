@@ -18,6 +18,14 @@ import type {
   CustomAction,
 } from "./types";
 
+function requireEndpoint(resource: AdminResource, key: keyof AdminResource["endpoints"]): string {
+  const endpoint = resource.endpoints[key];
+  if (!endpoint) {
+    throw new Error(`Missing required endpoint "${key}" for resource "${resource.id}".`);
+  }
+  return endpoint;
+}
+
 // ============================================================================
 // List Module Compiler
 // ============================================================================
@@ -25,6 +33,7 @@ import type {
 export function compileListModule<T = unknown>(
   resource: AdminResource
 ): ListPageModule<T> {
+  const listEndpoint = requireEndpoint(resource, "list");
   const canDelete = resource.actions?.delete !== false;
   const customActions = resource.actions?.custom ?? [];
 
@@ -65,8 +74,8 @@ export function compileListModule<T = unknown>(
 
         const queryString = queryParams.toString();
         const url = queryString
-          ? `${resource.endpoints.list}?${queryString}`
-          : resource.endpoints.list;
+          ? `${listEndpoint}?${queryString}`
+          : listEndpoint;
 
         const response = await apiGet<Record<string, T[]>>(url);
 
@@ -86,7 +95,8 @@ export function compileListModule<T = unknown>(
     actions: {
       delete: canDelete
         ? async (id: string): Promise<void> => {
-            const url = resolveEndpoint(resource.endpoints.delete, id);
+            const deleteEndpoint = requireEndpoint(resource, "delete");
+            const url = resolveEndpoint(deleteEndpoint, id);
             await apiDelete(url);
           }
         : undefined,
@@ -155,6 +165,9 @@ export function compileFormModule<T = unknown>(
 ): FormPageModule<T> {
   const canCreate = resource.actions?.create !== false;
   const canUpdate = resource.actions?.update !== false;
+  const getEndpoint = resource.endpoints.get;
+  const createEndpoint = resource.endpoints.create;
+  const updateEndpoint = resource.endpoints.update;
 
   return {
     resourceId: resource.id,
@@ -163,7 +176,10 @@ export function compileFormModule<T = unknown>(
 
     query: {
       get: async (id: string): Promise<T> => {
-        const url = resolveEndpoint(resource.endpoints.get, id);
+        if (!getEndpoint) {
+          throw new Error(`Missing required endpoint "get" for resource "${resource.id}".`);
+        }
+        const url = resolveEndpoint(getEndpoint, id);
         const response = await apiGet<Record<string, T>>(url);
 
         // Extract item from response using singleDataKey
@@ -175,8 +191,13 @@ export function compileFormModule<T = unknown>(
     actions: {
       create: canCreate
         ? async (payload: Record<string, unknown>): Promise<T> => {
+            if (!createEndpoint) {
+              throw new Error(
+                `Missing required endpoint "create" for resource "${resource.id}".`
+              );
+            }
             const response = await apiPost<Record<string, T>>(
-              resource.endpoints.create,
+              createEndpoint,
               payload
             );
             const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
@@ -186,7 +207,12 @@ export function compileFormModule<T = unknown>(
 
       update: canUpdate
         ? async (id: string, payload: Record<string, unknown>): Promise<T> => {
-            const url = resolveEndpoint(resource.endpoints.update, id);
+            if (!updateEndpoint) {
+              throw new Error(
+                `Missing required endpoint "update" for resource "${resource.id}".`
+              );
+            }
+            const url = resolveEndpoint(updateEndpoint, id);
             const response = await apiPatch<Record<string, T>>(url, payload);
             const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
             return (response.data?.[dataKey] ?? response.data) as T;
@@ -238,6 +264,8 @@ export function compileShowModule<T = unknown>(
 ): ShowPageModule<T> {
   const canDelete = resource.actions?.delete !== false;
   const customActions = resource.actions?.custom ?? [];
+  const getEndpoint = resource.endpoints.get;
+  const deleteEndpoint = resource.endpoints.delete;
 
   return {
     resourceId: resource.id,
@@ -246,7 +274,10 @@ export function compileShowModule<T = unknown>(
 
     query: {
       get: async (id: string): Promise<T> => {
-        const url = resolveEndpoint(resource.endpoints.get, id);
+        if (!getEndpoint) {
+          throw new Error(`Missing required endpoint "get" for resource "${resource.id}".`);
+        }
+        const url = resolveEndpoint(getEndpoint, id);
         const response = await apiGet<Record<string, T>>(url);
 
         // Extract item from response using singleDataKey
@@ -258,7 +289,12 @@ export function compileShowModule<T = unknown>(
     actions: {
       delete: canDelete
         ? async (id: string): Promise<void> => {
-            const url = resolveEndpoint(resource.endpoints.delete, id);
+            if (!deleteEndpoint) {
+              throw new Error(
+                `Missing required endpoint "delete" for resource "${resource.id}".`
+              );
+            }
+            const url = resolveEndpoint(deleteEndpoint, id);
             await apiDelete(url);
           }
         : undefined,

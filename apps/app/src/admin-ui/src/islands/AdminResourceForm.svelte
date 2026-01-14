@@ -31,6 +31,14 @@
 
   const fields = $derived(getFieldsForView(resource, mode));
 
+  const requireEndpoint = (key: keyof AdminResource["endpoints"]) => {
+    const endpoint = resource.endpoints[key];
+    if (!endpoint) {
+      throw new Error(`Missing required endpoint "${key}" for resource "${resource.id}".`);
+    }
+    return endpoint;
+  };
+
   const initializeFormData = () => {
     const data: Record<string, any> = {};
     for (const field of fields) {
@@ -53,7 +61,7 @@
     if (mode !== "edit" || !id) return;
     loadingData = true;
     try {
-      const endpoint = resolveEndpoint(resource.endpoints.get, id);
+      const endpoint = resolveEndpoint(requireEndpoint("get"), id);
       const response = await apiGet<any>(endpoint);
       const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
       const data = response.data?.[dataKey] ?? response.data;
@@ -128,9 +136,9 @@
 
       let response;
       if (mode === "create") {
-        response = await apiPost<any>(resource.endpoints.create, submitData);
+        response = await apiPost<any>(requireEndpoint("create"), submitData);
       } else {
-        const endpoint = resolveEndpoint(resource.endpoints.update, id);
+        const endpoint = resolveEndpoint(requireEndpoint("update"), id);
         response = await apiPatch<any>(endpoint, submitData);
       }
 

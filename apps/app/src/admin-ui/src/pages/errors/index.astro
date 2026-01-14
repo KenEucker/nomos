@@ -2,6 +2,7 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
 import { createStaticListModule } from "../../lib/pages";
+import { errorsResource } from "./errors.resource";
 
 export const pageModule = createStaticListModule({
   resourceId: "errors",
@@ -10,5 +11,5 @@ export const pageModule = createStaticListModule({
 });
 ---
 <AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <ResourceView client:load resourceId={pageModule.resourceId} view="List" />
+  <ResourceView client:load definition={errorsResource} view="List" />
 </AdminLayout>

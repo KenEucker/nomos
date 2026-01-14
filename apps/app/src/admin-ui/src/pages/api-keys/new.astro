@@ -1,7 +1,8 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
+import { apiKeysResource } from "./api-keys.resource";
 ---
 <AdminLayout title="Create API Key">
-  <ResourceView client:load resourceId="api-keys" view="Form" params={{ mode: "create" }} />
+  <ResourceView client:load definition={apiKeysResource} view="Form" params={{ mode: "create" }} />
 </AdminLayout>

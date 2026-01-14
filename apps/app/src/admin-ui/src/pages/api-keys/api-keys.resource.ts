@@ -1,61 +1,56 @@
-import type { AdminResource } from "../types";
+import type { AdminResourceInput } from "../../lib/resources/types";
 
-export const apiKeysResource: AdminResource = {
+export const apiKeysResource: AdminResourceInput = {
   id: "api-keys",
   label: "API Key",
   labelPlural: "API Keys",
-  routeBase: "/admin/api-keys",
-  primaryKey: "id",
   icon: "key",
-
   endpoints: {
     list: "/_/api-keys",
     get: "/_/api-keys/{id}",
     create: "/_/api-keys",
     update: "/_/api-keys/{id}",
-    delete: "/_/api-keys/{id}"
+    delete: "/_/api-keys/{id}",
   },
-
   list: {
     columns: [
       {
         key: "name",
         label: "Name",
-        sortable: true
+        sortable: true,
       },
       {
         key: "prefix",
         label: "Key Prefix",
-        hideOnMobile: true
+        hideOnMobile: true,
       },
       {
         key: "permissions",
         label: "Permissions",
         render: "badge",
-        hideOnMobile: true
+        hideOnMobile: true,
       },
       {
         key: "createdAt",
         label: "Created",
         sortable: true,
         render: "datetime",
-        hideOnMobile: true
+        hideOnMobile: true,
       },
       {
         key: "lastUsedAt",
         label: "Last Used",
-        render: "datetime"
-      }
+        render: "datetime",
+      },
     ],
     defaultSort: {
       key: "createdAt",
-      dir: "desc"
+      dir: "desc",
     },
     searchable: true,
     searchPlaceholder: "Search API keys...",
-    pageSize: 20
+    pageSize: 20,
   },
-
   form: {
     fields: [
       {
@@ -64,7 +59,7 @@ export const apiKeysResource: AdminResource = {
         type: "text",
         required: true,
         placeholder: "e.g., Production API Key",
-        help: "A descriptive name for this API key"
+        help: "A descriptive name for this API key",
       },
       {
         name: "permissions",
@@ -74,7 +69,7 @@ export const apiKeysResource: AdminResource = {
         optionsEndpoint: "/_/permissions",
         valueKey: "key",
         labelKey: "name",
-        help: "Select which permissions this API key should have"
+        help: "Select which permissions this API key should have",
       },
       {
         name: "allowedHosts",
@@ -88,16 +83,11 @@ export const apiKeysResource: AdminResource = {
                 .split(/[\n,]+/)
                 .map((entry) => entry.trim())
                 .filter(Boolean)
-            : value
-      }
-    ]
+            : value,
+      },
+    ],
   },
-
   actions: {
-    create: true,
-    view: true,
-    update: true,
-    delete: true,
     custom: [
       {
         id: "rotate",
@@ -105,12 +95,11 @@ export const apiKeysResource: AdminResource = {
         variant: "secondary",
         confirm: "Are you sure you want to rotate this API key? The old key will stop working immediately.",
         endpoint: "/_/api-keys/{id}/rotate",
-        method: "POST"
-      }
-    ]
+        method: "POST",
+      },
+    ],
   },
-
   requiredRole: "admin",
   dataKey: "apiKeys",
-  singleDataKey: "apiKey"
+  singleDataKey: "apiKey",
 };

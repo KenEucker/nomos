@@ -203,6 +203,86 @@ export interface FilterDef {
 }
 
 /**
+ * Admin Resource Input Definition
+ *
+ * This is the author-facing type. It allows partial definitions that are
+ * normalized into a fully specified AdminResource.
+ */
+export interface AdminResourceInput {
+  /** Unique resource identifier (e.g., "users") */
+  id: string;
+
+  /** Display name (singular, e.g., "User") */
+  label?: string;
+
+  /** Plural display name (e.g., "Users") */
+  labelPlural?: string;
+
+  /** Base route in admin UI (e.g., "/admin/users") */
+  routeBase?: string;
+
+  /** Primary key field name (usually "id") */
+  primaryKey?: string;
+
+  /** Icon name for navigation (optional) */
+  icon?: string;
+
+  /** API endpoints */
+  endpoints?: {
+    /** List endpoint (GET) */
+    list?: string;
+    /** Get single record endpoint (GET) - use {id} placeholder */
+    get?: string;
+    /** Create endpoint (POST) */
+    create?: string;
+    /** Update endpoint (PATCH/PUT) - use {id} placeholder */
+    update?: string;
+    /** Delete endpoint (DELETE) - use {id} placeholder */
+    delete?: string;
+  };
+
+  /** List view configuration */
+  list?: {
+    /** Columns to display */
+    columns?: ColumnDef[];
+    /** Default sort configuration */
+    defaultSort?: {
+      key: string;
+      dir: "asc" | "desc";
+    };
+    /** Available filters */
+    filters?: FilterDef[];
+    /** Enable search */
+    searchable?: boolean;
+    /** Search placeholder */
+    searchPlaceholder?: string;
+    /** Items per page */
+    pageSize?: number;
+  };
+
+  /** Form configuration */
+  form?: {
+    /** Field definitions */
+    fields?: FieldDef[];
+  };
+
+  /** Actions allowed on this resource */
+  actions?: ResourceActions;
+
+  /** Required role to access this resource */
+  requiredRole?: string;
+
+  /** Required permission to access this resource */
+  requiredPermission?: string;
+
+  /** Response data key (e.g., "users" for { users: [...] }) */
+  dataKey?: string;
+
+  /** Single record data key (e.g., "user" for { user: {...} }) */
+  singleDataKey?: string;
+}
+
+/**
  * Admin Resource Definition
  *
  * This is the main configuration object that defines how a resource
@@ -230,15 +310,15 @@ export interface AdminResource {
   /** API endpoints */
   endpoints: {
     /** List endpoint (GET) */
-    list: string;
+    list?: string;
     /** Get single record endpoint (GET) - use {id} placeholder */
-    get: string;
+    get?: string;
     /** Create endpoint (POST) */
-    create: string;
+    create?: string;
     /** Update endpoint (PATCH/PUT) - use {id} placeholder */
-    update: string;
+    update?: string;
     /** Delete endpoint (DELETE) - use {id} placeholder */
-    delete: string;
+    delete?: string;
   };
 
   /** List view configuration */
@@ -280,6 +360,61 @@ export interface AdminResource {
 
   /** Single record data key (e.g., "user" for { user: {...} }) */
   singleDataKey?: string;
+}
+
+/**
+ * Normalize a resource input into a fully specified AdminResource.
+ */
+export function normalizeResource(input: AdminResourceInput): AdminResource {
+  const label = input.label ?? toTitleCase(input.id);
+  const labelPlural = input.labelPlural ?? `${label}s`;
+  const endpoints = input.endpoints ?? {};
+
+  return {
+    id: input.id,
+    label,
+    labelPlural,
+    routeBase: input.routeBase ?? `/admin/${input.id}`,
+    primaryKey: input.primaryKey ?? "id",
+    icon: input.icon ?? "file",
+    endpoints: {
+      list: endpoints.list,
+      get: endpoints.get,
+      create: endpoints.create,
+      update: endpoints.update,
+      delete: endpoints.delete,
+    },
+    list: {
+      columns: input.list?.columns ?? [],
+      defaultSort: input.list?.defaultSort,
+      filters: input.list?.filters,
+      searchable: input.list?.searchable,
+      searchPlaceholder: input.list?.searchPlaceholder,
+      pageSize: input.list?.pageSize,
+    },
+    form: {
+      fields: input.form?.fields ?? [],
+    },
+    actions: {
+      ...input.actions,
+      create: input.actions?.create ?? Boolean(endpoints.create),
+      view: input.actions?.view ?? Boolean(endpoints.get),
+      update: input.actions?.update ?? Boolean(endpoints.update),
+      delete: input.actions?.delete ?? Boolean(endpoints.delete),
+    },
+    requiredRole: input.requiredRole,
+    requiredPermission: input.requiredPermission,
+    dataKey: input.dataKey,
+    singleDataKey: input.singleDataKey,
+  };
+}
+
+function toTitleCase(value: string): string {
+  return value
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 /**

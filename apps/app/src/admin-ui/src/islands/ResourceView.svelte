@@ -5,24 +5,21 @@
   It resolves the appropriate page module and template, then renders the view.
 
   Usage:
-    <ResourceView resourceId="users" view="List" />
-    <ResourceView resourceId="users" view="Form" params={{ id: "123", mode: "edit" }} />
-    <ResourceView resourceId="users" view="Show" params={{ id: "123" }} />
+    <ResourceView definition={usersResource} view="List" />
+    <ResourceView definition={usersResource} view="Form" params={{ id: "123", mode: "edit" }} />
+    <ResourceView definition={usersResource} view="Show" params={{ id: "123" }} />
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getResource } from "../lib/resources/registry";
+  import { normalizeResource, type AdminResourceInput } from "../lib/resources/types";
   import { resolvePageModule, type ViewType, type FormMode, type PageModule } from "../lib/pages";
   import { resolveTemplate, type ResolvedTemplate } from "../lib/templates";
 
-  // Import default templates statically for fallback
-  import DefaultList from "../templates/_default/List.svelte";
-  import DefaultForm from "../templates/_default/Form.svelte";
-  import DefaultShow from "../templates/_default/Show.svelte";
-
   interface Props {
+    /** Resource definition */
+    definition: AdminResourceInput;
     /** Resource identifier */
-    resourceId: string;
+    resourceId?: string;
     /** View type */
     view: ViewType;
     /** Route parameters */
@@ -40,6 +37,7 @@
   }
 
   let {
+    definition,
     resourceId,
     view,
     params = {},
@@ -57,7 +55,7 @@
   let pageModule = $state<PageModule | null>(null);
   let template = $state<ResolvedTemplate | null>(null);
 
-  const resource = $derived(getResource(resourceId));
+  const resource = $derived(normalizeResource(definition));
   const title = $derived(() => {
     if (pageModule?.view === "Form" && resource) {
       return params.mode === "edit" ? `Edit ${resource.label}` : `Create ${resource.label}`;
@@ -80,6 +78,14 @@
   const breadcrumbs = $derived(pageModule?.breadcrumbs ?? []);
   const actions = $derived(pageModule?.pageActions ?? []);
 
+  $effect(() => {
+    if (resourceId && resourceId !== resource.id) {
+      throw new Error(
+        `ResourceView: resourceId "${resourceId}" does not match definition id "${resource.id}".`
+      );
+    }
+  });
+
   // Load module and template
   async function loadResources() {
     loading = true;
@@ -87,10 +93,10 @@
 
     try {
       // Resolve page module
-      pageModule = await resolvePageModule(resourceId, view);
+      pageModule = await resolvePageModule(resource, view, {}, params);
 
       // Try to resolve template (may fail if not set up)
-      const resolved = await resolveTemplate(resourceId, view);
+      const resolved = await resolveTemplate(resource.id, view);
       template = resolved.template;
 
       ready = true;

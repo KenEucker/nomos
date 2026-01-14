@@ -1,57 +1,52 @@
-import type { AdminResource } from "../types";
+import type { AdminResourceInput } from "../../lib/resources/types";
 
-export const usersResource: AdminResource = {
+export const usersResource: AdminResourceInput = {
   id: "users",
   label: "User",
   labelPlural: "Users",
-  routeBase: "/admin/users",
-  primaryKey: "id",
   icon: "users",
-
   endpoints: {
     list: "/users",
     get: "/users/{id}",
     create: "/users",
     update: "/users/{id}",
-    delete: "/users/{id}"
+    delete: "/users/{id}",
   },
-
   list: {
     columns: [
       {
         key: "name",
         label: "Name",
-        sortable: true
+        sortable: true,
       },
       {
         key: "email",
         label: "Email",
         sortable: true,
         render: "email",
-        hideOnMobile: true
+        hideOnMobile: true,
       },
       {
         key: "roles",
         label: "Roles",
-        render: "badge"
+        render: "badge",
       },
       {
         key: "createdAt",
         label: "Created",
         sortable: true,
         render: "datetime",
-        hideOnMobile: true
-      }
+        hideOnMobile: true,
+      },
     ],
     defaultSort: {
       key: "createdAt",
-      dir: "desc"
+      dir: "desc",
     },
     searchable: true,
     searchPlaceholder: "Search users...",
-    pageSize: 20
+    pageSize: 20,
   },
-
   form: {
     fields: [
       {
@@ -59,14 +54,14 @@ export const usersResource: AdminResource = {
         label: "Name",
         type: "text",
         required: true,
-        placeholder: "Enter full name"
+        placeholder: "Enter full name",
       },
       {
         name: "email",
         label: "Email",
         type: "email",
         required: true,
-        placeholder: "user@example.com"
+        placeholder: "user@example.com",
       },
       {
         name: "password",
@@ -77,7 +72,7 @@ export const usersResource: AdminResource = {
         showOnEdit: true,
         showOnView: false,
         placeholder: "Minimum 6 characters",
-        help: "Leave blank to keep existing password (edit only)"
+        help: "Leave blank to keep existing password (edit only)",
       },
       {
         name: "roles",
@@ -89,19 +84,11 @@ export const usersResource: AdminResource = {
         optionsEndpoint: "/roles",
         showOnCreate: true,
         showOnEdit: true,
-        showOnView: true
-      }
-    ]
+        showOnView: true,
+      },
+    ],
   },
-
-  actions: {
-    create: true,
-    view: true,
-    update: true,
-    delete: true
-  },
-
   requiredRole: "admin",
   dataKey: "users",
-  singleDataKey: "user"
+  singleDataKey: "user",
 };

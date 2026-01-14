@@ -1,9 +1,10 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import ResourceView from "../../../islands/ResourceView.svelte";
+import { usersResource } from "../users.resource";
 
 const { id } = Astro.params;
 ---
 <AdminLayout title="User Details">
-  <ResourceView client:load resourceId="users" view="Show" params={{ id }} />
+  <ResourceView client:load definition={usersResource} view="Show" params={{ id }} />
 </AdminLayout>

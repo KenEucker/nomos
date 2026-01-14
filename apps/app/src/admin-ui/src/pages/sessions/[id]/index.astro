@@ -1,9 +1,10 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import ResourceView from "../../../islands/ResourceView.svelte";
+import { sessionsResource } from "../sessions.resource";
 
 const { id } = Astro.params;
 ---
 <AdminLayout title="Session Details">
-  <ResourceView client:load resourceId="sessions" view="Show" params={{ id }} />
+  <ResourceView client:load definition={sessionsResource} view="Show" params={{ id }} />
 </AdminLayout>
