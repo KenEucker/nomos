@@ -33,12 +33,18 @@
     applyState("mobile-menu-collapsed", readStored(MOBILE_KEY, true));
   };
 
+  const scheduleSync = () => {
+    requestAnimationFrame(() => {
+      syncState();
+    });
+  };
+
   onMount(() => {
     initState(SIDEBAR_KEY, "sidebar-collapsed", false);
     initState(MOBILE_KEY, "mobile-menu-collapsed", true);
 
     const swupHandler = () => {
-      syncState();
+      scheduleSync();
     };
 
     const handler = (event: Event) => {
@@ -53,9 +59,11 @@
 
     document.addEventListener("click", handler);
     document.addEventListener("swup:contentReplaced", swupHandler);
+    document.addEventListener("swup:pageView", swupHandler);
     return () => {
       document.removeEventListener("click", handler);
       document.removeEventListener("swup:contentReplaced", swupHandler);
+      document.removeEventListener("swup:pageView", swupHandler);
     };
   });
 </script>
