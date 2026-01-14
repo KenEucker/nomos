@@ -22,40 +22,9 @@ const { title = "Nomos Admin" } = Astro.props;
       html.dark { background: #020617; }
       :root { color-scheme: light dark; }
     </style>
-    <script is:inline>
-      (function() {
-        if (window.__nomosSwupHooksRegistered) return;
-        const register = () => {
-          if (window.__nomosSwupHooksRegistered || !window.swup) return;
-          window.__nomosSwupHooksRegistered = true;
-
-          const notifyPageView = () => {
-            window.dispatchEvent(
-              new CustomEvent("nomos:page-view", { detail: { path: window.location.pathname } })
-            );
-          };
-
-          window.swup.hooks.on("page:view", notifyPageView);
-          window.swup.hooks.on("page:view", () => {
-            console.log("[swup] page:view", window.location.pathname);
-          });
-          window.swup.hooks.on("animation:out:start", () => {
-            console.log("[swup] animation out");
-          });
-          notifyPageView();
-        };
-
-        if (window.swup) {
-          register();
-        } else {
-          document.addEventListener("swup:enable", register, { once: true });
-        }
-      })();
-    </script>
-
   </head>
   <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-    <!-- Swup swaps the #swup container; hooks dispatch nomos:page-view for persistent UI. -->
+    <!-- Swup swaps the #swup container; the shell stays mounted. -->
     <AppShell client:load {title}>
       <main id="swup" class="transition-main">
         <slot />

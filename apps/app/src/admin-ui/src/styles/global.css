@@ -26,11 +26,13 @@ html.dark body {
 }
 
 #swup {
-  transition: opacity 150ms ease;
+  transition: opacity 160ms ease;
 }
 
-.is-animating #swup,
-.is-changing #swup {
+html.is-animating #swup,
+body.is-animating #swup,
+html.is-changing #swup,
+body.is-changing #swup {
   opacity: 0;
 }
 

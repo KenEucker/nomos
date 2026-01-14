@@ -77,7 +77,6 @@
   const fallbackActions = actions;
 
   onMount(() => {
-    console.log("[AppShell] mount");
     const unsubscribe = session.subscribe((value) => {
       user = value;
     });
@@ -111,17 +110,7 @@
       }
     })();
 
-    const handlePageView = (event: Event) => {
-      const detail = event instanceof CustomEvent ? event.detail : null;
-      currentPath = detail?.path ?? window.location.pathname;
-      mobileMenuCollapsed = true;
-    };
-
-    window.addEventListener("nomos:page-view", handlePageView);
-
     return () => {
-      console.log("[AppShell] destroy");
-      window.removeEventListener("nomos:page-view", handlePageView);
       unsubscribeShell();
       unsubscribe();
     };
