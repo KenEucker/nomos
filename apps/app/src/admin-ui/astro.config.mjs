@@ -13,7 +13,8 @@ export default defineConfig({
     swup({
       globalInstance: true,
       containers: ["#swup"],
-      animationSelector: "#swup"
+      animationSelector: "#swup",
+      linkSelector: 'a[href^="/admin"]'
     })
   ],
   output: "server",
