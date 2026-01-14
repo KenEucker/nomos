@@ -119,7 +119,11 @@
         if (field.readonly) {
           continue;
         }
-        submitData[field.name] = value;
+        if (field.submitTransform) {
+          submitData[field.name] = field.submitTransform(value);
+        } else {
+          submitData[field.name] = value;
+        }
       }
 
       let response;

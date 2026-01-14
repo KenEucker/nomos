@@ -5,7 +5,12 @@ export const config = {
   auth: "required",
   permissions: ["auth.manage"],
   tags: ["admin"],
-  summary: "Manage API keys",
+  summary: "Manage API keys"
+};
+
+export const postConfig = {
+  auth: "required",
+  permissions: ["auth.manage"],
   validate: {
     body: z.object({
       name: z.string().optional(),

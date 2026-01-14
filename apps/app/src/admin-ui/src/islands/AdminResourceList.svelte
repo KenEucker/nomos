@@ -26,6 +26,8 @@
   let total = $state(0);
   let sortKey = $state(resource.list.defaultSort?.key ?? "");
   let sortDir = $state<"asc" | "desc">(resource.list.defaultSort?.dir ?? "desc");
+  let hasInitialized = $state(false);
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   type ResourceCustomAction = NonNullable<AdminResource["actions"]>["custom"][number];
 
@@ -70,6 +72,15 @@
   const handleSearch = () => {
     page = 1;
     loadData();
+  };
+
+  const scheduleSearch = () => {
+    if (!resource.list.searchable || !hasInitialized) return;
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      page = 1;
+      loadData();
+    }, 300);
   };
 
   const handleSort = (key: string) => {
@@ -259,6 +270,7 @@
 
   onMount(() => {
     loadData();
+    hasInitialized = true;
   });
 </script>
 
@@ -272,6 +284,7 @@
           placeholder={resource.list.searchPlaceholder ?? `Search ${resource.labelPlural.toLowerCase()}...`}
           bind:value={search}
           onkeydown={(e: KeyboardEvent) => e.key === "Enter" && handleSearch()}
+          oninput={scheduleSearch}
         />
         <Button variant="secondary" onclick={handleSearch}>Search</Button>
       </div>

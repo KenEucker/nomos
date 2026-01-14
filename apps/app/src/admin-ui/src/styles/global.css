@@ -77,6 +77,30 @@ body.sidebar-collapsed .admin-sidebar-toggle {
   padding: 0.625rem;
 }
 
+.admin-nav-item[data-active="true"] {
+  @apply bg-slate-200 text-slate-900;
+}
+
+html.dark .admin-nav-item[data-active="true"] {
+  @apply bg-slate-800 text-white;
+}
+
+.admin-nav-item[data-active="false"] {
+  @apply text-slate-600;
+}
+
+html.dark .admin-nav-item[data-active="false"] {
+  @apply text-slate-300;
+}
+
+.admin-nav-item[data-active="false"]:hover {
+  @apply bg-slate-200 text-slate-900;
+}
+
+html.dark .admin-nav-item[data-active="false"]:hover {
+  @apply bg-slate-800 text-white;
+}
+
 body.mobile-menu-collapsed .mobile-nav-label {
   display: none;
 }
@@ -91,6 +115,30 @@ body:not(.mobile-menu-collapsed) .admin-mobile-nav-link {
 
 body:not(.mobile-menu-collapsed) .admin-mobile-nav-items {
   min-width: max-content;
+}
+
+.admin-mobile-nav-link[data-active="true"] {
+  @apply bg-slate-200 text-slate-900;
+}
+
+html.dark .admin-mobile-nav-link[data-active="true"] {
+  @apply bg-slate-800 text-white;
+}
+
+.admin-mobile-nav-link[data-active="false"] {
+  @apply text-slate-600;
+}
+
+html.dark .admin-mobile-nav-link[data-active="false"] {
+  @apply text-slate-400;
+}
+
+.admin-mobile-nav-link[data-active="false"]:hover {
+  @apply bg-slate-200 text-slate-900;
+}
+
+html.dark .admin-mobile-nav-link[data-active="false"]:hover {
+  @apply bg-slate-800 text-white;
 }
 
 /* Hide scrollbar while allowing scroll */

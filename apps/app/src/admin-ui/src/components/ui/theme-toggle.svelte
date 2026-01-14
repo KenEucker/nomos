@@ -44,6 +44,6 @@
     {@html currentTheme === "dark" ? sunIcon : moonIcon}
   </svg>
   {#if !collapsed}
-    <span>{currentTheme === "dark" ? "Light mode" : "Dark mode"}</span>
+    <span class="admin-collapse-label">{currentTheme === "dark" ? "Light mode" : "Dark mode"}</span>
   {/if}
 </button>

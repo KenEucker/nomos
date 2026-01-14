@@ -48,6 +48,8 @@ export interface BaseFieldDef {
   placeholder?: string;
   /** Default value */
   defaultValue?: unknown;
+  /** Optional transform applied before submit */
+  submitTransform?: (value: unknown) => unknown;
 }
 
 /**

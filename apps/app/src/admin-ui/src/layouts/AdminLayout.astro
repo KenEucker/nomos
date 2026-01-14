@@ -3,6 +3,8 @@ import BaseLayout from "./BaseLayout.astro";
 import ThemeToggle from "../components/ui/theme-toggle.svelte";
 import Toast from "../components/ui/toast.svelte";
 import ShellState from "../islands/ShellState.svelte";
+import SessionLoader from "../islands/SessionLoader.svelte";
+import NavHighlight from "../islands/NavHighlight.svelte";
 import LogoutButton from "../islands/LogoutButton.svelte";
 import type { PageAction, PageBreadcrumb } from "../lib/pages/types";
 import type { SessionUser } from "../lib/session";
@@ -66,6 +68,8 @@ const icons: Record<string, string> = {
 };
 
 const hasRole = (role?: string) => !role || user?.roles?.includes(role);
+const isActive = (path: string) =>
+  path === "/admin" ? activePath === "/admin" : activePath === path || activePath.startsWith(`${path}/`);
 
 const actionClass = (variant?: string) => {
   switch (variant) {
@@ -84,6 +88,8 @@ const actionClass = (variant?: string) => {
 ---
 <BaseLayout title={title}>
   <ShellState client:load />
+  <SessionLoader client:load />
+  <NavHighlight client:load />
   <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
     <header class="admin-mobile-header sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
       <div class="flex items-center h-12 gap-2 px-3">
@@ -116,11 +122,9 @@ const actionClass = (variant?: string) => {
             hasRole(item.role) ? (
               <a
                 href={item.path}
-                class={`admin-mobile-nav-link flex items-center gap-2 rounded-md text-sm font-medium transition whitespace-nowrap flex-shrink-0 ${
-                  activePath === item.path
-                    ? "bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-white"
-                    : "text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-                }`}
+                data-nav-path={item.path}
+                data-active={isActive(item.path) ? "true" : "false"}
+                class="admin-mobile-nav-link flex items-center gap-2 rounded-md text-sm font-medium transition whitespace-nowrap flex-shrink-0"
               >
                 <svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <Fragment set:html={icons[item.icon]} />
@@ -153,11 +157,9 @@ const actionClass = (variant?: string) => {
               hasRole(item.role) ? (
                 <a
                   href={item.path}
-                  class={`admin-nav-item group flex items-center rounded-md text-sm font-medium transition ${
-                    activePath === item.path
-                      ? "bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-white"
-                      : "text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-                  }`}
+                  data-nav-path={item.path}
+                  data-active={isActive(item.path) ? "true" : "false"}
+                  class="admin-nav-item group flex items-center rounded-md text-sm font-medium transition"
                 >
                   <svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <Fragment set:html={icons[item.icon]} />
