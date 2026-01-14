@@ -148,6 +148,34 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 ---
 
+### `pages/` (Admin UI plugin pages)
+**Purpose**
+- Provide Astro routes for the admin UI from within a plugin.
+- Pages inside a plugin are injected into the admin UI router at build/dev time.
+
+**How it works**
+- Any `pages/` directory under a plugin root is treated like an additional `src/pages/` folder.
+- Route paths are derived from the path under `pages/`:
+  - `pages/reports/index.astro` → `/reports`
+  - `pages/reports/[id].astro` → `/reports/[id]`
+  - `pages/reports/nested/index.astro` → `/reports/nested`
+- Dynamic and rest segments (`[id]`, `[...path]`) follow Astro file routing rules.
+
+**Collision rules**
+- If a plugin page conflicts with a core admin UI route in `src/pages`, the build fails with a clear error.
+- If two plugins define the same route path, the build fails similarly.
+
+**Constraints**
+- Plugin pages should avoid catch-all routes (e.g. `[...all].astro`) unless you intend to own that namespace.
+- Injected routes are registered before routing is finalized, so collisions are always explicit errors.
+
+**Manual verification steps**
+1. Add a new `.astro` file under `apps/app/src/plugins/<plugin>/pages/...`.
+2. Run `pnpm --filter nomos-admin-ui dev` and navigate to the route path.
+3. Run `pnpm --filter nomos-admin-ui build` to ensure injected routes build cleanly.
+
+---
+
 ## Admin UI layering (coordination)
 - Follow the Admin UI guide for the full layering model and renderer behavior. See [../admin-ui/src/pages/AGENTS.md](../admin-ui/src/pages/AGENTS.md).
 - Template override priority (highest → lowest): plugin → platform → resource-specific → default. (`apps/app/src/admin-ui/src/lib/templates/resolveTemplate.ts`)

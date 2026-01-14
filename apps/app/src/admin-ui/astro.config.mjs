@@ -3,6 +3,7 @@ import svelte from "@astrojs/svelte";
 import tailwind from "@astrojs/tailwind";
 import node from "@astrojs/node";
 import swup from "@swup/astro";
+import { pluginPages } from "./src/integrations/plugin-pages.js";
 
 const astroDevPort = process.env.ASTRO_DEV_PORT ? parseInt(process.env.ASTRO_DEV_PORT, 10) : 4321;
 
@@ -15,7 +16,8 @@ export default defineConfig({
       containers: ["#swup"],
       animationSelector: "#swup",
       linkSelector: 'a[href^="/admin"]'
-    })
+    }),
+    pluginPages()
   ],
   output: "server",
   base: "/admin",
