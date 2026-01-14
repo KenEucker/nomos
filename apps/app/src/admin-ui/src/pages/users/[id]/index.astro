@@ -1,9 +1,105 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
-import ResourceView from "../../../islands/ResourceView.svelte";
+import Card from "../../../components/ui/card.svelte";
+import Badge from "../../../components/ui/badge.svelte";
+import { usersResource } from "../../../lib/resources/definitions/users";
+import { serverApiGet, ServerApiError } from "../../../lib/server/api";
 
 const { id } = Astro.params;
+
+let user:
+  | {
+      id: string;
+      name: string;
+      email: string;
+      roles: string[];
+      createdAt?: string;
+      updatedAt?: string;
+    }
+  | null = null;
+let errorMessage: string | null = null;
+
+try {
+  const userUrl = new URL(usersResource.endpoints.get.replace("{id}", id ?? ""), Astro.request.url);
+  const response = await serverApiGet<{ user: typeof user }>(Astro.request, userUrl.toString());
+  const dataKey = usersResource.singleDataKey ?? "user";
+  user = response.data?.[dataKey] ?? null;
+} catch (error) {
+  if (error instanceof ServerApiError && error.status === 401) {
+    return Astro.redirect("/admin/login");
+  }
+  errorMessage = error instanceof Error ? error.message : "Failed to load user.";
+}
+
+const formatDateTime = (value?: string) => {
+  if (!value) return "-";
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+};
 ---
 <BaseLayout title="User Details">
-  <ResourceView client:load resourceId="users" view="Show" params={{ id: id! }} />
+  <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold">User Details</h1>
+          <p class="text-sm text-slate-500 dark:text-slate-400">User record and roles</p>
+        </div>
+        {user ? (
+          <a
+            href={`/admin/users/${user.id}/edit`}
+            class="inline-flex h-9 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            Edit user
+          </a>
+        ) : null}
+      </div>
+
+      {errorMessage ? (
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
+          {errorMessage}
+        </div>
+      ) : user ? (
+        <Card>
+          <div class="grid gap-6 md:grid-cols-2">
+            <div>
+              <div class="text-sm text-slate-500 dark:text-slate-400">Name</div>
+              <div class="mt-1 text-base font-medium">{user.name}</div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500 dark:text-slate-400">Email</div>
+              <div class="mt-1 text-base font-medium">{user.email}</div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500 dark:text-slate-400">Roles</div>
+              <div class="mt-2 flex flex-wrap gap-2">
+                {(user.roles ?? []).map((role) => (
+                  <Badge variant={role === "admin" ? "success" : "secondary"}>{role}</Badge>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div class="text-sm text-slate-500 dark:text-slate-400">Created</div>
+              <div class="mt-1 text-base font-medium">{formatDateTime(user.createdAt)}</div>
+              <div class="mt-4 text-sm text-slate-500 dark:text-slate-400">Updated</div>
+              <div class="mt-1 text-base font-medium">{formatDateTime(user.updatedAt)}</div>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <div class="rounded-lg border border-slate-200 bg-white/40 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-400">
+          User not found.
+        </div>
+      )}
+
+      <div>
+        <a href="/admin/users" class="text-sm font-medium text-slate-600 hover:underline dark:text-slate-300">
+          Back to users
+        </a>
+      </div>
+    </div>
+  </div>
 </BaseLayout>
