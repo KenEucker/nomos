@@ -8,6 +8,11 @@
     document.body.classList.toggle(className, value);
   };
 
+  const readStored = (key: string, defaultValue: boolean) => {
+    const stored = localStorage.getItem(key);
+    return stored !== null ? stored === "true" : defaultValue;
+  };
+
   const initState = (key: string, className: string, defaultValue: boolean) => {
     const stored = localStorage.getItem(key);
     const value = stored !== null ? stored === "true" : defaultValue;
@@ -23,9 +28,18 @@
     localStorage.setItem(key, String(next));
   };
 
+  const syncState = () => {
+    applyState("sidebar-collapsed", readStored(SIDEBAR_KEY, false));
+    applyState("mobile-menu-collapsed", readStored(MOBILE_KEY, true));
+  };
+
   onMount(() => {
     initState(SIDEBAR_KEY, "sidebar-collapsed", false);
     initState(MOBILE_KEY, "mobile-menu-collapsed", true);
+
+    const swupHandler = () => {
+      syncState();
+    };
 
     const handler = (event: Event) => {
       const target = event.target;
@@ -38,8 +52,10 @@
     };
 
     document.addEventListener("click", handler);
+    document.addEventListener("swup:contentReplaced", swupHandler);
     return () => {
       document.removeEventListener("click", handler);
+      document.removeEventListener("swup:contentReplaced", swupHandler);
     };
   });
 </script>

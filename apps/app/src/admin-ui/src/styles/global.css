@@ -78,6 +78,14 @@ body.sidebar-collapsed .admin-sidebar-toggle {
   padding: 0.625rem;
 }
 
+.admin-sidebar-toggle-icon {
+  transition: transform 200ms ease;
+}
+
+body.sidebar-collapsed .admin-sidebar-toggle-icon {
+  transform: rotate(180deg);
+}
+
 .admin-nav-item[data-active="true"] {
   @apply bg-slate-200 text-slate-900;
 }
