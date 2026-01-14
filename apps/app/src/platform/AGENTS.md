@@ -20,7 +20,7 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 ## Guidance for adding platform capabilities
 **Registries & resolution**
 - Keep resolution order predictable and documented.
-- Do not add new registries that duplicate existing concepts.
+- Do not add new registries that duplicate or undermine existing resolution concepts.
 
 **Middleware/hooks**
 - Provide composable hook APIs instead of hard-coded behavior.

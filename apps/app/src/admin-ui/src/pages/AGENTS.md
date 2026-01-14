@@ -4,7 +4,7 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 ## Mission for AI agents
 - Keep admin UI **route-aligned** and predictable.
-- Use the three-layer model: **Astro route → Page module → Resource definition** (templates render only).
+- Use the three-layer model: **Astro route container + (page module / resource definition inputs)**; templates render only.
 - Prefer the lowest layer that satisfies the use case.
 
 ## Three-layer model (non-negotiable)

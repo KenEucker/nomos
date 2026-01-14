@@ -98,11 +98,11 @@ You **must not collapse these layers**.
 * Standard CRUD (List / Create / Edit / Show / Delete)
 * Simple validation and relationships
 
-**Location:**
+**Preferred locations (by convention):**
 
-```
-apps/app/src/admin-ui/src/pages/<resource>/<resource>.resource.ts
-```
+* Co-located with admin UI routes (common case)
+* Defined inline in an `.astro` route when the resource is small
+* Provided by plugins when the resource is owned by a plugin
 
 > If CRUD can be expressed here, it *must* be expressed here.
 
@@ -130,7 +130,7 @@ For simple cases, this is preferred.
 **Resolution order:**
 
 1. Route‑aligned handwritten page module (`*.page.ts`)
-2. Auto‑compiled module from resource definition
+2. Auto-derived page behavior from the resource definition (when no handwritten page module exists)
 
 **When to write a handwritten page module:**
 
@@ -228,7 +228,7 @@ If you feel tempted to do one of these, stop and reassess.
 
 ## Backend Expectations
 
-Admin resources expect:
+Admin-facing routes/resources consumed by the admin UI expect:
 
 * Consistent REST semantics
 * Zod validation

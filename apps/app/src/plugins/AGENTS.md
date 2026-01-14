@@ -149,7 +149,7 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 ---
 
 ## Admin UI layering (coordination)
-- **Resource Definitions → Page Modules → Templates**.
+- Follow the Admin UI guide for the full layering model and renderer behavior. See [../admin-ui/src/pages/AGENTS.md](../admin-ui/src/pages/AGENTS.md).
 - Template override priority (highest → lowest): plugin → platform → resource-specific → default. (`apps/app/src/admin-ui/src/lib/templates/resolveTemplate.ts`)
 - Do **not** create wrapper templates that only render a single island.
 
