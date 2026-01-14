@@ -5,7 +5,8 @@ type NavItem = {
   label: string;
   path: string;
   icon: string;
-  order: number;
+  order?: number;
+  group?: string;
 };
 
 type BuildNavOptions = {
@@ -15,9 +16,12 @@ type BuildNavOptions = {
 type ResourceMeta = {
   label: string;
   icon?: string;
+  order?: number;
+  group?: string;
 };
 
-const DEFAULT_ICON = "folder";
+const DEFAULT_ICON =
+  '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>';
 
 const normalizePath = (value: string) => value.split(path.sep).join(path.posix.sep);
 
@@ -57,11 +61,21 @@ const buildResourceMetadata = () => {
     if (!resourceExport) continue;
 
     const label = resourceExport.labelPlural ?? resourceExport.label ?? toTitleCase(resourceExport.id);
-    resourceMetadata.set(resourceExport.id, { label, icon: resourceExport.icon });
+    resourceMetadata.set(resourceExport.id, {
+      label,
+      icon: resourceExport.icon,
+      order: resourceExport.menuOrder,
+      group: resourceExport.menuGroup
+    });
 
     if (resourceExport.routeBase) {
       const normalizedRoute = normalizePath(resourceExport.routeBase);
-      resourceMetadata.set(normalizedRoute, { label, icon: resourceExport.icon });
+      resourceMetadata.set(normalizedRoute, {
+        label,
+        icon: resourceExport.icon,
+        order: resourceExport.menuOrder,
+        group: resourceExport.menuGroup
+      });
     }
   }
 
@@ -141,15 +155,26 @@ const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
     const resourceMeta = getResourceMetaForRoute(resourceMetadata, topRoute, basePath);
     const label = resourceMeta?.label ?? (topRoute === "/" ? "Dashboard" : toTitleCase(topRoute.slice(1)));
     const icon = resourceMeta?.icon ?? DEFAULT_ICON;
-    const order = topRoute === "/" ? -1 : 0;
+    const order = resourceMeta?.order ?? (topRoute === "/" ? -1 : undefined);
+    const group = resourceMeta?.group;
     const normalizedBase = stripTrailingSlash(basePath);
     const path = topRoute === "/" ? normalizedBase || "/" : `${normalizedBase}${topRoute}`;
 
-    navItems.push({ label, path, icon, order });
+    navItems.push({ label, path, icon, order, group });
   }
 
   return navItems.sort((a, b) => {
-    if (a.order !== b.order) return a.order - b.order;
+    const aHasOrder = typeof a.order === "number";
+    const bHasOrder = typeof b.order === "number";
+
+    if (aHasOrder && bHasOrder && a.order !== b.order) {
+      return a.order - b.order;
+    }
+
+    if (aHasOrder !== bHasOrder) {
+      return aHasOrder ? -1 : 1;
+    }
+
     return a.label.localeCompare(b.label);
   });
 };

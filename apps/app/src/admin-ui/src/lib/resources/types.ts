@@ -224,7 +224,13 @@ export interface AdminResourceInput {
   /** Primary key field name (usually "id") */
   primaryKey?: string;
 
-  /** Icon name for navigation (optional) */
+  /** Navigation order (lower appears first) */
+  menuOrder?: number;
+
+  /** Navigation group label (optional) */
+  menuGroup?: string;
+
+  /** Full SVG markup string for navigation (optional) */
   icon?: string;
 
   /** API endpoints */
@@ -304,7 +310,13 @@ export interface AdminResource {
   /** Primary key field name (usually "id") */
   primaryKey: string;
 
-  /** Icon name for navigation (optional) */
+  /** Navigation order (lower appears first) */
+  menuOrder?: number;
+
+  /** Navigation group label (optional) */
+  menuGroup?: string;
+
+  /** Full SVG markup string for navigation (optional) */
   icon?: string;
 
   /** API endpoints */
@@ -376,7 +388,9 @@ export function normalizeResource(input: AdminResourceInput): AdminResource {
     labelPlural,
     routeBase: input.routeBase ?? `/admin/${input.id}`,
     primaryKey: input.primaryKey ?? "id",
-    icon: input.icon ?? "file",
+    menuOrder: input.menuOrder,
+    menuGroup: input.menuGroup,
+    icon: input.icon,
     endpoints: {
       list: endpoints.list,
       get: endpoints.get,
