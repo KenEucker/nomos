@@ -119,7 +119,14 @@
         if (field.readonly) {
           continue;
         }
-        submitData[field.name] = value;
+        if (field.name === "allowedHosts" && typeof value === "string") {
+          submitData[field.name] = value
+            .split(/[\n,]+/)
+            .map((entry) => entry.trim())
+            .filter(Boolean);
+        } else {
+          submitData[field.name] = value;
+        }
       }
 
       let response;
