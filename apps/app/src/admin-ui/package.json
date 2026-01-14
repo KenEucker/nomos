@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build"
+    "build": "astro build",
+    "check:plugin-pages": "node ./scripts/check-plugin-pages.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.1",
