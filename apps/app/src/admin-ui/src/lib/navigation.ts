@@ -1,6 +1,5 @@
 import path from "node:path";
 import type { AdminResourceInput } from "./resources/types";
-import { getCorePageRoutes, getPluginPageRoutes } from "../integrations/plugin-pages.js";
 
 type NavItem = {
   label: string;
@@ -11,7 +10,6 @@ type NavItem = {
 
 type BuildNavOptions = {
   basePath: string;
-  adminUiRoot?: string;
 };
 
 type ResourceMeta = {
@@ -94,31 +92,49 @@ const getResourceMetaForRoute = (
   return undefined;
 };
 
-const buildAdminNavOnce = async ({ basePath, adminUiRoot }: BuildNavOptions): Promise<NavItem[]> => {
+const routeFromFilePath = (filePath: string) => {
+  const normalized = normalizePath(filePath);
+  const markerIndex = normalized.lastIndexOf("/pages/");
+
+  if (markerIndex === -1) return null;
+
+  const relativePath = normalized.slice(markerIndex + "/pages/".length);
+  if (!relativePath.endsWith(".astro")) return null;
+
+  const withoutExtension = relativePath.slice(0, -".astro".length);
+  const segments = withoutExtension.split("/").filter(Boolean);
+
+  if (segments[segments.length - 1] === "index") {
+    segments.pop();
+  }
+
+  return segments.length === 0 ? "/" : `/${segments.join("/")}`;
+};
+
+const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
   const resourceMetadata = buildResourceMetadata();
-  const [{ routes: pluginRoutes }, { routes: coreRoutes }] = await Promise.all([
-    getPluginPageRoutes({ adminUiRoot }),
-    getCorePageRoutes({ adminUiRoot })
-  ]);
+  const corePages = import.meta.glob("../pages/**/*.astro", { eager: true });
+  const pluginPages = import.meta.glob("../../../plugins/**/pages/**/*.astro", { eager: true });
+  const entries = Object.keys({ ...corePages, ...pluginPages });
 
   const indexRoutes = new Set(
-    [...coreRoutes, ...pluginRoutes]
-      .filter((routeEntry) => path.basename(routeEntry.entrypoint) === "index.astro")
-      .map((routeEntry) => routeEntry.route)
+    entries
+      .filter((filePath) => path.basename(filePath) === "index.astro")
+      .map((filePath) => routeFromFilePath(filePath))
+      .filter((route): route is string => Boolean(route))
   );
 
   const seen = new Set<string>();
   const navItems: NavItem[] = [];
 
-  for (const routeEntry of [...coreRoutes, ...pluginRoutes]) {
-    const route = routeEntry.route;
+  for (const route of indexRoutes) {
     const topRoute = getTopLevelRoute(route);
 
     if (EXCLUDED_ROUTES.has(topRoute)) continue;
-    if (!indexRoutes.has(topRoute)) continue;
+    if (topRoute !== route) continue;
     if (seen.has(topRoute)) continue;
 
-    if (isDynamicRoute(route) && topRoute === route) continue;
+    if (isDynamicRoute(route)) continue;
 
     seen.add(topRoute);
 
@@ -140,12 +156,12 @@ const buildAdminNavOnce = async ({ basePath, adminUiRoot }: BuildNavOptions): Pr
 
 let cachedNav: NavItem[] | null = null;
 
-export const buildAdminNav = async (options: BuildNavOptions): Promise<NavItem[]> => {
+export const buildAdminNav = (options: BuildNavOptions): NavItem[] => {
   if (!import.meta.env.DEV && cachedNav) {
     return cachedNav;
   }
 
-  const nav = await buildAdminNavOnce(options);
+  const nav = buildAdminNavOnce(options);
 
   if (!import.meta.env.DEV) {
     cachedNav = nav;
