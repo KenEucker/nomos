@@ -43,10 +43,19 @@
     id: string;
   } | null>(null);
 
+  const requireEndpoint = (key: keyof AdminResource["endpoints"]) => {
+    const endpoint = resource.endpoints[key];
+    if (!endpoint) {
+      throw new Error(`Missing required endpoint "${key}" for resource "${resource.id}".`);
+    }
+    return endpoint;
+  };
+
   const loadData = async () => {
     loading = true;
     error = null;
     try {
+      const listEndpoint = requireEndpoint("list");
       const params = new URLSearchParams({
         page: String(page),
         pageSize: String(pageSize)
@@ -57,7 +66,7 @@
       if (sortKey) {
         params.set("sort", `${sortKey}:${sortDir}`);
       }
-      const response = await apiGet<any>(`${resource.endpoints.list}?${params}`);
+      const response = await apiGet<any>(`${listEndpoint}?${params}`);
       const dataKey = resource.dataKey ?? resource.id;
       items = response.data?.[dataKey] ?? response.data ?? [];
       total = response.meta?.total ?? items.length;
@@ -188,7 +197,8 @@
     if (!deleteId) return;
     deleting = true;
     try {
-      const endpoint = resolveEndpoint(resource.endpoints.delete, deleteId);
+      const deleteEndpoint = requireEndpoint("delete");
+      const endpoint = resolveEndpoint(deleteEndpoint, deleteId);
       await apiDelete(endpoint);
       deleteDialogOpen = false;
       deleteId = null;

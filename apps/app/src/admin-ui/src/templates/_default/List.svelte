@@ -15,7 +15,7 @@
 <script lang="ts">
   import AdminResourceList from "../../islands/AdminResourceList.svelte";
   import ResourceModal from "../../islands/ResourceModal.svelte";
-  import type { AdminResource } from "../../lib/resources/types";
+  import { normalizeResource, type AdminResource, type AdminResourceInput } from "../../lib/resources/types";
   import type { ListPageModule, ViewType, FormMode } from "../../lib/pages/types";
 
   interface Props {
@@ -57,22 +57,14 @@
   let modalParams = $state<{ id?: string; mode?: FormMode }>({});
 
   // Create a synthetic resource from the module if not provided
-  const effectiveResource = $derived(resource ?? createResourceFromModule(module));
+  const effectiveResource = $derived(normalizeResource(resource ?? createResourceFromModule(module)));
 
-  function createResourceFromModule(mod: ListPageModule): AdminResource {
+  function createResourceFromModule(mod: ListPageModule): AdminResourceInput {
     return {
       id: mod.resourceId,
       label: mod.title.replace(/s$/, ""), // Rough singular
       labelPlural: mod.title,
       routeBase: mod.navigation?.createUrl?.()?.replace("/new", "") ?? `/${mod.resourceId}`,
-      primaryKey: "id",
-      endpoints: {
-        list: `/${mod.resourceId}`,
-        get: `/${mod.resourceId}/{id}`,
-        create: `/${mod.resourceId}`,
-        update: `/${mod.resourceId}/{id}`,
-        delete: `/${mod.resourceId}/{id}`,
-      },
       list: {
         columns: mod.list.columns,
         defaultSort: mod.list.defaultSort,
@@ -81,14 +73,8 @@
         searchPlaceholder: mod.list.searchPlaceholder,
         pageSize: mod.list.pageSize,
       },
-      form: {
-        fields: [],
-      },
-      actions: {
-        create: true,
-        view: true,
-        update: true,
-        delete: !!mod.actions?.delete,
+      endpoints: {
+        list: `/${mod.resourceId}`,
       },
     };
   }
@@ -159,7 +145,7 @@
 <!-- Internal modal host (used when useModals=true) -->
 {#if useModals && !onOpenModal}
   <ResourceModal
-    resourceId={module.resourceId}
+    definition={effectiveResource}
     view={modalView}
     params={modalParams}
     bind:open={modalOpen}

@@ -1,7 +1,8 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
+import { usersResource } from "./users.resource";
 ---
 <AdminLayout title="Create User">
-  <ResourceView client:load resourceId="users" view="Form" params={{ mode: "create" }} />
+  <ResourceView client:load definition={usersResource} view="Form" params={{ mode: "create" }} />
 </AdminLayout>

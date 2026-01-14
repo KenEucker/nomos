@@ -9,8 +9,15 @@
  * while getting automatic CRUD for simple cases.
  */
 
-import type { ViewType, PageModule, ListPageModule, FormPageModule, ShowPageModule } from "./types";
-import { getAllResources, getResource, hasResource } from "../resources/registry";
+import type {
+  ViewType,
+  PageModule,
+  ListPageModule,
+  FormPageModule,
+  ShowPageModule,
+  FormMode,
+} from "./types";
+import type { AdminResource } from "../resources/types";
 import { compileListModule, compileFormModule, compileShowModule } from "./compileFromResource";
 
 // ============================================================================
@@ -42,7 +49,7 @@ export class PageModuleError extends Error {
 // Handwritten modules are at: pages/*/*.ts (relative: ../../pages/)
 // Note: This looks for TypeScript page modules, not Astro pages
 const handwrittenModules = import.meta.glob<{ default: PageModule }>(
-  "../../pages/*/*.ts",
+  "../../pages/**/*.page.ts",
   { eager: false }
 );
 
@@ -56,11 +63,29 @@ const astroPageModules = import.meta.glob<{ pageModule?: PageModule }>(
 // Normalize paths to resourceId/View format
 function normalizeModulePath(path: string): string | null {
   // Expected formats:
-  // - ../../pages/<resource>/<View>.ts (relative)
-  // - /pages/<resource>/<View>.ts (absolute)
-  const match = path.match(/pages\/([^/]+)\/([^/]+)\.ts$/);
+  // - ../../pages/<resource>/index.page.ts
+  // - ../../pages/<resource>/new.page.ts
+  // - ../../pages/<resource>/[id].page.ts
+  // - ../../pages/<resource>/[id]/index.page.ts
+  // - ../../pages/<resource>/[id]/edit.page.ts
+  const match = path.match(/pages\/([^/]+)\/(.+)\.page\.ts$/);
   if (!match) return null;
-  return `${match[1]}/${match[2]}`;
+
+  const [, resourceId, rawPath] = match;
+  if (rawPath === "index") {
+    return `${resourceId}/List`;
+  }
+  if (rawPath === "new") {
+    return `${resourceId}/Form:create`;
+  }
+  if (rawPath === "[id]" || rawPath === "[id]/index") {
+    return `${resourceId}/Show`;
+  }
+  if (rawPath === "[id]/edit") {
+    return `${resourceId}/Form:edit`;
+  }
+
+  return null;
 }
 
 // Build lookup map
@@ -91,14 +116,29 @@ for (const [path, loader] of Object.entries(astroPageModules)) {
 /**
  * Try to load a handwritten module
  */
+function getHandwrittenModuleLookupKeys(
+  resourceId: string,
+  view: ViewType,
+  params?: { mode?: FormMode }
+): string[] {
+  if (view === "Form") {
+    const modeKey = params?.mode === "edit" ? "Form:edit" : "Form:create";
+    return [`${resourceId}/${modeKey}`, `${resourceId}/Form`];
+  }
+  return [`${resourceId}/${view}`];
+}
+
 async function loadHandwrittenModule(
   resourceId: string,
-  view: ViewType
+  view: ViewType,
+  params?: { mode?: FormMode }
 ): Promise<PageModule | null> {
-  const key = `${resourceId}/${view}`;
-  const loader = handwrittenModuleMap.get(key);
+  const keys = getHandwrittenModuleLookupKeys(resourceId, view, params);
+  const loaderEntry = keys
+    .map((key) => ({ key, loader: handwrittenModuleMap.get(key) }))
+    .find((entry) => entry.loader);
 
-  if (!loader) {
+  if (!loaderEntry?.loader) {
     if (view === "List") {
       const astroLoader = astroModuleMap.get(resourceId);
       if (astroLoader) {
@@ -127,10 +167,10 @@ async function loadHandwrittenModule(
   }
 
   try {
-    const mod = await loader();
+    const mod = await loaderEntry.loader();
     return mod.default;
   } catch (error) {
-    console.warn(`Failed to load handwritten module for ${key}:`, error);
+    console.warn(`Failed to load handwritten module for ${loaderEntry.key}:`, error);
     return null;
   }
 }
@@ -142,17 +182,7 @@ async function loadHandwrittenModule(
 /**
  * Compile a page module from resource definition
  */
-function compileModule(resourceId: string, view: ViewType): PageModule {
-  const resource = getResource(resourceId);
-
-  if (!resource) {
-    const availableResources = getAllResources().map((item) => item.id);
-    throw new PageModuleError(
-      `Resource "${resourceId}" not found. Available resources: ${availableResources.join(", ")}`,
-      "RESOURCE_NOT_FOUND"
-    );
-  }
-
+function compileModule(resource: AdminResource, view: ViewType): PageModule {
   switch (view) {
     case "List":
       return compileListModule(resource);
@@ -182,9 +212,10 @@ function compileModule(resourceId: string, view: ViewType): PageModule {
  * @throws PageModuleError if resource not found or view invalid
  */
 export async function resolvePageModule(
-  resourceId: string,
+  resource: AdminResource,
   view: ViewType,
-  options: ResolveOptions = {}
+  options: ResolveOptions = {},
+  params?: { mode?: FormMode }
 ): Promise<PageModule> {
   // Validate view type
   if (!["List", "Form", "Show"].includes(view)) {
@@ -194,54 +225,48 @@ export async function resolvePageModule(
     );
   }
 
-  // Validate resource exists
-  if (!hasResource(resourceId)) {
-    throw new PageModuleError(
-      `Resource "${resourceId}" not found`,
-      "RESOURCE_NOT_FOUND"
-    );
-  }
+  const resourceId = resource.id;
 
   // Try handwritten module first (unless skipped)
   if (!options.skipHandwritten) {
-    const handwritten = await loadHandwrittenModule(resourceId, view);
+    const handwritten = await loadHandwrittenModule(resourceId, view, params);
     if (handwritten) {
       return handwritten;
     }
   }
 
   // Fall back to compiled module
-  return compileModule(resourceId, view);
+  return compileModule(resource, view);
 }
 
 /**
  * Resolve a List page module
  */
 export async function resolveListModule(
-  resourceId: string,
+  resource: AdminResource,
   options?: ResolveOptions
 ): Promise<ListPageModule> {
-  return resolvePageModule(resourceId, "List", options) as Promise<ListPageModule>;
+  return resolvePageModule(resource, "List", options) as Promise<ListPageModule>;
 }
 
 /**
  * Resolve a Form page module
  */
 export async function resolveFormModule(
-  resourceId: string,
+  resource: AdminResource,
   options?: ResolveOptions
 ): Promise<FormPageModule> {
-  return resolvePageModule(resourceId, "Form", options) as Promise<FormPageModule>;
+  return resolvePageModule(resource, "Form", options) as Promise<FormPageModule>;
 }
 
 /**
  * Resolve a Show page module
  */
 export async function resolveShowModule(
-  resourceId: string,
+  resource: AdminResource,
   options?: ResolveOptions
 ): Promise<ShowPageModule> {
-  return resolvePageModule(resourceId, "Show", options) as Promise<ShowPageModule>;
+  return resolvePageModule(resource, "Show", options) as Promise<ShowPageModule>;
 }
 
 // ============================================================================
@@ -251,9 +276,14 @@ export async function resolveShowModule(
 /**
  * Check if a handwritten module exists for a resource/view
  */
-export function hasHandwrittenModule(resourceId: string, view: ViewType): boolean {
-  const key = `${resourceId}/${view}`;
-  return handwrittenModuleMap.has(key);
+export function hasHandwrittenModule(
+  resourceId: string,
+  view: ViewType,
+  params?: { mode?: FormMode }
+): boolean {
+  return getHandwrittenModuleLookupKeys(resourceId, view, params).some((key) =>
+    handwrittenModuleMap.has(key)
+  );
 }
 
 /**

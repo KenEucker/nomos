@@ -1,49 +1,44 @@
-import type { AdminResource } from "../types";
+import type { AdminResourceInput } from "../../lib/resources/types";
 
-export const rolesResource: AdminResource = {
+export const rolesResource: AdminResourceInput = {
   id: "roles",
   label: "Role",
   labelPlural: "Roles",
-  routeBase: "/admin/roles",
-  primaryKey: "id",
   icon: "shield",
-
   endpoints: {
     list: "/roles",
     get: "/roles/{id}",
     create: "/roles",
     update: "/roles/{id}",
-    delete: "/roles/{id}"
+    delete: "/roles/{id}",
   },
-
   list: {
     columns: [
       {
         key: "key",
         label: "Key",
-        sortable: true
+        sortable: true,
       },
       {
         key: "name",
         label: "Name",
-        sortable: true
+        sortable: true,
       },
       {
         key: "userCount",
         label: "Users",
         render: "text",
-        hideOnMobile: true
-      }
+        hideOnMobile: true,
+      },
     ],
     defaultSort: {
       key: "key",
-      dir: "asc"
+      dir: "asc",
     },
     searchable: true,
     searchPlaceholder: "Search roles...",
-    pageSize: 20
+    pageSize: 20,
   },
-
   form: {
     fields: [
       {
@@ -53,26 +48,18 @@ export const rolesResource: AdminResource = {
         required: true,
         placeholder: "e.g., admin, editor, viewer",
         help: "Unique identifier used in code. Use lowercase with underscores.",
-        showOnEdit: false // Key should not be editable
+        showOnEdit: false,
       },
       {
         name: "name",
         label: "Display Name",
         type: "text",
         required: true,
-        placeholder: "e.g., Administrator"
-      }
-    ]
+        placeholder: "e.g., Administrator",
+      },
+    ],
   },
-
-  actions: {
-    create: true,
-    view: true,
-    update: true,
-    delete: true
-  },
-
   requiredRole: "admin",
   dataKey: "roles",
-  singleDataKey: "role"
+  singleDataKey: "role",
 };

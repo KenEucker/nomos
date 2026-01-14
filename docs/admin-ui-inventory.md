@@ -44,9 +44,7 @@ apps/app/src/admin-ui/src/
 │   └── _default/             # Generic fallback templates
 ├── lib/
 │   ├── resources/            # Resource definition system
-│   │   ├── definitions/      # Resource config files
-│   │   ├── registry.ts       # Central registry
-│   │   └── types.ts          # Type definitions
+│   │   └── types.ts          # Type definitions + normalization
 │   ├── pages/                # Page module system
 │   │   ├── types.ts          # Page module interfaces
 │   │   ├── compileFromResource.ts
@@ -305,7 +303,7 @@ export const config = {
 
 ### users
 
-**File**: `apps/app/src/admin-ui/src/lib/resources/definitions/users.ts`
+**File**: `apps/app/src/admin-ui/src/pages/users/users.resource.ts`
 
 **Endpoints**:
 - List: `GET /users`
@@ -322,7 +320,7 @@ export const config = {
 
 ### roles
 
-**File**: `apps/app/src/admin-ui/src/lib/resources/definitions/roles.ts`
+**File**: `apps/app/src/admin-ui/src/pages/roles/roles.resource.ts`
 
 **Endpoints**:
 - List: `GET /roles`
@@ -339,12 +337,12 @@ export const config = {
 
 ### sessions
 
-**File**: `apps/app/src/admin-ui/src/lib/resources/definitions/sessions.ts`
+**File**: `apps/app/src/admin-ui/src/pages/sessions/sessions.resource.ts`
 
 **Endpoints**:
-- List: `GET /admin/sessions`
-- Get: `GET /admin/sessions/{id}`
-- Delete: `DELETE /admin/sessions/{id}`
+- List: `GET /_/sessions`
+- Get: `GET /_/sessions/{id}`
+- Delete: `DELETE /_/sessions/{id}`
 
 **Note**: Sessions are read-only (no create/update). Custom "revoke" action deletes the session.
 
@@ -356,16 +354,16 @@ export const config = {
 
 ### api-keys
 
-**File**: `apps/app/src/admin-ui/src/lib/resources/definitions/api-keys.ts`
+**File**: `apps/app/src/admin-ui/src/pages/api-keys/api-keys.resource.ts`
 
 **Endpoints**:
-- List: `GET /admin/api/api-keys`
-- Get: `GET /admin/api/api-keys/{id}`
-- Create: `POST /admin/api/api-keys`
-- Update: `PATCH /admin/api/api-keys/{id}`
-- Delete: `DELETE /admin/api/api-keys/{id}`
+- List: `GET /_/api-keys`
+- Get: `GET /_/api-keys/{id}`
+- Create: `POST /_/api-keys`
+- Update: `PATCH /_/api-keys/{id}`
+- Delete: `DELETE /_/api-keys/{id}`
 
-**Custom Actions**: `rotate` - POST to `/admin/api/api-keys/{id}/rotate`
+**Custom Actions**: `rotate` - POST to `/_/api-keys/{id}/rotate`
 
 **Columns**: name, prefix, permissions (badge), createdAt, lastUsedAt
 
@@ -390,10 +388,9 @@ These resources use page modules + custom templates (not the generic CRUD render
 
 To add a new admin-managed resource:
 
-1. Create a resource definition in `lib/resources/definitions/<resource>.ts`
-2. Register it in the registry (`lib/resources/registry.ts`)
-3. Create Astro pages in `pages/<resource>/` using the page wrappers
-4. Optionally create custom page modules in `lib/pages/<resource>/` for complex behavior
-5. Optionally create template overrides in `templates/<resource>/` for custom rendering
+1. Create a resource definition in `pages/<resource>/<resource>.resource.ts`
+2. Create Astro pages in `pages/<resource>/` using `ResourceView`
+3. Optionally create route-aligned page modules in `pages/<resource>/*.page.ts` for complex behavior
+4. Optionally create template overrides in `templates/<resource>/` for custom rendering
 
 See `docs/admin-ui-llm-guide.md` for complete examples and the three-layer architecture.

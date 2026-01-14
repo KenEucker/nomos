@@ -26,7 +26,7 @@ The admin UI uses a **three-layer model**:
 ┌─────────────────────────────────────────────────────────┐
 │              Resource Definitions (Layer 1)              │
 │         Declarative shorthand for simple CRUD           │
-│         Existing files in lib/resources/definitions/    │
+│         Co-located with the Astro routes                │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -37,7 +37,7 @@ Resource definitions are declarative TypeScript objects that describe a CRUD res
 ### Location
 
 ```
-apps/app/src/admin-ui/src/lib/resources/definitions/<resource>.ts
+apps/app/src/admin-ui/src/pages/<resource>/<resource>.resource.ts
 ```
 
 ### When to Use
@@ -50,15 +50,13 @@ Use resource definitions when:
 ### Structure
 
 ```typescript
-// apps/app/src/admin-ui/src/lib/resources/definitions/products.ts
-import type { AdminResource } from "../types";
+// apps/app/src/admin-ui/src/pages/products/products.resource.ts
+import type { AdminResourceInput } from "../../lib/resources/types";
 
-export const productsResource: AdminResource = {
+export const productsResource: AdminResourceInput = {
   id: "products",
   label: "Product",
   labelPlural: "Products",
-  routeBase: "/admin/products",
-  primaryKey: "id",
   icon: "package",
 
   endpoints: {
@@ -135,10 +133,6 @@ export const productsResource: AdminResource = {
   },
 
   actions: {
-    create: true,
-    view: true,
-    update: true,
-    delete: true,
     custom: [
       {
         id: "archive",
@@ -155,15 +149,16 @@ export const productsResource: AdminResource = {
 };
 ```
 
-### Registering Resources
+### Wiring Resources to Routes
 
-After creating a definition, register it in the registry:
+Astro pages define routes and are responsible for passing definitions into `ResourceView`:
 
-```typescript
-// apps/app/src/admin-ui/src/lib/resources/registry.ts
-import { productsResource } from "./definitions/products";
-
-registerResource(productsResource);
+```astro
+---
+import ResourceView from "../../islands/ResourceView.svelte";
+import { productsResource } from "./products.resource";
+---
+<ResourceView client:load definition={productsResource} view="List" />
 ```
 
 ### Field Types
@@ -218,6 +213,7 @@ Use the Astro route file as the single source of truth:
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
 import { createStaticListModule } from "../../lib/pages";
+import { jobsResource } from "./jobs.resource";
 
 export const pageModule = createStaticListModule({
   resourceId: "jobs",
@@ -227,7 +223,7 @@ export const pageModule = createStaticListModule({
 ---
 
 <BaseLayout title={pageModule.title}>
-  <ResourceView client:load resourceId={pageModule.resourceId} view="List" />
+  <ResourceView client:load definition={jobsResource} view="List" />
 </BaseLayout>
 ```
 
@@ -235,12 +231,20 @@ Page modules are resolved automatically by `ResourceView` and rendered by a temp
 
 ### Location
 
-Handwritten page modules go in:
+Handwritten page modules live alongside the Astro routes:
+
 ```
-apps/app/src/admin-ui/src/pages/<resource>/<View>
+apps/app/src/admin-ui/src/pages/<resource>/
 ```
 
-Where `<View>` is one of: `List`, `Form`, `Show`
+Naming conventions:
+
+```
+index.astro        → index.page.ts        (List)
+[id].astro         → [id].page.ts         (Show)
+new.astro          → new.page.ts          (Create)
+[id]/edit.astro    → edit.page.ts         (Edit)
+```
 
 ### When to Use
 
@@ -252,8 +256,8 @@ Use handwritten page modules when:
 
 ### Resolution Order
 
-1. Check for handwritten module at `pages/<resource>/<View>.ts`
-2. If not found, compile default module from resource definition
+1. Check for handwritten module at the route-aligned `*.page.ts`
+2. If not found, compile default module from the resource definition
 
 ### Anti-patterns
 
@@ -265,7 +269,7 @@ Use handwritten page modules when:
 Use standalone `List.ts` modules only when you need complex overrides (custom data fetching, workflow logic, etc.). For simple routes, keep the module in `index.astro` as shown above.
 
 ```typescript
-// apps/app/src/admin-ui/src/pages/orders/List.ts
+// apps/app/src/admin-ui/src/pages/orders/index.page.ts
 import type { ListPageModule } from "../../lib/pages/types";
 import { apiGet } from "../../lib/api";
 
@@ -585,7 +589,7 @@ In Astro pages:
 ```astro
 <ResourceView
   client:load
-  resourceId="orders"
+  definition={ordersResource}
   view="List"
   useModals={true}
 />
@@ -619,10 +623,9 @@ Templates can use `onOpenModal` to open modals programmatically:
 
 | Purpose | Path |
 |---------|------|
-| Resource definitions | `lib/resources/definitions/<resource>.ts` |
-| Resource registry | `lib/resources/registry.ts` |
+| Resource definitions | `pages/<resource>/<resource>.resource.ts` |
 | Page module types | `lib/pages/types.ts` |
-| Handwritten page modules | `pages/<resource>/<View>.ts` |
+| Handwritten page modules | `pages/<resource>/*.page.ts` |
 | Default templates | `templates/_default/<View>.svelte` |
 | Resource-specific templates | `templates/<resource>/<View>.svelte` |
 | Plugin template overrides | `plugins/<plugin>/templates/<resource>/<View>.svelte` |
@@ -636,9 +639,8 @@ Templates can use `onOpenModal` to open modals programmatically:
 
 ### Simple CRUD (Resource Definition Only)
 
-1. Create `lib/resources/definitions/<resource>.ts`
-2. Register in `lib/resources/registry.ts`
-3. Create Astro pages in `pages/<resource>/`
+1. Create `pages/<resource>/<resource>.resource.ts`
+2. Create Astro pages in `pages/<resource>/`
 
 ### Registering Navigation + Routing (Required)
 
@@ -650,10 +652,9 @@ Templates can use `onOpenModal` to open modals programmatically:
 
 For pages like diagnostics, routes, or audit logs:
 
-1. Create a resource definition with empty `list.columns` and `form.fields`.
-2. Register it in the registry.
-3. Add a handwritten page module (often via `createStaticListModule`) to set title/subtitle.
-4. Add a template that renders a custom island component.
+1. Create a resource definition (no need to include empty `list.columns`/`form.fields`).
+2. Add a handwritten page module (often via `createStaticListModule`) to set title/subtitle.
+3. Add a template that renders a custom island component.
 
 ### Complex Workflow (Handwritten Page Module)
 
@@ -737,8 +738,8 @@ Error: Resource "xyz" not found
 ```
 
 Make sure the resource is:
-1. Defined in `lib/resources/definitions/<resource>.ts`
-2. Registered in `lib/resources/registry.ts`
+1. Defined in `pages/<resource>/<resource>.resource.ts`
+2. Imported into the Astro route and passed to `ResourceView`
 
 ### Template Not Loading
 

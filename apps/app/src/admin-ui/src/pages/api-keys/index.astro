@@ -1,7 +1,8 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
+import { apiKeysResource } from "./api-keys.resource";
 ---
 <AdminLayout title="API Keys">
-  <ResourceView client:load resourceId="api-keys" view="List" />
+  <ResourceView client:load definition={apiKeysResource} view="List" />
 </AdminLayout>

@@ -7,22 +7,19 @@ This document explains how to add new CRUD resources to the Nomos admin UI using
 To add a new admin CRUD resource:
 
 1. Create a Resource Definition file
-2. Register it in the registry
-3. Add backend API endpoints
-4. Create Astro pages
-5. Add navigation entry
+2. Add backend API endpoints
+3. Create Astro pages
+4. Add navigation entry
 
 ### Canonical Resource Definition (Short Example)
 
 ```typescript
-import type { AdminResource } from "../types";
+import type { AdminResourceInput } from "../../lib/resources/types";
 
-export const widgetsResource: AdminResource = {
+export const widgetsResource: AdminResourceInput = {
   id: "widgets",
   label: "Widget",
   labelPlural: "Widgets",
-  routeBase: "/admin/widgets",
-  primaryKey: "id",
   icon: "folder",
   endpoints: {
     list: "/widgets",
@@ -33,7 +30,6 @@ export const widgetsResource: AdminResource = {
   },
   list: { columns: [{ key: "name", label: "Name", sortable: true }] },
   form: { fields: [{ name: "name", label: "Name", type: "text", required: true }] },
-  actions: { create: true, view: true, update: true, delete: true },
   requiredRole: "admin",
 };
 ```
@@ -45,6 +41,7 @@ export const widgetsResource: AdminResource = {
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
 import { createStaticListModule } from "../../lib/pages";
+import { widgetsResource } from "./widgets.resource";
 
 export const pageModule = createStaticListModule({
   resourceId: "widgets",
@@ -55,17 +52,17 @@ export const pageModule = createStaticListModule({
 
 <!-- List -->
 <BaseLayout title={pageModule.title}>
-  <ResourceView client:load resourceId={pageModule.resourceId} view="List" />
+  <ResourceView client:load definition={widgetsResource} view="List" />
 </BaseLayout>
 
 <!-- Create -->
-<ResourceView client:load resourceId="widgets" view="Form" params={{ mode: "create" }} />
+<ResourceView client:load definition={widgetsResource} view="Form" params={{ mode: "create" }} />
 
 <!-- Show -->
-<ResourceView client:load resourceId="widgets" view="Show" params={{ id: "123" }} />
+<ResourceView client:load definition={widgetsResource} view="Show" params={{ id: "123" }} />
 
 <!-- Edit -->
-<ResourceView client:load resourceId="widgets" view="Form" params={{ id: "123", mode: "edit" }} />
+<ResourceView client:load definition={widgetsResource} view="Form" params={{ id: "123", mode: "edit" }} />
 ```
 
 **Anti-patterns:**
@@ -78,7 +75,7 @@ export const pageModule = createStaticListModule({
 
 Resource definitions live in:
 ```
-apps/app/src/admin-ui/src/lib/resources/definitions/
+apps/app/src/admin-ui/src/pages/<resource>/<resource>.resource.ts
 ```
 
 ### Template
@@ -86,21 +83,15 @@ apps/app/src/admin-ui/src/lib/resources/definitions/
 Create a new file (e.g., `widgets.ts`):
 
 ```typescript
-import type { AdminResource } from "../types";
+import type { AdminResourceInput } from "../../lib/resources/types";
 
-export const widgetsResource: AdminResource = {
+export const widgetsResource: AdminResourceInput = {
   // Unique identifier for the resource
   id: "widgets",
 
   // Display names
   label: "Widget",           // Singular
   labelPlural: "Widgets",    // Plural
-
-  // Admin UI route base
-  routeBase: "/admin/widgets",
-
-  // Primary key field (usually "id")
-  primaryKey: "id",
 
   // Icon for navigation (see AppShell.svelte for available icons)
   icon: "folder",
@@ -153,14 +144,6 @@ export const widgetsResource: AdminResource = {
         ]
       }
     ]
-  },
-
-  // CRUD actions enabled
-  actions: {
-    create: true,
-    view: true,
-    update: true,
-    delete: true
   },
 
   // Authorization
@@ -226,26 +209,16 @@ For list view columns:
 }
 ```
 
-## Register the Resource
+## Wire the Resource in Astro Routes
 
-Add your resource to the registry in:
-`apps/app/src/admin-ui/src/lib/resources/registry.ts`
+Import the resource definition directly from the route folder and pass it to `ResourceView`:
 
-```typescript
-import { widgetsResource } from "./definitions/widgets";
-
-// ... existing registrations ...
-
-registerResource(widgetsResource);
-
-export { widgetsResource };
-```
-
-Also export from the index:
-`apps/app/src/admin-ui/src/lib/resources/index.ts`
-
-```typescript
-export { widgetsResource } from "./definitions/widgets";
+```astro
+---
+import ResourceView from "../../islands/ResourceView.svelte";
+import { widgetsResource } from "./widgets.resource";
+---
+<ResourceView client:load definition={widgetsResource} view="List" />
 ```
 
 ## Backend API Endpoints
@@ -500,11 +473,9 @@ Errors from API calls are displayed in the form. The API client expects response
 
 | Step | Location | Action |
 |------|----------|--------|
-| 1 | `lib/resources/definitions/` | Create resource definition |
-| 2 | `lib/resources/registry.ts` | Register resource |
-| 3 | `lib/resources/index.ts` | Export resource |
-| 4 | `routes/` | Create backend CRUD endpoints |
-| 5 | `pages/` | Create Astro pages |
-| 6 | `islands/AppShell.svelte` | Add navigation entry |
+| 1 | `pages/<resource>/<resource>.resource.ts` | Create resource definition |
+| 2 | `routes/` | Create backend CRUD endpoints |
+| 3 | `pages/` | Create Astro pages |
+| 4 | `islands/AppShell.svelte` | Add navigation entry |
 
 Following this pattern ensures that new resources integrate seamlessly with the admin UI and maintain consistent behavior across all CRUD operations.

@@ -1,7 +1,8 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import ResourceView from "../../islands/ResourceView.svelte";
+import { sessionsResource } from "./sessions.resource";
 ---
 <AdminLayout title="Sessions">
-  <ResourceView client:load resourceId="sessions" view="List" />
+  <ResourceView client:load definition={sessionsResource} view="List" />
 </AdminLayout>

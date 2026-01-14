@@ -36,11 +36,19 @@
 
   const fields = $derived(getFieldsForView(resource, "view"));
 
+  const requireEndpoint = (key: keyof AdminResource["endpoints"]) => {
+    const endpoint = resource.endpoints[key];
+    if (!endpoint) {
+      throw new Error(`Missing required endpoint "${key}" for resource "${resource.id}".`);
+    }
+    return endpoint;
+  };
+
   const loadData = async () => {
     loading = true;
     error = null;
     try {
-      const endpoint = resolveEndpoint(resource.endpoints.get, id);
+      const endpoint = resolveEndpoint(requireEndpoint("get"), id);
       const response = await apiGet<any>(endpoint);
       const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
       data = response.data?.[dataKey] ?? response.data;
@@ -126,7 +134,7 @@
   const handleDelete = async () => {
     deleting = true;
     try {
-      const endpoint = resolveEndpoint(resource.endpoints.delete, id);
+      const endpoint = resolveEndpoint(requireEndpoint("delete"), id);
       await apiDelete(endpoint);
       deleteDialogOpen = false;
       navigate(resource.routeBase);

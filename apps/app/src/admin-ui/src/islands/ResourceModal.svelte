@@ -17,13 +17,15 @@
 <script lang="ts">
   import Dialog from "../components/ui/dialog.svelte";
   import Button from "../components/ui/button.svelte";
-  import { getResource } from "../lib/resources/registry";
+  import { normalizeResource, type AdminResourceInput } from "../lib/resources/types";
   import { resolvePageModule, type ViewType, type FormMode, type PageModule } from "../lib/pages";
   import { resolveTemplate, type ResolvedTemplate } from "../lib/templates";
 
   interface Props {
+    /** Resource definition */
+    definition: AdminResourceInput;
     /** Resource identifier */
-    resourceId: string;
+    resourceId?: string;
     /** View type (typically Form or Show for modals) */
     view: ViewType;
     /** Route parameters */
@@ -39,6 +41,7 @@
   }
 
   let {
+    definition,
     resourceId,
     view,
     params = {},
@@ -54,7 +57,15 @@
   let pageModule = $state<PageModule | null>(null);
   let template = $state<ResolvedTemplate | null>(null);
 
-  const resource = $derived(getResource(resourceId));
+  const resource = $derived(normalizeResource(definition));
+
+  $effect(() => {
+    if (resourceId && resourceId !== resource.id) {
+      throw new Error(
+        `ResourceModal: resourceId "${resourceId}" does not match definition id "${resource.id}".`
+      );
+    }
+  });
 
   // Determine title based on view and mode
   const title = $derived(() => {
@@ -78,10 +89,10 @@
 
     try {
       // Resolve page module
-      pageModule = await resolvePageModule(resourceId, view);
+      pageModule = await resolvePageModule(resource, view, {}, params);
 
       // Try to resolve template
-      const resolved = await resolveTemplate(resourceId, view);
+      const resolved = await resolveTemplate(resource.id, view);
       template = resolved.template;
     } catch (err: any) {
       error = err.message ?? "Failed to load view";

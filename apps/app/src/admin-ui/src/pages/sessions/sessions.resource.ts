@@ -1,71 +1,64 @@
-import type { AdminResource } from "../types";
+import type { AdminResourceInput } from "../../lib/resources/types";
 
-export const sessionsResource: AdminResource = {
+export const sessionsResource: AdminResourceInput = {
   id: "sessions",
   label: "Session",
   labelPlural: "Sessions",
-  routeBase: "/admin/sessions",
-  primaryKey: "id",
   icon: "key",
-
   endpoints: {
     list: "/_/sessions",
     get: "/_/sessions/{id}",
-    create: "", // Sessions are not created via admin
-    update: "", // Sessions are not updated
-    delete: "/_/sessions/{id}"
+    delete: "/_/sessions/{id}",
   },
-
   list: {
     columns: [
       {
         key: "id",
         label: "Session ID",
-        width: "200px"
+        width: "200px",
       },
       {
         key: "userName",
         label: "User",
-        sortable: true
+        sortable: true,
       },
       {
         key: "userEmail",
         label: "Email",
         render: "email",
-        hideOnMobile: true
+        hideOnMobile: true,
       },
       {
         key: "createdAt",
         label: "Created",
         sortable: true,
         render: "datetime",
-        hideOnMobile: true
+        hideOnMobile: true,
       },
       {
         key: "expiresAt",
         label: "Expires",
         sortable: true,
-        render: "datetime"
+        render: "datetime",
       },
       {
         key: "isExpired",
         label: "Status",
         render: "badge",
         badgeVariants: {
-          "true": "destructive",
-          "false": "success"
-        }
-      }
+          true: "destructive",
+          false: "success",
+        },
+      },
     ],
     defaultSort: {
       key: "createdAt",
-      dir: "desc"
+      dir: "desc",
     },
     searchable: true,
     searchPlaceholder: "Search by user...",
-    pageSize: 20
+    pageSize: 20,
   },
-
   form: {
     fields: [
       {
@@ -74,40 +67,36 @@ export const sessionsResource: AdminResource = {
         type: "text",
         readonly: true,
         showOnCreate: false,
-        showOnEdit: false
+        showOnEdit: false,
       },
       {
         name: "userName",
         label: "User",
         type: "text",
-        readonly: true
+        readonly: true,
       },
       {
         name: "userEmail",
         label: "Email",
         type: "email",
-        readonly: true
+        readonly: true,
       },
       {
         name: "createdAt",
         label: "Created At",
         type: "datetime",
-        readonly: true
+        readonly: true,
       },
       {
         name: "expiresAt",
         label: "Expires At",
         type: "datetime",
-        readonly: true
-      }
-    ]
+        readonly: true,
+      },
+    ],
   },
-
   actions: {
-    create: false, // Sessions are created via login
-    view: true,
-    update: false, // Sessions cannot be edited
-    delete: false, // Use explicit revoke action instead
+    delete: false,
     custom: [
       {
         id: "revoke",
@@ -115,12 +104,11 @@ export const sessionsResource: AdminResource = {
         variant: "destructive",
         confirm: "Are you sure you want to revoke this session? The user will be logged out.",
         endpoint: "/_/sessions/{id}",
-        method: "DELETE"
-      }
-    ]
+        method: "DELETE",
+      },
+    ],
   },
-
   requiredRole: "admin",
   dataKey: "sessions",
-  singleDataKey: "session"
+  singleDataKey: "session",
 };
