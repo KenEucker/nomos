@@ -9,6 +9,7 @@ import formbody from "@fastify/formbody";
 import middie from "@fastify/middie";
 import { nanoid } from "nanoid";
 import { loadEnv } from "./config/env";
+import type { ResolvedNomosConfig } from "./config/nomos-config";
 import { createAuthHelpers, errorResponse, jsonResponse } from "./ctx";
 import type { ApiClient, InMemoryStore } from "./ctx";
 import { HttpError } from "./errors";
@@ -38,7 +39,28 @@ import { resolvePermissions } from "./auth/permissions";
 import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logging/logger";
 import { getPrismaClient } from "./db/prisma";
 
-export async function createApp() {
+export async function createApp(config: ResolvedNomosConfig) {
+  process.env.LOG_LEVEL = config.logging.level;
+  process.env.LOG_PRETTY = String(config.logging.pretty);
+  if (config.logging.domains) {
+    process.env.LOG_DOMAINS = Object.entries(config.logging.domains)
+      .filter(([, enabled]) => enabled)
+      .map(([domain]) => domain)
+      .join(",");
+  }
+
+  const databaseUrl =
+    config.database.provider === "url"
+      ? config.database.url ?? ""
+      : config.database.sqliteFile.startsWith("file:")
+        ? config.database.sqliteFile
+        : `file:${config.database.sqliteFile}`;
+  if (databaseUrl) {
+    process.env.DATABASE_URL = databaseUrl;
+  }
+
+  process.env.DIAGNOSTICS_ENABLED = String(config.dev.diagnostics);
+
   const env = loadEnv();
 
   const contentTypeForPath = (filePath: string) => {
@@ -65,13 +87,16 @@ export async function createApp() {
   };
 
   const app = fastify({
-    logger: createLoggerOptions(env),
+    logger: createLoggerOptions({ level: config.logging.level, pretty: config.logging.pretty }),
+    trustProxy: config.server.trustProxy,
     genReqId: (req) => {
       return (req.headers["x-request-id"] as string | undefined) ?? nanoid();
     }
   });
 
-  const allowedDomains = parseLogDomains(env.LOG_DOMAINS);
+  const allowedDomains = config.logging.domains
+    ? new Set(Object.entries(config.logging.domains).filter(([, enabled]) => enabled).map(([domain]) => domain))
+    : parseLogDomains(env.LOG_DOMAINS);
   const baseLogger = app.log;
   const serverLog = createDomainLogger(baseLogger, "server", allowedDomains);
   const pluginsLog = createDomainLogger(baseLogger, "plugins", allowedDomains);
@@ -91,7 +116,7 @@ export async function createApp() {
   await app.register(formbody);
 
   serverLog.info(
-    { env: env.NODE_ENV, logLevel: env.LOG_LEVEL, pretty: env.LOG_PRETTY },
+    { env: config.app.env, logLevel: config.logging.level, pretty: config.logging.pretty },
     "Server logger initialized."
   );
 
@@ -178,10 +203,13 @@ export async function createApp() {
     : path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
   const platformDir = path.dirname(fileURLToPath(import.meta.url));
-  const corePlugins: string[] = [
-    path.join(platformDir, "admin", "plugin.ts"),
-    path.join(platformDir, "auth", "plugin.ts")
-  ];
+  const corePlugins: string[] = [];
+  if (config.modules.admin.enabled) {
+    corePlugins.push(path.join(platformDir, "admin", "plugin.ts"));
+  }
+  if (config.modules.auth.enabled) {
+    corePlugins.push(path.join(platformDir, "auth", "plugin.ts"));
+  }
 
   const plugins = await loadPlugins(baseDir, corePlugins);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
@@ -192,6 +220,14 @@ export async function createApp() {
   if (!db.roles.has("admin")) {
     db.roles.set("admin", Array.from(db.permissions));
   }
+
+  const authBypassUser = config.modules.auth.enabled
+    ? null
+    : {
+        id: "system",
+        roles: ["admin"],
+        permissions: resolvePermissions({ roles: ["admin"] }, db.roles)
+      };
 
   const middlewareRegistry = createMiddlewareRegistry();
   middlewareRegistry.set("requestContext", requestContext);
@@ -204,6 +240,7 @@ export async function createApp() {
 
   const services: Record<string, any> = {
     env,
+    config,
     pluginRegistry: plugins.registry,
     eventsRegistry: events,
     hooksRegistry: hooks,
@@ -300,6 +337,12 @@ export async function createApp() {
   services.openApi = openApi;
 
   const canAccessDocs = async (req: FastifyRequest) => {
+    if (!config.modules.docs.enabled) {
+      return false;
+    }
+    if (!config.modules.auth.enabled) {
+      return true;
+    }
     if (env.NODE_ENV !== "production" || env.SWAGGER_PUBLIC) {
       return true;
     }
@@ -308,19 +351,21 @@ export async function createApp() {
     return Boolean(session);
   };
 
-  app.get(OPENAPI_JSON_PATH, async (_req, reply) => {
-    if (!env.SWAGGER_PUBLIC && env.NODE_ENV === "production") {
-      return reply.code(403).send({ error: "forbidden" });
-    }
-    reply.send(openApi);
-  });
+  if (config.modules.docs.enabled) {
+    app.get(OPENAPI_JSON_PATH, async (_req, reply) => {
+      if (!env.SWAGGER_PUBLIC && env.NODE_ENV === "production") {
+        return reply.code(403).send({ error: "forbidden" });
+      }
+      reply.send(openApi);
+    });
 
-  app.get(OPENAPI_DOCS_PATH, async (req, reply) => {
-    if (!(await canAccessDocs(req))) {
-      return reply.code(403).send({ error: "forbidden" });
-    }
-    reply.type("text/html").send(buildSwaggerUiHtml(OPENAPI_JSON_PATH));
-  });
+    app.get(OPENAPI_DOCS_PATH, async (req, reply) => {
+      if (!(await canAccessDocs(req))) {
+        return reply.code(403).send({ error: "forbidden" });
+      }
+      reply.type("text/html").send(buildSwaggerUiHtml(OPENAPI_JSON_PATH));
+    });
+  }
 
   for (const route of routeRegistry.routes) {
     app.route({
@@ -329,65 +374,68 @@ export async function createApp() {
       config: { routeId: route.id },
       handler: async (req, reply) => {
         const reqId = (req.headers["x-request-id"] as string) ?? req.id ?? nanoid();
-        let user = null;
+        let user = authBypassUser;
         let apiClient: ApiClient | null = null;
-        let authMode: "session" | "jwt" | "apiKey" | "none" = "none";
+        let authMode: "session" | "jwt" | "apiKey" | "none" | "disabled" =
+          config.modules.auth.enabled ? "none" : "disabled";
 
-        // 1. Try session cookie authentication
-        const sessionId = req.cookies?.session_id;
-        if (sessionId) {
-          const session = await getSession(prisma, sessionId);
-          if (session) {
-            const userRecord = await prisma.user.findUnique({
-              where: { id: session.userId },
-              include: { roles: { include: { role: true } } }
-            });
-            if (userRecord) {
-              const roles = userRecord.roles.map((entry) => entry.role.key);
-              user = {
-                id: userRecord.id,
-                roles,
-                permissions: resolvePermissions({ roles }, db.roles)
-              };
-              authMode = "session";
-              authLog.debug({ userId: user.id }, "Authenticated via session");
+        if (config.modules.auth.enabled) {
+          // 1. Try session cookie authentication
+          const sessionId = req.cookies?.session_id;
+          if (sessionId) {
+            const session = await getSession(prisma, sessionId);
+            if (session) {
+              const userRecord = await prisma.user.findUnique({
+                where: { id: session.userId },
+                include: { roles: { include: { role: true } } }
+              });
+              if (userRecord) {
+                const roles = userRecord.roles.map((entry) => entry.role.key);
+                user = {
+                  id: userRecord.id,
+                  roles,
+                  permissions: resolvePermissions({ roles }, db.roles)
+                };
+                authMode = "session";
+                authLog.debug({ userId: user.id }, "Authenticated via session");
+              }
             }
           }
-        }
 
-        // 2. Try API key authentication (X-API-Key header)
-        if (!user && !apiClient) {
-          const apiKeyHeader = req.headers["x-api-key"] as string | undefined;
-          if (apiKeyHeader) {
-            const foundKey = findApiKey(db.apiKeys, apiKeyHeader);
-            if (foundKey) {
-              apiClient = {
-                id: foundKey.id,
-                name: foundKey.name,
-                permissions: foundKey.permissions,
-                allowedHosts: foundKey.allowedHosts
-              };
-              authMode = "apiKey";
-              authLog.debug({ apiKeyId: apiClient.id }, "Authenticated via API key");
+          // 2. Try API key authentication (X-API-Key header)
+          if (!user && !apiClient) {
+            const apiKeyHeader = req.headers["x-api-key"] as string | undefined;
+            if (apiKeyHeader) {
+              const foundKey = findApiKey(db.apiKeys, apiKeyHeader);
+              if (foundKey) {
+                apiClient = {
+                  id: foundKey.id,
+                  name: foundKey.name,
+                  permissions: foundKey.permissions,
+                  allowedHosts: foundKey.allowedHosts
+                };
+                authMode = "apiKey";
+                authLog.debug({ apiKeyId: apiClient.id }, "Authenticated via API key");
+              }
             }
           }
-        }
 
-        // 3. Try Bearer JWT authentication
-        if (!user && !apiClient) {
-          const authHeader = req.headers.authorization as string | undefined;
-          if (authHeader?.startsWith("Bearer ")) {
-            const token = authHeader.slice(7);
-            const payload = verifyJwt(token, env.JWT_SECRET);
-            if (payload) {
-              const roles = payload.roles ?? [];
-              user = {
-                id: payload.sub,
-                roles,
-                permissions: resolvePermissions({ roles }, db.roles)
-              };
-              authMode = "jwt";
-              authLog.debug({ userId: user.id }, "Authenticated via JWT");
+          // 3. Try Bearer JWT authentication
+          if (!user && !apiClient) {
+            const authHeader = req.headers.authorization as string | undefined;
+            if (authHeader?.startsWith("Bearer ")) {
+              const token = authHeader.slice(7);
+              const payload = verifyJwt(token, env.JWT_SECRET);
+              if (payload) {
+                const roles = payload.roles ?? [];
+                user = {
+                  id: payload.sub,
+                  roles,
+                  permissions: resolvePermissions({ roles }, db.roles)
+                };
+                authMode = "jwt";
+                authLog.debug({ userId: user.id }, "Authenticated via JWT");
+              }
             }
           }
         }
@@ -431,23 +479,25 @@ export async function createApp() {
         const ctx = { ...ctxBase, auth: createAuthHelpers(ctxBase) };
 
         try {
-          if (route.config.auth === "required" && !ctx.user && !ctx.apiClient) {
-            throw new HttpError(401, "unauthorized", "Authentication required");
-          }
+          if (config.modules.auth.enabled) {
+            if (route.config.auth === "required" && !ctx.user && !ctx.apiClient) {
+              throw new HttpError(401, "unauthorized", "Authentication required");
+            }
 
-          if (route.config.permissions?.length) {
-            const hasAll = route.config.permissions.every((perm) => ctx.auth.hasPermission(perm));
-            if (!hasAll) throw new HttpError(403, "forbidden", "Missing permissions");
-          }
+            if (route.config.permissions?.length) {
+              const hasAll = route.config.permissions.every((perm) => ctx.auth.hasPermission(perm));
+              if (!hasAll) throw new HttpError(403, "forbidden", "Missing permissions");
+            }
 
-          if (route.config.permissionsAny?.length) {
-            const hasAny = route.config.permissionsAny.some((perm) => ctx.auth.hasPermission(perm));
-            if (!hasAny) throw new HttpError(403, "forbidden", "Missing permissions");
-          }
+            if (route.config.permissionsAny?.length) {
+              const hasAny = route.config.permissionsAny.some((perm) => ctx.auth.hasPermission(perm));
+              if (!hasAny) throw new HttpError(403, "forbidden", "Missing permissions");
+            }
 
-          if (route.config.roles?.length && ctx.user) {
-            const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
-            if (!hasRole) throw new HttpError(403, "forbidden", "Missing role");
+            if (route.config.roles?.length && ctx.user) {
+              const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
+              if (!hasRole) throw new HttpError(403, "forbidden", "Missing role");
+            }
           }
 
           if (route.config.validate) {
@@ -578,8 +628,12 @@ export async function createApp() {
   });
 
   const astroDevPort = env.ASTRO_DEV_PORT;
+  const adminEnabled = config.modules.admin.enabled;
 
   const shouldSkipAstro = (url: string | undefined, isDev: boolean) => {
+    if (!adminEnabled) {
+      return true;
+    }
     const p = (url ?? "/").split("?")[0] ?? "/";
     // In dev mode, also proxy Vite internal paths to Astro dev server
     if (isDev) {
@@ -599,7 +653,7 @@ export async function createApp() {
     return true; // Skip Astro for all other routes (API routes at root)
   };
 
-  if (astroDevPort) {
+  if (astroDevPort && adminEnabled) {
     // Development mode: proxy requests to Astro dev server for hot reload
     await app.register(middie);
     adminLog.info(
@@ -644,7 +698,7 @@ export async function createApp() {
     };
 
     app.use(proxyToAstro);
-  } else {
+  } else if (adminEnabled) {
     // Production mode: serve pre-built Astro output
     const adminDist = path.join(baseDir, "admin-ui", "dist");
     const adminServer = path.join(adminDist, "server", "entry.mjs");
