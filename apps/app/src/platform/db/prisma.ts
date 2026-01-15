@@ -4,25 +4,23 @@ import path from "node:path"
 import { PrismaClient } from "@prisma/client"
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3"
 
-import { loadEnv } from "../config/env";
-
 let prisma: PrismaClient | undefined
 
 const getNonEmpty = (value: string | undefined) =>
   value && value.trim() !== "" ? value : undefined
 
+/**
+ * Gets the DATABASE_URL from process.env.
+ * By the time this is called, loadNomosConfig should have already
+ * loaded .env files and createApp should have set process.env.DATABASE_URL.
+ */
 const requireDatabaseUrl = () => {
-  // Prefer process.env (works in most runtimes), but allow your platform loader as fallback.
-  let url = getNonEmpty(process.env.DATABASE_URL)
+  const url = getNonEmpty(process.env.DATABASE_URL)
 
   if (!url) {
-    const env = loadEnv()
-    url = getNonEmpty(env.DATABASE_URL)
-    if (url) process.env.DATABASE_URL = url
-  }
-
-  if (!url) {
-    throw new Error(`[db] DATABASE_URL is required (set it in .env)`)
+    throw new Error(
+      `[db] DATABASE_URL is required. Ensure loadNomosConfig() is called before getPrismaClient().`
+    )
   }
 
   return url

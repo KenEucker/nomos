@@ -8,7 +8,7 @@ import cookie from "@fastify/cookie";
 import formbody from "@fastify/formbody";
 import middie from "@fastify/middie";
 import { nanoid } from "nanoid";
-import { loadEnv } from "./config/env";
+import { createEnvFromConfig } from "./config/env";
 import type { ResolvedNomosConfig } from "./config/nomos-config";
 import { createAuthHelpers, errorResponse, jsonResponse } from "./ctx";
 import type { ApiClient, InMemoryStore } from "./ctx";
@@ -41,28 +41,16 @@ import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logg
 import { getPrismaClient } from "./db/prisma";
 
 export async function createApp(config: ResolvedNomosConfig) {
-  process.env.LOG_LEVEL = config.logging.level;
-  process.env.LOG_PRETTY = String(config.logging.pretty);
-  if (config.logging.domains) {
-    process.env.LOG_DOMAINS = Object.entries(config.logging.domains)
-      .filter(([, enabled]) => enabled)
-      .map(([domain]) => domain)
-      .join(",");
+  // Create env object from config - this is now the single source of truth
+  const env = createEnvFromConfig(config);
+
+  // Set critical process.env values that other modules may depend on
+  process.env.DATABASE_URL = env.DATABASE_URL;
+  process.env.LOG_LEVEL = env.LOG_LEVEL;
+  process.env.LOG_PRETTY = String(env.LOG_PRETTY);
+  if (env.LOG_DOMAINS) {
+    process.env.LOG_DOMAINS = env.LOG_DOMAINS;
   }
-
-  const databaseUrl =
-    config.database.provider === "url"
-      ? config.database.url ?? ""
-      : config.database.sqliteFile.startsWith("file:")
-        ? config.database.sqliteFile
-        : `file:${config.database.sqliteFile}`;
-  if (databaseUrl) {
-    process.env.DATABASE_URL = databaseUrl;
-  }
-
-  process.env.DIAGNOSTICS_ENABLED = String(config.dev.diagnostics);
-
-  const env = loadEnv();
 
   const contentTypeForPath = (filePath: string) => {
     const ext = path.extname(filePath);
