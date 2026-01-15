@@ -1,0 +1,11 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import PluginPreviewDetails from "../../../islands/PluginPreviewDetails.svelte";
+
+const { slug } = Astro.params;
+const title = "Plugin Preview";
+const subtitle = `Preview details for ${slug}`;
+---
+<AdminLayout title={title} subtitle={subtitle}>
+  <PluginPreviewDetails client:load slug={slug} />
+</AdminLayout>

@@ -38,7 +38,10 @@ async function importPlugin(entry: string): Promise<PluginManifest> {
   return mod.default ?? mod;
 }
 
-export async function loadPlugins(baseDir: string, corePluginPaths: string[]): Promise<LoadedPlugins> {
+export async function loadPlugins(
+  baseDir: string,
+  corePluginPaths: string[]
+): Promise<LoadedPlugins> {
   const registry = createPluginRegistry();
   const pluginRoutes: PluginRoute[] = [];
   const jobs: any[] = [];
@@ -61,7 +64,8 @@ export async function loadPlugins(baseDir: string, corePluginPaths: string[]): P
       if (!fs.existsSync(indexPath)) continue;
       const manifest = await importPlugin(indexPath);
       const name = manifest.name ?? entry.name;
-      discovered.push({ name, manifest: { ...manifest, name } });
+      const slug = manifest.slug ?? entry.name;
+      discovered.push({ name, manifest: { ...manifest, name, slug } });
     }
   }
 
@@ -80,7 +84,8 @@ export async function loadPlugins(baseDir: string, corePluginPaths: string[]): P
       Object.assign(registry.services, manifest.services);
     }
     if (manifest.routes) {
-      manifest.routes.forEach((route) => pluginRoutes.push({ ...route, owner: name }));
+      const owner = manifest.slug ?? name;
+      manifest.routes.forEach((route) => pluginRoutes.push({ ...route, owner }));
     }
     if (manifest.adminResources) {
       registry.adminResources.push(...manifest.adminResources);
