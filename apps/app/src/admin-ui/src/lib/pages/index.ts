@@ -67,5 +67,5 @@ export {
   type ResolveOptions,
 } from "./resolvePageModule";
 
-// Static module helpers
-export { createStaticListModule } from "./static";
+// Static page helpers
+export { createStaticPageDefinition } from "./static";

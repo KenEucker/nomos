@@ -1,14 +1,14 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import { createStaticListModule } from "../../lib/pages";
+import { createStaticPageDefinition } from "../../lib/pages";
 
-export const pageModule = createStaticListModule({
+export const staticPageDefinition = createStaticPageDefinition({
   resourceId: "docs",
   title: "API Documentation",
   subtitle: "Browse the OpenAPI reference for Nomos.",
 });
 ---
-<AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
+<AdminLayout title={staticPageDefinition.title} subtitle={staticPageDefinition.subtitle} breadcrumbs={staticPageDefinition.breadcrumbs} actions={staticPageDefinition.pageActions}>
   <div id="docs-root" class="space-y-6"></div>
 </AdminLayout>
 

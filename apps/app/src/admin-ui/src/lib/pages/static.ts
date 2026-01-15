@@ -15,7 +15,7 @@ const emptyListResult: ListQueryResult = {
   pageSize: 1,
 };
 
-export function createStaticListModule({
+export function createStaticPageDefinition({
   resourceId,
   title,
   subtitle,
