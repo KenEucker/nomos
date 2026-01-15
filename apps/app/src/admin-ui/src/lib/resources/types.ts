@@ -149,11 +149,13 @@ export interface ColumnDef {
   /** Whether the column is sortable */
   sortable?: boolean;
   /** Custom render type */
-  render?: "text" | "badge" | "date" | "datetime" | "boolean" | "json" | "link" | "email";
+  render?: "text" | "badge" | "date" | "datetime" | "boolean" | "json" | "link" | "email" | "action";
   /** For badge render: variant based on value */
   badgeVariants?: Record<string, string>;
   /** For link render: URL template with {value} placeholder */
   linkTemplate?: string;
+  /** For action render: custom action id */
+  actionId?: string;
   /** Width hint */
   width?: string;
   /** Whether to show on mobile */
@@ -181,8 +183,9 @@ export interface ResourceActions {
     /** Confirmation message (if set, shows confirm dialog) */
     confirm?: string;
     /** Endpoint to call (method defaults to POST) */
-    endpoint: string | ((id: string) => string);
+    endpoint?: string | ((id: string) => string);
     method?: "POST" | "PATCH" | "PUT" | "DELETE";
+    href?: string | ((id: string) => string);
     showWhen?: (record: Record<string, any>) => boolean;
   }>;
 }

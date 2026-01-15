@@ -142,6 +142,13 @@
   };
 
   const confirmCustomAction = (action: ResourceCustomAction, id: string) => {
+    if (action.href) {
+      const href = typeof action.href === "function" ? action.href(id) : action.href;
+      if (href) {
+        navigate(href);
+      }
+      return;
+    }
     if (action.confirm) {
       pendingCustomAction = { action, id };
       customActionDialogOpen = true;
@@ -153,6 +160,9 @@
   const runCustomAction = async (action: ResourceCustomAction, id: string) => {
     customActionLoading = true;
     try {
+      if (!action.endpoint) {
+        throw new Error("Action endpoint is missing.");
+      }
       const endpoint =
         typeof action.endpoint === "function"
           ? action.endpoint(id)
@@ -347,7 +357,21 @@
             <div class="flex-1 min-w-0">
               {#each resource.list.columns.filter(c => !c.hideOnMobile).slice(0, 3) as column}
                 <div class={column === resource.list.columns[0] ? "font-medium text-slate-900 dark:text-slate-100" : "text-sm text-slate-500 mt-1"}>
-                  {#if column.render === "badge"}
+                  {#if column.render === "action"}
+                    {@const action = customActions.find((entry) => entry.id === column.actionId)}
+                    {@const canShowAction = action && (action.showWhen ? action.showWhen(item) : true)}
+                    {#if action && canShowAction}
+                      <Button
+                        variant={action.variant ?? "outline"}
+                        size="sm"
+                        onclick={() => confirmCustomAction(action, item[resource.primaryKey])}
+                      >
+                        {action.label}
+                      </Button>
+                    {:else}
+                      <span class="text-slate-400">-</span>
+                    {/if}
+                  {:else if column.render === "badge"}
                     {@const value = getNestedValue(item, column.key)}
                     {#if Array.isArray(value)}
                       <div class="flex flex-wrap gap-1 mt-1">
@@ -429,7 +453,21 @@
             <tr class="border-t border-slate-200 hover:bg-slate-100/50 dark:border-slate-800 dark:hover:bg-slate-800/30">
               {#each resource.list.columns as column}
                 <td class="px-4 py-3">
-                  {#if column.render === "badge"}
+                  {#if column.render === "action"}
+                    {@const action = customActions.find((entry) => entry.id === column.actionId)}
+                    {@const canShowAction = action && (action.showWhen ? action.showWhen(item) : true)}
+                    {#if action && canShowAction}
+                      <Button
+                        variant={action.variant ?? "outline"}
+                        size="sm"
+                        onclick={() => confirmCustomAction(action, item[resource.primaryKey])}
+                      >
+                        {action.label}
+                      </Button>
+                    {:else}
+                      <span class="text-slate-400">-</span>
+                    {/if}
+                  {:else if column.render === "badge"}
                     {@const value = getNestedValue(item, column.key)}
                     {#if Array.isArray(value)}
                       <div class="flex flex-wrap gap-1">

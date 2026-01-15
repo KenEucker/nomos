@@ -1,5 +1,7 @@
 import type { AdminResourceInput } from "../../lib/resources/types";
 
+const adminBase = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+
 export const pluginsResource: AdminResourceInput = {
   id: "plugins",
   label: "Plugin",
@@ -18,11 +20,29 @@ export const pluginsResource: AdminResourceInput = {
       { key: "slug", label: "Slug", sortable: true },
       { key: "name", label: "Name", sortable: true },
       { key: "version", label: "Version" },
-      { key: "status", label: "Status", render: "badge" },
-      { key: "enabled", label: "Enabled", render: "boolean" },
-      { key: "missing", label: "Missing", render: "boolean" },
-      { key: "lastError", label: "Last Error" },
-      { key: "lastPreview", label: "Last Preview", render: "json" }
+      {
+        key: "status",
+        label: "Status",
+        render: "badge",
+        badgeVariants: {
+          enabled: "success",
+          staged: "secondary",
+          installed: "warning",
+          disabled: "secondary",
+          broken: "destructive"
+        }
+      },
+      {
+        key: "enabled",
+        label: "Enabled",
+        render: "badge",
+        badgeVariants: {
+          true: "success",
+          false: "secondary"
+        }
+      },
+      { key: "preview", label: "Preview", render: "action", actionId: "viewPreview" },
+      { key: "lastError", label: "Last Error" }
     ],
     defaultSort: { key: "name", dir: "asc" }
   },
@@ -32,6 +52,12 @@ export const pluginsResource: AdminResourceInput = {
     update: false,
     delete: false,
     custom: [
+      {
+        id: "viewPreview",
+        label: "View",
+        href: (id) => `${adminBase}/plugins/${id}/preview`,
+        showWhen: (record) => Boolean(record.lastPreview) || Boolean(record.lastError)
+      },
       {
         id: "preview",
         label: "Preview",
