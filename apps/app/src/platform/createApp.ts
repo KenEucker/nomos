@@ -210,6 +210,13 @@ export async function createApp(config: ResolvedNomosConfig) {
   if (config.modules.auth.enabled) {
     corePlugins.push(path.join(platformDir, "auth", "plugin.ts"));
   }
+  if (
+    config.modules.pluginManager.enabled &&
+    config.modules.pluginManager.api.enabled &&
+    (config.modules.auth.enabled || config.modules.pluginManager.api.allowUnauthenticated)
+  ) {
+    corePlugins.push(path.join(platformDir, "pluginManager", "plugin.ts"));
+  }
 
   const plugins = await loadPlugins(baseDir, corePlugins);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");

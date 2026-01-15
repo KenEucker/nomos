@@ -41,7 +41,7 @@ export type NomosConfig = {
 
 export type PluginManagerConfig = {
   enabled?: boolean;
-  api?: { enabled?: boolean };
+  api?: { enabled?: boolean; allowUnauthenticated?: boolean };
   ui?: { enabled?: boolean };
   discovery?: {
     pluginDir?: string;
@@ -62,6 +62,7 @@ export type PluginManagerConfig = {
   preview?: {
     enabled?: boolean;
     strategy?: "plan";
+    require?: boolean;
   };
 };
 
@@ -94,7 +95,7 @@ export type ResolvedNomosConfig = {
     devtools: { enabled: boolean };
     pluginManager: {
       enabled: boolean;
-      api: { enabled: boolean };
+      api: { enabled: boolean; allowUnauthenticated: boolean };
       ui: { enabled: boolean };
       discovery: {
         pluginDir: string;
@@ -115,6 +116,7 @@ export type ResolvedNomosConfig = {
       preview: {
         enabled: boolean;
         strategy: "plan";
+        require: boolean;
       };
     };
   };
@@ -164,7 +166,10 @@ const resolvePluginManager = (
   const enabled = raw.enabled ?? (isProduction ? false : true);
   return {
     enabled,
-    api: { enabled: raw.api?.enabled ?? enabled },
+    api: {
+      enabled: raw.api?.enabled ?? enabled,
+      allowUnauthenticated: raw.api?.allowUnauthenticated ?? false
+    },
     ui: { enabled: raw.ui?.enabled ?? enabled },
     discovery: {
       pluginDir: raw.discovery?.pluginDir ?? "src/plugins",
@@ -185,7 +190,8 @@ const resolvePluginManager = (
     },
     preview: {
       enabled: raw.preview?.enabled ?? true,
-      strategy: raw.preview?.strategy ?? "plan"
+      strategy: raw.preview?.strategy ?? "plan",
+      require: raw.preview?.require ?? true
     }
   };
 };
