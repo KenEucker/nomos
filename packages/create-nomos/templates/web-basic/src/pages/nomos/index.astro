@@ -1,0 +1,21 @@
+---
+const apiBase = import.meta.env.PUBLIC_NOMOS_API_BASE ?? import.meta.env.NOMOS_API_ORIGIN ?? "";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Nomos Web</title>
+  </head>
+  <body>
+    <main>
+      <h1>Nomos Web</h1>
+      <p>This Astro app is wired to a Nomos backend.</p>
+      <p>API Base: <code>{apiBase || "(not configured)"}</code></p>
+      <p>
+        <a href="/nomos/login">Try the login flow</a>
+      </p>
+    </main>
+  </body>
+</html>
