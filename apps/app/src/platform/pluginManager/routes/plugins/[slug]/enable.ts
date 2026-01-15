@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Ctx } from "../../../../ctx";
 import { HttpError } from "../../../../errors";
 import { discoverPlugins } from "../../../discovery";
+import { getPluginStateStore } from "../../../store";
 import { syncDiscoveredPlugins } from "../../../state";
 
 export const postConfig = {
@@ -32,7 +33,8 @@ export const post = async (ctx: Ctx) => {
 
   await syncDiscoveredPlugins(ctx.prisma, discovered);
 
-  const state = await ctx.prisma.pluginState.findUnique({ where: { slug } });
+  const pluginState = getPluginStateStore(ctx.prisma);
+  const state = await pluginState.findUnique({ where: { slug } });
   if (!state || !state.installedAt) {
     throw new HttpError(400, "not_installed", "Plugin must be installed before enabling.");
   }
@@ -41,7 +43,7 @@ export const post = async (ctx: Ctx) => {
     throw new HttpError(400, "preview_required", "Plugin preview is required before enabling.");
   }
 
-  const updated = await ctx.prisma.pluginState.update({
+  const updated = await pluginState.update({
     where: { slug },
     data: {
       status: "enabled",

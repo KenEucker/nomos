@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Ctx } from "../../../../ctx";
 import { HttpError } from "../../../../errors";
 import { discoverPlugins } from "../../../discovery";
+import { getPluginStateStore } from "../../../store";
 import { syncDiscoveredPlugins } from "../../../state";
 
 export const postConfig = {
@@ -27,12 +28,13 @@ export const post = async (ctx: Ctx) => {
   const discovered = await discoverPlugins(config);
   await syncDiscoveredPlugins(ctx.prisma, discovered);
 
-  const state = await ctx.prisma.pluginState.findUnique({ where: { slug } });
+  const pluginState = getPluginStateStore(ctx.prisma);
+  const state = await pluginState.findUnique({ where: { slug } });
   if (!state) {
     throw new HttpError(404, "not_found", "Plugin not found.");
   }
 
-  const updated = await ctx.prisma.pluginState.update({
+  const updated = await pluginState.update({
     where: { slug },
     data: {
       status: "disabled",

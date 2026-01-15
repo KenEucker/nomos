@@ -1,7 +1,8 @@
-import type { PrismaClient, PluginState } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import type { DiscoveredPlugin } from "./types";
+import { getPluginStateStore, type PluginStateRecord } from "./store";
 
-export type PluginListItem = PluginState & {
+export type PluginListItem = PluginStateRecord & {
   missing?: boolean;
   entryPath?: string;
   folderPath?: string;
@@ -16,7 +17,8 @@ export const syncDiscoveredPlugins = async (
   discovered: DiscoveredPlugin[]
 ) => {
   const now = new Date();
-  const results = new Map<string, PluginState>();
+  const results = new Map<string, PluginStateRecord>();
+  const pluginState = getPluginStateStore(prisma);
 
   for (const plugin of discovered) {
     const metadata = {
@@ -28,11 +30,11 @@ export const syncDiscoveredPlugins = async (
       discoveredAt: now
     };
 
-    const existing = await prisma.pluginState.findUnique({ where: { slug: plugin.slug } });
+    const existing = await pluginState.findUnique({ where: { slug: plugin.slug } });
     const hasError = Boolean(plugin.error) || !plugin.manifest;
 
     if (!existing) {
-      const created = await prisma.pluginState.create({
+      const created = await pluginState.create({
         data: {
           ...metadata,
           status: hasError ? "broken" : "discovered",
@@ -44,7 +46,7 @@ export const syncDiscoveredPlugins = async (
       continue;
     }
 
-    const updated = await prisma.pluginState.update({
+    const updated = await pluginState.update({
       where: { slug: plugin.slug },
       data: {
         ...metadata,
@@ -67,7 +69,7 @@ export const syncDiscoveredPlugins = async (
 
 export const mergePluginStates = (
   discovered: DiscoveredPlugin[],
-  states: PluginState[]
+  states: PluginStateRecord[]
 ): PluginListItem[] => {
   const discoveredBySlug = new Map(discovered.map((plugin) => [plugin.slug, plugin]));
   const results: PluginListItem[] = [];

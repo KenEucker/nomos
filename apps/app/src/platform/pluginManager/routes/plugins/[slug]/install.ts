@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Ctx } from "../../../../ctx";
 import { HttpError } from "../../../../errors";
 import { discoverPlugins } from "../../../discovery";
+import { getPluginStateStore } from "../../../store";
 import { syncDiscoveredPlugins } from "../../../state";
 
 export const postConfig = {
@@ -32,7 +33,8 @@ export const post = async (ctx: Ctx) => {
 
   await syncDiscoveredPlugins(ctx.prisma, discovered);
 
-  const existing = await ctx.prisma.pluginState.findUnique({ where: { slug } });
+  const pluginState = getPluginStateStore(ctx.prisma);
+  const existing = await pluginState.findUnique({ where: { slug } });
   if (!existing) {
     throw new HttpError(500, "state_error", "Plugin state could not be created.");
   }
@@ -42,7 +44,7 @@ export const post = async (ctx: Ctx) => {
   }
 
   const installedAt = existing.installedAt ?? new Date();
-  const updated = await ctx.prisma.pluginState.update({
+  const updated = await pluginState.update({
     where: { slug },
     data: {
       status: "installed",

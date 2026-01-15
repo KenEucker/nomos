@@ -3,6 +3,7 @@ import type { Ctx } from "../../../../ctx";
 import { HttpError } from "../../../../errors";
 import { discoverPlugins } from "../../../discovery";
 import { runPreview } from "../../../preview";
+import { getPluginStateStore } from "../../../store";
 import { syncDiscoveredPlugins } from "../../../state";
 
 export const postConfig = {
@@ -39,14 +40,15 @@ export const post = async (ctx: Ctx) => {
 
   await syncDiscoveredPlugins(ctx.prisma, discovered);
 
-  const state = await ctx.prisma.pluginState.findUnique({ where: { slug } });
+  const pluginState = getPluginStateStore(ctx.prisma);
+  const state = await pluginState.findUnique({ where: { slug } });
   if (!state || !state.installedAt) {
     throw new HttpError(400, "not_installed", "Plugin must be installed before preview.");
   }
 
   try {
     const result = await runPreview(match.manifest, config);
-    const updated = await ctx.prisma.pluginState.update({
+    const updated = await pluginState.update({
       where: { slug },
       data: {
         status: state.enabled ? "enabled" : "staged",
@@ -59,7 +61,7 @@ export const post = async (ctx: Ctx) => {
     return ctx.json({ plugin: updated, plan: result.plan });
   } catch (error: any) {
     const message = error instanceof Error ? error.message : "Preview failed.";
-    await ctx.prisma.pluginState.update({
+    await pluginState.update({
       where: { slug },
       data: {
         status: "broken",

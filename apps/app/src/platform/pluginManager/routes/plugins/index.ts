@@ -1,6 +1,7 @@
 import type { Ctx } from "../../../ctx";
 import { HttpError } from "../../../errors";
 import { discoverPlugins } from "../../discovery";
+import { getPluginStateStore } from "../../store";
 import { mergePluginStates, syncDiscoveredPlugins } from "../../state";
 
 export const config = {
@@ -21,7 +22,8 @@ export const get = async (ctx: Ctx) => {
 
   const discovered = await discoverPlugins(config);
   await syncDiscoveredPlugins(ctx.prisma, discovered);
-  const states = await ctx.prisma.pluginState.findMany();
+  const pluginState = getPluginStateStore(ctx.prisma);
+  const states = await pluginState.findMany();
   const merged = mergePluginStates(discovered, states).sort((a, b) =>
     a.slug.localeCompare(b.slug)
   );
