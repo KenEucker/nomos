@@ -17,14 +17,22 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}) {
     headers,
     ...options
   });
-  const data = (await res.json()) as ApiResponse<T>;
-  if (!res.ok || !data.ok) {
-    const message = data.error?.message ?? "Request failed";
+  let data: ApiResponse<T> | undefined;
+  try {
+    data = (await res.json()) as ApiResponse<T>;
+  } catch {
+    // ignore parse errors
+  }
+
+  if (!res.ok || !data?.ok) {
+    const message = data?.error?.message ?? "Request failed";
     const error = new Error(message);
-    (error as any).code = data.error?.code;
-    (error as any).details = data.error?.details;
+    (error as any).status = res.status;
+    (error as any).code = data?.error?.code;
+    (error as any).details = data?.error?.details;
     throw error;
   }
+
   return data;
 }
 
