@@ -111,7 +111,7 @@ export function compileListModule<T = unknown>(
           const endpoint =
             typeof action.endpoint === "function"
               ? action.endpoint(id)
-              : resolveEndpoint(action.endpoint, id);
+              : resolveEndpoint(action.endpoint!, id);
 
           const method = action.method ?? "POST";
 
@@ -309,7 +309,7 @@ export function compileShowModule<T = unknown>(
           const endpoint =
             typeof action.endpoint === "function"
               ? action.endpoint(id)
-              : resolveEndpoint(action.endpoint, id);
+              : resolveEndpoint(action.endpoint!, id);
 
           const method = action.method ?? "POST";
 

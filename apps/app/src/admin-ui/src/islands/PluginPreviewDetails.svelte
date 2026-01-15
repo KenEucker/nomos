@@ -5,7 +5,9 @@
   import Button from "../components/ui/button.svelte";
   import { apiGet } from "../lib/api";
 
-  export let slug: string;
+  let { slug } = $props<{
+    slug?: string;
+  }>();
 
   type PluginPlan = {
     slug: string;
@@ -167,7 +169,7 @@
               <li>
                 <span class="font-mono text-xs text-slate-100">{key.key}</span>
                 {#if key.required}
-                  <Badge variant="warning" class="ml-2">Required</Badge>
+                  <Badge variant="warning" className="ml-2">Required</Badge>
                 {/if}
                 {#if key.description}
                   <span class="ml-2 text-xs text-slate-400">{key.description}</span>

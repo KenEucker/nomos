@@ -1,8 +1,8 @@
 ---
-import AdminLayout from "../../../layouts/AdminLayout.astro";
-import PluginPreviewDetails from "../../../islands/PluginPreviewDetails.svelte";
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import PluginPreviewDetails from "../../../../islands/PluginPreviewDetails.svelte";
 
-const { slug } = Astro.params;
+const slug: string = Astro.params.slug as string;
 const title = "Plugin Preview";
 const subtitle = `Preview details for ${slug}`;
 ---
