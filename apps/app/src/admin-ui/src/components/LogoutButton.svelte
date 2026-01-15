@@ -1,5 +1,5 @@
 <script lang="ts">
-  const sdkModulePromise = import("/sdk/client.js");
+  import { apiPost } from "../lib/api";
 
   type Props = {
     className?: string;
@@ -17,8 +17,7 @@
 
   const handleLogout = async () => {
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      await client.POST("/auth/logout");
+      await apiPost("/auth/logout");
     } catch {
       // ignore
     }

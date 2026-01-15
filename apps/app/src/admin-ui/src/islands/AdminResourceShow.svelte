@@ -3,7 +3,7 @@
   import Button from "../components/ui/button.svelte";
   import Badge from "../components/ui/badge.svelte";
   import ConfirmDialog from "../components/ConfirmDialog.svelte";
-  const sdkModulePromise = import("/sdk/client.js");
+  import { apiGet, apiDelete, apiPatch, apiPost, apiPut } from "../lib/api";
   import { toasts } from "../lib/toast";
   import type { AdminResource, FieldDef } from "../lib/resources/types";
   import { resolveEndpoint, getFieldsForView } from "../lib/resources/types";
@@ -49,8 +49,7 @@
     error = null;
     try {
       const endpoint = resolveEndpoint(requireEndpoint("get"), id);
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.GET(endpoint);
+      const response = await apiGet<any>(endpoint);
       const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
       data = response.data?.[dataKey] ?? response.data;
     } catch (err: any) {
@@ -98,20 +97,19 @@
           : resolveEndpoint(action.endpoint, id);
 
       const method = action.method ?? "POST";
-      const client = (await sdkModulePromise).getSingletonClient();
 
       switch (method) {
         case "DELETE":
-          await client.DELETE(endpoint);
+          await apiDelete(endpoint);
           break;
         case "PATCH":
-          await client.PATCH(endpoint, { body: {} });
+          await apiPatch(endpoint, {});
           break;
         case "PUT":
-          await client.PUT(endpoint, { body: {} });
+          await apiPut(endpoint, {});
           break;
         default:
-          await client.POST(endpoint, { body: {} });
+          await apiPost(endpoint, {});
           break;
       }
 
@@ -137,8 +135,7 @@
     deleting = true;
     try {
       const endpoint = resolveEndpoint(requireEndpoint("delete"), id);
-      const client = (await sdkModulePromise).getSingletonClient();
-      await client.DELETE(endpoint);
+      await apiDelete(endpoint);
       deleteDialogOpen = false;
       navigate(resource.routeBase);
     } catch (err: any) {

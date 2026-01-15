@@ -6,7 +6,7 @@
   import Badge from "../components/ui/badge.svelte";
   import Input from "../components/ui/input.svelte";
   import Card from "../components/ui/card.svelte";
-  const sdkModulePromise = import("/sdk/client.js");
+  import { apiGet, apiPost, apiPatch, apiDelete } from "../lib/api";
   import { toasts } from "../lib/toast";
 
   interface ApiKey {
@@ -33,8 +33,7 @@
   const loadApiKeys = async () => {
     loading = true;
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.GET("/_/api-keys");
+      const response = await apiGet<{ apiKeys: ApiKey[] }>("/_/api-keys");
       apiKeys = response.data?.apiKeys ?? [];
     } catch (e: any) {
       console.error("Failed to load API keys", e);
@@ -50,8 +49,7 @@
         permissions: newPermissions ? newPermissions.split(",").map((s) => s.trim()) : [],
         allowedHosts: newAllowedHosts ? newAllowedHosts.split(",").map((s) => s.trim()) : []
       };
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.POST("/_/api-keys", { body });
+      const response = await apiPost<ApiKey>("/_/api-keys", body);
       if (response.data?.token) {
         newToken = response.data.token;
         showCreate = false;
@@ -70,8 +68,7 @@
 
   const rotateKey = async (id: string) => {
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.PATCH(`/_/api-keys/${id}`, { body: { action: "rotate" } });
+      const response = await apiPatch<ApiKey>(`/_/api-keys/${id}`, { action: "rotate" });
       if (response.data?.token) {
         newToken = response.data.token;
         showToken = true;
@@ -86,8 +83,7 @@
 
   const revokeKey = async (id: string) => {
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      await client.PATCH(`/_/api-keys/${id}`, { body: { action: "revoke" } });
+      await apiPatch(`/_/api-keys/${id}`, { action: "revoke" });
       await loadApiKeys();
       toasts.success("API key revoked");
     } catch (e: any) {
@@ -98,8 +94,7 @@
 
   const deleteKey = async (id: string) => {
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      await client.DELETE(`/_/api-keys/${id}`);
+      await apiDelete(`/_/api-keys/${id}`);
       await loadApiKeys();
       toasts.success("API key deleted");
     } catch (e: any) {

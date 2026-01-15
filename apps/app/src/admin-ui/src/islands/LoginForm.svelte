@@ -1,5 +1,5 @@
 <script lang="ts">
-  const sdkModulePromise = import("/sdk/client.js");
+  import { apiPost } from "../lib/api";
   import Button from "../components/ui/button.svelte";
   import Input from "../components/ui/input.svelte";
 
@@ -14,8 +14,7 @@
     loading = true;
 
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      await client.POST("/auth/login", { body: { email, password } });
+      await apiPost("/auth/login", { email, password });
       window.location.href = "/admin";
     } catch (err) {
       error = (err as Error).message ?? "Login failed";

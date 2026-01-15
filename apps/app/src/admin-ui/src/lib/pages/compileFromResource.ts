@@ -6,7 +6,7 @@
  * or overridden by handwritten modules for complex workflows.
  */
 
-const sdkModulePromise = import("/sdk/client.js");
+import { apiGet, apiPost, apiPatch, apiDelete } from "../api";
 import type { AdminResource } from "../resources/types";
 import { resolveEndpoint, getFieldsForView } from "../resources/types";
 import type {
@@ -77,8 +77,7 @@ export function compileListModule<T = unknown>(
           ? `${listEndpoint}?${queryString}`
           : listEndpoint;
 
-        const client = (await sdkModulePromise).getSingletonClient();
-        const response = await client.GET(url);
+        const response = await apiGet<Record<string, T[]>>(url);
 
         // Extract items from response using dataKey
         const dataKey = resource.dataKey ?? resource.id;
@@ -98,8 +97,7 @@ export function compileListModule<T = unknown>(
         ? async (id: string): Promise<void> => {
             const deleteEndpoint = requireEndpoint(resource, "delete");
             const url = resolveEndpoint(deleteEndpoint, id);
-            const client = (await sdkModulePromise).getSingletonClient();
-            await client.DELETE(url);
+            await apiDelete(url);
           }
         : undefined,
 
@@ -116,17 +114,16 @@ export function compileListModule<T = unknown>(
               : resolveEndpoint(action.endpoint!, id);
 
           const method = action.method ?? "POST";
-          const client = (await sdkModulePromise).getSingletonClient();
 
           switch (method) {
             case "DELETE":
-              return client.DELETE(endpoint);
+              return apiDelete(endpoint);
             case "PATCH":
-              return client.PATCH(endpoint, { body: {} });
+              return apiPatch(endpoint, {});
             case "PUT":
-              return client.PUT(endpoint, { body: {} });
+              return apiPatch(endpoint, {});
             default:
-              return client.POST(endpoint, { body: {} });
+              return apiPost(endpoint, {});
           }
         },
       })),
@@ -183,8 +180,7 @@ export function compileFormModule<T = unknown>(
           throw new Error(`Missing required endpoint "get" for resource "${resource.id}".`);
         }
         const url = resolveEndpoint(getEndpoint, id);
-        const client = (await sdkModulePromise).getSingletonClient();
-        const response = await client.GET(url);
+        const response = await apiGet<Record<string, T>>(url);
 
         // Extract item from response using singleDataKey
         const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
@@ -200,8 +196,10 @@ export function compileFormModule<T = unknown>(
                 `Missing required endpoint "create" for resource "${resource.id}".`
               );
             }
-            const client = (await sdkModulePromise).getSingletonClient();
-            const response = await client.POST(createEndpoint, { body: payload });
+            const response = await apiPost<Record<string, T>>(
+              createEndpoint,
+              payload
+            );
             const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
             return (response.data?.[dataKey] ?? response.data) as T;
           }
@@ -215,8 +213,7 @@ export function compileFormModule<T = unknown>(
               );
             }
             const url = resolveEndpoint(updateEndpoint, id);
-            const client = (await sdkModulePromise).getSingletonClient();
-            const response = await client.PATCH(url, { body: payload });
+            const response = await apiPatch<Record<string, T>>(url, payload);
             const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
             return (response.data?.[dataKey] ?? response.data) as T;
           }
@@ -281,8 +278,7 @@ export function compileShowModule<T = unknown>(
           throw new Error(`Missing required endpoint "get" for resource "${resource.id}".`);
         }
         const url = resolveEndpoint(getEndpoint, id);
-        const client = (await sdkModulePromise).getSingletonClient();
-        const response = await client.GET(url);
+        const response = await apiGet<Record<string, T>>(url);
 
         // Extract item from response using singleDataKey
         const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
@@ -299,8 +295,7 @@ export function compileShowModule<T = unknown>(
               );
             }
             const url = resolveEndpoint(deleteEndpoint, id);
-            const client = (await sdkModulePromise).getSingletonClient();
-            await client.DELETE(url);
+            await apiDelete(url);
           }
         : undefined,
 
@@ -317,17 +312,16 @@ export function compileShowModule<T = unknown>(
               : resolveEndpoint(action.endpoint!, id);
 
           const method = action.method ?? "POST";
-          const client = (await sdkModulePromise).getSingletonClient();
 
           switch (method) {
             case "DELETE":
-              return client.DELETE(endpoint);
+              return apiDelete(endpoint);
             case "PATCH":
-              return client.PATCH(endpoint, { body: {} });
+              return apiPatch(endpoint, {});
             case "PUT":
-              return client.PUT(endpoint, { body: {} });
+              return apiPatch(endpoint, {});
             default:
-              return client.POST(endpoint, { body: {} });
+              return apiPost(endpoint, {});
           }
         },
       })),

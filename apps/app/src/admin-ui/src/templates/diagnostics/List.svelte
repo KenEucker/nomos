@@ -5,7 +5,7 @@
   import Badge from "../../components/ui/badge.svelte";
   import Tabs from "../../components/ui/tabs.svelte";
   import Table from "../../components/ui/table.svelte";
-  const sdkModulePromise = import("/sdk/client.js");
+  import { apiGet } from "../../lib/api";
   import { session, hasRole, type SessionUser } from "../../lib/session";
 
   interface DiagnosticsOverview {
@@ -57,8 +57,7 @@
   const loadDiagnostics = async () => {
     try {
       error = null;
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.GET("/_/diagnostics");
+      const response = await apiGet<DiagnosticsOverview>("/_/diagnostics");
       overview = response.data ?? null;
     } catch (e: any) {
       if (e.message?.includes("Diagnostics disabled")) {
@@ -72,8 +71,7 @@
 
   const loadRouteStats = async () => {
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.GET("/_/diagnostics/routes");
+      const response = await apiGet<RouteStats>("/_/diagnostics/routes");
       routeStats = response.data ?? null;
     } catch {
       // ignore
@@ -82,8 +80,7 @@
 
   const loadJobStats = async () => {
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.GET("/_/diagnostics/jobs");
+      const response = await apiGet<JobStats>("/_/diagnostics/jobs");
       jobStats = response.data ?? null;
     } catch {
       // ignore
@@ -92,8 +89,7 @@
 
   const loadEventStats = async () => {
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.GET("/_/diagnostics/events");
+      const response = await apiGet<EventStats>("/_/diagnostics/events");
       eventStats = response.data ?? null;
     } catch {
       // ignore

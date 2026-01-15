@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { cn } from "../../lib/utils";
-  const sdkModulePromise = import("/sdk/client.js");
+  import { apiGet } from "../../lib/api";
   import Badge from "../../components/ui/badge.svelte";
   import Button from "../../components/ui/button.svelte";
 
@@ -42,8 +42,7 @@
     loading = true;
     loadError = null;
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.GET(optionsEndpoint);
+      const response = await apiGet<any>(optionsEndpoint);
       let data = response.data;
       if (dataKey && data?.[dataKey]) {
         data = data[dataKey];

@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import Button from "../components/ui/button.svelte";
   import FieldRenderer from "./FieldRenderer.svelte";
-  const sdkModulePromise = import("/sdk/client.js");
+  import { apiGet, apiPost, apiPatch } from "../lib/api";
   import { toasts } from "../lib/toast";
   import type { AdminResource, FieldDef } from "../lib/resources/types";
   import { resolveEndpoint, getFieldsForView } from "../lib/resources/types";
@@ -62,8 +62,7 @@
     loadingData = true;
     try {
       const endpoint = resolveEndpoint(requireEndpoint("get"), id);
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.GET(endpoint);
+      const response = await apiGet<any>(endpoint);
       const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");
       const data = response.data?.[dataKey] ?? response.data;
       // Initialize form data from response
@@ -136,12 +135,11 @@
       }
 
       let response;
-      const client = (await sdkModulePromise).getSingletonClient();
       if (mode === "create") {
-        response = await client.POST(requireEndpoint("create"), { body: submitData });
+        response = await apiPost<any>(requireEndpoint("create"), submitData);
       } else {
         const endpoint = resolveEndpoint(requireEndpoint("update"), id);
-        response = await client.PATCH(endpoint, { body: submitData });
+        response = await apiPatch<any>(endpoint, submitData);
       }
 
       const dataKey = resource.singleDataKey ?? resource.id.replace(/s$/, "");

@@ -6,7 +6,7 @@
   import Badge from "../../components/ui/badge.svelte";
   import Card from "../../components/ui/card.svelte";
   import Tabs from "../../components/ui/tabs.svelte";
-  const sdkModulePromise = import("/sdk/client.js");
+  import { apiGet, apiPost } from "../../lib/api";
   import { session, hasRole, type SessionUser } from "../../lib/session";
 
   interface Job {
@@ -44,8 +44,7 @@
 
   const loadJobs = async () => {
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      const response = await client.GET("/_/jobs");
+      const response = await apiGet<{ jobs: Job[]; runs: JobRun[] }>("/_/jobs");
       jobs = response.data?.jobs ?? [];
       runs = response.data?.runs ?? [];
     } catch (e) {
@@ -62,8 +61,7 @@
       } catch {
         // ignore parse errors
       }
-      const client = (await sdkModulePromise).getSingletonClient();
-      await client.POST("/_/jobs", { body: { jobId: selectedJobId, payload } });
+      await apiPost("/_/jobs", { jobId: selectedJobId, payload });
       showTrigger = false;
       triggerPayload = "{}";
       await loadJobs();
@@ -74,8 +72,7 @@
 
   const retryJob = async (run: JobRun) => {
     try {
-      const client = (await sdkModulePromise).getSingletonClient();
-      await client.POST("/_/jobs", { body: { jobId: run.jobId, payload: run.payload } });
+      await apiPost("/_/jobs", { jobId: run.jobId, payload: run.payload });
       await loadJobs();
     } catch (e) {
       console.error("Failed to retry job", e);
