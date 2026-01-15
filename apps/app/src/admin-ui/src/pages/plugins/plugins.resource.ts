@@ -5,6 +5,7 @@ export const pluginsResource: AdminResourceInput = {
   label: "Plugin",
   labelPlural: "Plugins",
   menuGroup: "System",
+  primaryKey: "slug",
   icon:
     '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4a4 4 0 014 4v1h1a3 3 0 010 6h-1v1a4 4 0 01-8 0v-1H7a3 3 0 010-6h1V8a4 4 0 014-4z"/></svg>',
   endpoints: {
