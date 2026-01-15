@@ -1,6 +1,5 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import DiagnosticsView from "./DiagnosticsView.svelte";
 import { createStaticListModule } from "../../lib/pages";
 
 export const pageModule = createStaticListModule({
@@ -10,5 +9,263 @@ export const pageModule = createStaticListModule({
 });
 ---
 <AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <DiagnosticsView client:load />
+  <div id="diagnostics-root" class="space-y-4"></div>
 </AdminLayout>
+
+<script type="module">
+  import { apiGet } from "../../lib/api";
+  import { session, hasRole } from "../../lib/session";
+
+  const root = document.getElementById("diagnostics-root");
+  const state = {
+    loading: true,
+    error: null,
+    overview: null,
+    routeStats: null,
+    jobStats: null,
+    eventStats: null,
+    activeTab: "overview",
+    autoRefresh: false,
+    refreshInterval: null,
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "ok": return "bg-green-500";
+      case "degraded": return "bg-yellow-500";
+      case "error": return "bg-red-500";
+      default: return "bg-slate-500";
+    }
+  };
+
+  const formatModuleName = (value) =>
+    value.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^\\w/, (match) => match.toUpperCase());
+
+  const renderTabs = () => `
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex gap-2">
+        ${["overview", "routes", "jobs", "events"].map((tab) => `
+          <button data-tab="${tab}" class="rounded px-3 py-2 text-sm ${state.activeTab === tab ? "bg-slate-200 text-slate-900" : "border border-slate-700 text-slate-200"}">
+            ${tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        `).join("")}
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="diag-auto" class="rounded border border-slate-700 px-3 py-2 text-sm text-slate-200">${state.autoRefresh ? "Auto-refresh ON" : "Auto-refresh OFF"}</button>
+        <button id="diag-refresh" class="rounded border border-slate-700 px-3 py-2 text-sm text-slate-200">Refresh</button>
+      </div>
+    </div>
+  `;
+
+  const render = () => {
+    if (!root) return;
+    if (state.loading) {
+      root.innerHTML = '<div class="text-slate-400">Loading diagnostics...</div>';
+      return;
+    }
+    if (state.error) {
+      root.innerHTML = `
+        <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-6 text-center">
+          <div class="mb-2 text-red-400">${state.error}</div>
+          <button id="diag-retry" class="rounded border border-slate-700 px-3 py-2 text-sm text-slate-200">Retry</button>
+        </div>
+      `;
+      document.getElementById("diag-retry")?.addEventListener("click", loadDiagnostics);
+      return;
+    }
+    let content = "";
+    if (state.activeTab === "overview") {
+      const events = state.overview?.events ?? [];
+      const coreModules = state.overview?.coreModules ?? [];
+      content = `
+        <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-4">
+          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4 text-center">
+            <div class="flex items-center justify-center gap-2 mb-2">
+              <div class="w-3 h-3 rounded-full ${getStatusColor(state.overview?.status ?? "unknown")}"></div>
+              <span class="text-sm text-slate-400">Status</span>
+            </div>
+            <div class="text-2xl font-semibold capitalize text-slate-100">${state.overview?.status ?? "Unknown"}</div>
+          </div>
+          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4 text-center">
+            <div class="mb-2 text-sm text-slate-400">Total Routes</div>
+            <div class="text-2xl font-semibold text-slate-100">${state.overview?.routes ?? 0}</div>
+          </div>
+          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4 text-center">
+            <div class="mb-2 text-sm text-slate-400">Registered Jobs</div>
+            <div class="text-2xl font-semibold text-slate-100">${state.overview?.jobs ?? 0}</div>
+          </div>
+          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4 text-center">
+            <div class="mb-2 text-sm text-slate-400">Event Types</div>
+            <div class="text-2xl font-semibold text-slate-100">${events.length}</div>
+          </div>
+        </div>
+        ${events.length ? `
+          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
+            <h3 class="mb-3 text-sm font-semibold text-slate-300">Registered Events</h3>
+            <div class="flex flex-wrap gap-2">
+              ${events.map((event) => `<span class="rounded-full bg-slate-700 px-2 py-1 text-xs text-slate-200">${event}</span>`).join("")}
+            </div>
+          </div>
+        ` : ""}
+        ${coreModules.length ? `
+          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
+            <h3 class="mb-3 text-sm font-semibold text-slate-300">Installed Core Modules</h3>
+            <table class="w-full">
+              <thead class="text-xs text-left uppercase text-slate-400">
+                <tr>
+                  <th class="pb-2">Module</th>
+                  <th class="pb-2">State</th>
+                  <th class="pb-2">API</th>
+                  <th class="pb-2">UI</th>
+                </tr>
+              </thead>
+              <tbody class="text-sm">
+                ${coreModules.map((module) => `
+                  <tr class="border-t border-slate-800">
+                    <td class="py-3 text-xs text-slate-100">${formatModuleName(module.name)}</td>
+                    <td class="py-3 text-xs"><span class="rounded-full ${module.enabled ? "bg-slate-700" : "border border-slate-600"} px-2 py-1 text-xs text-slate-200">${module.enabled ? "Enabled" : "Disabled"}</span></td>
+                    <td class="py-3 text-xs text-slate-400">${module.apiEnabled === undefined ? "-" : module.apiEnabled ? "On" : "Off"}</td>
+                    <td class="py-3 text-xs text-slate-400">${module.uiEnabled === undefined ? "-" : module.uiEnabled ? "On" : "Off"}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        ` : ""}
+      `;
+    } else if (state.activeTab === "routes") {
+      const routes = state.routeStats?.routes ?? [];
+      content = routes.length
+        ? `
+          <table class="w-full">
+            <thead class="text-xs text-left uppercase text-slate-400">
+              <tr>
+                <th class="pb-2">Method</th>
+                <th class="pb-2">Path</th>
+                <th class="pb-2">ID</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              ${routes.map((route) => `
+                <tr class="border-t border-slate-800">
+                  <td class="py-3 text-xs text-slate-400">${route.method}</td>
+                  <td class="py-3 font-mono text-xs text-slate-100">${route.path}</td>
+                  <td class="py-3 font-mono text-xs text-slate-400">${route.id}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `
+        : '<div class="rounded-lg border border-slate-800 bg-slate-900/40 py-8 text-center text-slate-400">No route data available.</div>';
+    } else if (state.activeTab === "jobs") {
+      const jobs = state.jobStats?.jobs ?? [];
+      content = jobs.length
+        ? `
+          <table class="w-full">
+            <thead class="text-xs text-left uppercase text-slate-400">
+              <tr>
+                <th class="pb-2">Job ID</th>
+                <th class="pb-2">Queue</th>
+                <th class="pb-2">Schedule</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              ${jobs.map((job) => `
+                <tr class="border-t border-slate-800">
+                  <td class="py-3 font-mono text-xs text-slate-100">${job.id}</td>
+                  <td class="py-3 text-xs text-slate-400">${job.queue ?? "default"}</td>
+                  <td class="py-3 font-mono text-xs text-slate-400">${job.schedule ?? "-"}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `
+        : '<div class="rounded-lg border border-slate-800 bg-slate-900/40 py-8 text-center text-slate-400">No job data available.</div>';
+    } else {
+      const events = state.eventStats?.events ?? [];
+      content = events.length
+        ? `<div class="flex flex-wrap gap-2">${events.map((event) => `<span class="rounded-full bg-slate-700 px-2 py-1 text-xs text-slate-200">${event}</span>`).join("")}</div>`
+        : '<div class="rounded-lg border border-slate-800 bg-slate-900/40 py-8 text-center text-slate-400">No event data available.</div>';
+    }
+
+    root.innerHTML = `${renderTabs()}${content}`;
+    root.querySelectorAll("[data-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.activeTab = button.getAttribute("data-tab");
+        render();
+      });
+    });
+    document.getElementById("diag-auto")?.addEventListener("click", toggleAutoRefresh);
+    document.getElementById("diag-refresh")?.addEventListener("click", loadAll);
+  };
+
+  const loadDiagnostics = async () => {
+    try {
+      state.error = null;
+      const response = await apiGet("/_/diagnostics");
+      state.overview = response.data ?? null;
+    } catch (e) {
+      state.error = e.message?.includes("Diagnostics disabled")
+        ? "Diagnostics are disabled. Set DIAGNOSTICS_ENABLED=true to enable."
+        : "Failed to load diagnostics.";
+    }
+    state.loading = false;
+    render();
+  };
+
+  const loadRouteStats = async () => {
+    try {
+      const response = await apiGet("/_/diagnostics/routes");
+      state.routeStats = response.data ?? null;
+    } catch {
+      state.routeStats = null;
+    }
+  };
+
+  const loadJobStats = async () => {
+    try {
+      const response = await apiGet("/_/diagnostics/jobs");
+      state.jobStats = response.data ?? null;
+    } catch {
+      state.jobStats = null;
+    }
+  };
+
+  const loadEventStats = async () => {
+    try {
+      const response = await apiGet("/_/diagnostics/events");
+      state.eventStats = response.data ?? null;
+    } catch {
+      state.eventStats = null;
+    }
+  };
+
+  const loadAll = async () => {
+    state.loading = true;
+    render();
+    await Promise.all([loadDiagnostics(), loadRouteStats(), loadJobStats(), loadEventStats()]);
+  };
+
+  const toggleAutoRefresh = () => {
+    state.autoRefresh = !state.autoRefresh;
+    if (state.autoRefresh) {
+      state.refreshInterval = setInterval(loadAll, 5000);
+    } else if (state.refreshInterval) {
+      clearInterval(state.refreshInterval);
+      state.refreshInterval = null;
+    }
+    render();
+  };
+
+  const unsubscribe = session.subscribe((value) => {
+    if (!value) return;
+    unsubscribe();
+    if (!hasRole(value, "admin")) {
+      window.location.href = "/";
+      return;
+    }
+    loadAll();
+  });
+
+  render();
+</script>

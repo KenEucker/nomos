@@ -1,6 +1,5 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import DocsView from "./DocsView.svelte";
 import { createStaticListModule } from "../../lib/pages";
 
 export const pageModule = createStaticListModule({
@@ -10,5 +9,113 @@ export const pageModule = createStaticListModule({
 });
 ---
 <AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <DocsView client:load />
+  <div id="docs-root" class="space-y-6"></div>
 </AdminLayout>
+
+<script type="module">
+  import { session } from "../../lib/session";
+
+  const root = document.getElementById("docs-root");
+
+  const render = (state) => {
+    if (!root) return;
+    if (state.loading) {
+      root.innerHTML = '<div class="text-slate-400">Checking documentation access...</div>';
+      return;
+    }
+    if (state.error) {
+      root.innerHTML = `
+        <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-6 text-center">
+          <div class="mb-4 text-yellow-400">${state.error}</div>
+          <p class="mb-4 text-sm text-slate-400">
+            In development mode, documentation is publicly accessible.
+            In production, set <code class="px-1 rounded bg-slate-800">SWAGGER_PUBLIC=true</code> to enable public access.
+          </p>
+          <button id="docs-retry" class="inline-flex items-center rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:border-slate-500">
+            Retry
+          </button>
+        </div>
+      `;
+      const retry = document.getElementById("docs-retry");
+      retry?.addEventListener("click", () => checkDocsAccess());
+      return;
+    }
+    if (state.docsAccessible) {
+      root.innerHTML = `
+        <div class="space-y-6">
+          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-6">
+            <h3 class="mb-4 text-lg font-semibold text-slate-100">Swagger UI</h3>
+            <p class="mb-4 text-sm text-slate-400">
+              Interactive API documentation with try-it-out functionality.
+            </p>
+            <div class="flex gap-2">
+              <button id="docs-open" class="inline-flex items-center rounded-md bg-slate-200 px-3 py-2 text-sm text-slate-900 hover:bg-slate-100">Open Swagger UI</button>
+              <button id="docs-openapi" class="inline-flex items-center rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:border-slate-500">View OpenAPI JSON</button>
+            </div>
+          </div>
+
+          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-6">
+            <h3 class="mb-4 text-lg font-semibold text-slate-100">Embedded Documentation</h3>
+            <div class="overflow-hidden border rounded-lg bg-slate-900 border-slate-700">
+              <iframe src="/docs" class="w-full h-[600px] border-0" title="API Documentation"></iframe>
+            </div>
+          </div>
+
+          <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-6">
+            <h3 class="mb-4 text-lg font-semibold text-slate-100">Quick Links</h3>
+            <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <a href="/docs" target="_blank" class="block p-4 transition border rounded-lg bg-slate-900/50 border-slate-800 hover:border-slate-600">
+                <div class="text-sm font-medium text-slate-100">Swagger UI</div>
+                <div class="text-xs text-slate-400">/docs</div>
+              </a>
+              <a href="/openapi.json" target="_blank" class="block p-4 transition border rounded-lg bg-slate-900/50 border-slate-800 hover:border-slate-600">
+                <div class="text-sm font-medium text-slate-100">OpenAPI Spec</div>
+                <div class="text-xs text-slate-400">/openapi.json</div>
+              </a>
+              <a href="/docs" target="_blank" class="block p-4 transition border rounded-lg bg-slate-900/50 border-slate-800 hover:border-slate-600">
+                <div class="text-sm font-medium text-slate-100">API Docs</div>
+                <div class="text-xs text-slate-400">/docs</div>
+              </a>
+              <a href="/health" target="_blank" class="block p-4 transition border rounded-lg bg-slate-900/50 border-slate-800 hover:border-slate-600">
+                <div class="text-sm font-medium text-slate-100">Health</div>
+                <div class="text-xs text-slate-400">/health</div>
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById("docs-open")?.addEventListener("click", () => window.open("/docs", "_blank"));
+      document.getElementById("docs-openapi")?.addEventListener("click", () => window.open("/openapi.json", "_blank"));
+    }
+  };
+
+  const state = {
+    loading: true,
+    error: null,
+    docsAccessible: false,
+  };
+
+  const checkDocsAccess = async () => {
+    state.loading = true;
+    render(state);
+    try {
+      const response = await fetch("/docs", { method: "HEAD", credentials: "include" });
+      state.docsAccessible = response.ok;
+      state.error = !response.ok && response.status === 403
+        ? "API documentation is not accessible. It may be restricted in production."
+        : null;
+    } catch {
+      state.error = "Failed to check documentation access.";
+    }
+    state.loading = false;
+    render(state);
+  };
+
+  const unsubscribe = session.subscribe((value) => {
+    if (!value) return;
+    unsubscribe();
+    checkDocsAccess();
+  });
+
+  render(state);
+</script>

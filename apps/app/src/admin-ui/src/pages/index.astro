@@ -1,6 +1,5 @@
 ---
 import AdminLayout from "../layouts/AdminLayout.astro";
-import DashboardView from "./DashboardView.svelte";
 import { createStaticListModule } from "../lib/pages";
 
 export const pageModule = createStaticListModule({
@@ -10,5 +9,90 @@ export const pageModule = createStaticListModule({
 });
 ---
 <AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <DashboardView client:load />
+  <div id="dashboard-root" class="space-y-6"></div>
 </AdminLayout>
+
+<script type="module">
+  import { apiGet } from "../lib/api";
+
+  const root = document.getElementById("dashboard-root");
+
+  const render = (state) => {
+    if (!root) return;
+    if (state.loading) {
+      root.innerHTML = `
+        <div class="flex items-center justify-center py-12 text-slate-500 dark:text-slate-400">
+          <div class="flex flex-col items-center gap-2">
+            <div class="w-6 h-6 border-2 rounded-full animate-spin border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
+            <span>Loading dashboard...</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+    root.innerHTML = `
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-lg border border-slate-200 bg-white/40 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-slate-500 dark:text-slate-400">Jobs</div>
+              <div class="text-2xl font-semibold sm:text-3xl">${state.counts.jobs}</div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-200 dark:bg-slate-800">
+              <svg class="w-6 h-6 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-2 text-xs text-slate-500">Active jobs tracked in Nomos.</div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white/40 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 sm:col-span-2 lg:col-span-1">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-slate-500 dark:text-slate-400">Users</div>
+              <div class="text-2xl font-semibold sm:text-3xl">${state.usersCount ?? "—"}</div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-200 dark:bg-slate-800">
+              <svg class="w-6 h-6 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-2 text-xs text-slate-500">People collaborating in Nomos.</div>
+        </div>
+      </div>
+
+      <div class="mt-6 border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
+        <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 sm:px-6">
+          <h2 class="text-lg font-semibold">Recent Jobs</h2>
+        </div>
+        <div class="p-4 sm:p-6">
+          <div class="py-8 text-center text-slate-500 dark:text-slate-400">No jobs yet.</div>
+        </div>
+      </div>
+    `;
+  };
+
+  const state = { loading: true, counts: { jobs: 0 }, usersCount: null };
+  render(state);
+
+  (async () => {
+    try {
+      const [jobsRes] = await Promise.all([
+        apiGet("/_/jobs?page=1&pageSize=5")
+      ]);
+      let usersTotal = null;
+      try {
+        const usersRes = await apiGet("/users?page=1&pageSize=1");
+        usersTotal = usersRes.meta?.total ?? 0;
+      } catch {
+        usersTotal = null;
+      }
+      state.counts = { jobs: jobsRes.meta?.total ?? 0 };
+      state.usersCount = usersTotal;
+    } finally {
+      state.loading = false;
+      render(state);
+    }
+  })();
+</script>
