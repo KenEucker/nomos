@@ -183,6 +183,7 @@ export interface ResourceActions {
     /** Endpoint to call (method defaults to POST) */
     endpoint: string | ((id: string) => string);
     method?: "POST" | "PATCH" | "PUT" | "DELETE";
+    showWhen?: (record: Record<string, any>) => boolean;
   }>;
 }
 

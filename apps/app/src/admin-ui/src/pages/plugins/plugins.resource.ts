@@ -33,38 +33,36 @@ export const pluginsResource: AdminResourceInput = {
     delete: false,
     custom: [
       {
-        id: "install",
-        label: "Install",
-        endpoint: "/plugins/{id}/install",
-        method: "POST",
-        confirm: "Install this plugin?"
-      },
-      {
         id: "preview",
         label: "Preview",
         endpoint: "/plugins/{id}/preview",
-        method: "POST"
+        method: "POST",
+        showWhen: (record) => !record.lastPreview && record.status !== "enabled"
       },
       {
         id: "enable",
         label: "Enable",
         endpoint: "/plugins/{id}/enable",
         method: "POST",
-        confirm: "Enable this plugin?"
+        confirm: "Enable this plugin?",
+        showWhen: (record) =>
+          Boolean(record.lastPreview) && (record.status === "staged" || record.status === "disabled")
       },
       {
         id: "disable",
         label: "Disable",
         endpoint: "/plugins/{id}/disable",
         method: "POST",
-        confirm: "Disable this plugin?"
+        confirm: "Disable this plugin?",
+        showWhen: (record) => record.status === "enabled"
       },
       {
         id: "uninstall",
         label: "Uninstall",
         endpoint: "/plugins/{id}/uninstall",
         method: "POST",
-        confirm: "Uninstall this plugin?"
+        confirm: "Uninstall this plugin?",
+        showWhen: (record) => record.status === "disabled"
       }
     ]
   }

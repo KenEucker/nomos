@@ -19,6 +19,7 @@ import { csrf } from "./middleware/builtins/csrf";
 import { rateLimit } from "./middleware/builtins/rateLimit";
 import { requestContext } from "./middleware/builtins/requestContext";
 import { loadPlugins } from "./plugins/loadPlugins";
+import { getPluginStateStore } from "./pluginManager/store";
 import { loadRoutes } from "./router/loadRoutes";
 import {
   buildOpenApiSpec,
@@ -218,7 +219,26 @@ export async function createApp(config: ResolvedNomosConfig) {
     corePlugins.push(path.join(platformDir, "pluginManager", "plugin.ts"));
   }
 
-  const plugins = await loadPlugins(baseDir, corePlugins);
+  let enabledPluginSlugs: Set<string> | undefined;
+  if (config.modules.pluginManager.enabled && config.modules.pluginManager.activation.useDatabase) {
+    try {
+      const pluginState = getPluginStateStore(prisma);
+      const enabled = await pluginState.findMany();
+      enabledPluginSlugs = new Set(
+        enabled
+          .filter((plugin) => plugin.enabled && plugin.status === "enabled")
+          .map((plugin) => plugin.slug)
+      );
+    } catch (error) {
+      serverLog.warn(
+        { err: error instanceof Error ? error.message : error },
+        "Plugin manager state unavailable; filesystem plugins will not be loaded."
+      );
+      enabledPluginSlugs = new Set();
+    }
+  }
+
+  const plugins = await loadPlugins(baseDir, corePlugins, { enabledPluginSlugs });
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
 
   for (const perm of plugins.registry.permissions) {

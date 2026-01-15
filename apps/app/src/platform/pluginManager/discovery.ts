@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { createHash } from "node:crypto";
 import type { ResolvedNomosConfig } from "../config/nomos-config";
 import type { DiscoveredPlugin, PluginManifest } from "./types";
 
@@ -51,6 +52,33 @@ const resolveManifest = (mod: Record<string, unknown> | null): PluginManifest | 
   return manifest;
 };
 
+const hashFolder = (folderPath: string) => {
+  const hash = createHash("sha256");
+  const entries: string[] = [];
+
+  const walk = (dir: string) => {
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory()) {
+        walk(fullPath);
+      } else if (item.isFile()) {
+        entries.push(fullPath);
+      }
+    }
+  };
+
+  walk(folderPath);
+  entries.sort();
+
+  for (const entry of entries) {
+    hash.update(entry);
+    hash.update(fs.readFileSync(entry));
+  }
+
+  return hash.digest("hex");
+};
+
 export const discoverPlugins = async (
   config: ResolvedNomosConfig,
   options: { force?: boolean } = {}
@@ -95,13 +123,15 @@ export const discoverPlugins = async (
     if (manifest && !manifest.slug) {
       manifest.slug = slug;
     }
+    const checksum = hashFolder(folderPath);
 
     results.push({
       slug,
       folderPath,
       entryPath,
       manifest,
-      error
+      error,
+      checksum
     });
   }
 

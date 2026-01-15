@@ -367,6 +367,8 @@
             {#if hasActions}
               <div class="flex flex-wrap gap-1">
                 {#each customActions as action}
+                  {@const canShow = action.showWhen ? action.showWhen(item) : true}
+                  {#if canShow}
                   <Button
                     variant={action.variant ?? "outline"}
                     size="sm"
@@ -374,6 +376,7 @@
                   >
                     {action.label}
                   </Button>
+                  {/if}
                 {/each}
                 {#if resource.actions?.view !== false}
                   <Button variant="ghost" size="sm" onclick={() => handleView(item[resource.primaryKey])}>
@@ -453,15 +456,18 @@
               {#if hasActions}
                 <td class="px-4 py-3">
                   <div class="flex flex-wrap gap-1">
-                    {#each customActions as action}
-                      <Button
-                        variant={action.variant ?? "outline"}
-                        size="sm"
-                        onclick={() => confirmCustomAction(action, item[resource.primaryKey])}
-                      >
-                        {action.label}
-                      </Button>
-                    {/each}
+                {#each customActions as action}
+                  {@const canShow = action.showWhen ? action.showWhen(item) : true}
+                  {#if canShow}
+                  <Button
+                    variant={action.variant ?? "outline"}
+                    size="sm"
+                    onclick={() => confirmCustomAction(action, item[resource.primaryKey])}
+                  >
+                    {action.label}
+                  </Button>
+                  {/if}
+                {/each}
                     {#if resource.actions?.view !== false}
                       <Button variant="ghost" size="sm" onclick={() => handleView(item[resource.primaryKey])}>
                         View

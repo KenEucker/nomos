@@ -67,6 +67,7 @@ export type DiscoveredPlugin = {
   entryPath: string;
   manifest: PluginManifest | null;
   error?: string;
+  checksum?: string;
 };
 
 export type PluginSandboxMode = "none" | "restricted" | "isolated";

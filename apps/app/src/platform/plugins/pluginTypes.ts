@@ -14,6 +14,7 @@ export type PluginResource = {
 };
 
 export type PluginManifest = {
+  slug?: string;
   name?: string;
   dependsOn?: string[];
   permissions?: string[];

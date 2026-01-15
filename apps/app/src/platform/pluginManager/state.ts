@@ -27,18 +27,21 @@ export const syncDiscoveredPlugins = async (
       version: plugin.manifest?.version ?? "0.0.0",
       description: plugin.manifest?.description ?? null,
       source: "filesystem",
-      discoveredAt: now
+      discoveredAt: now,
+      checksum: plugin.checksum ?? null
     };
 
     const existing = await pluginState.findUnique({ where: { slug: plugin.slug } });
     const hasError = Boolean(plugin.error) || !plugin.manifest;
+    const checksumChanged = existing?.checksum && plugin.checksum && existing.checksum !== plugin.checksum;
 
     if (!existing) {
       const created = await pluginState.create({
         data: {
           ...metadata,
-          status: hasError ? "broken" : "discovered",
+          status: hasError ? "broken" : "installed",
           enabled: false,
+          installedAt: hasError ? null : now,
           lastError: toErrorMessage(plugin.error)
         }
       });
@@ -50,14 +53,23 @@ export const syncDiscoveredPlugins = async (
       where: { slug: plugin.slug },
       data: {
         ...metadata,
-        lastError: hasError ? toErrorMessage(plugin.error) : null,
+        lastError: hasError
+          ? toErrorMessage(plugin.error)
+          : checksumChanged
+            ? "Plugin files changed. Preview required before enabling."
+            : null,
         status: hasError
           ? "broken"
-          : existing.status === "broken" && !existing.installedAt
-            ? "discovered"
-            : existing.status,
-        enabled: hasError ? false : existing.enabled,
-        enabledAt: hasError ? null : existing.enabledAt
+          : checksumChanged
+            ? "installed"
+            : existing.status === "broken" && !existing.installedAt
+              ? "installed"
+              : existing.status,
+        enabled: hasError || checksumChanged ? false : existing.enabled,
+        enabledAt: hasError || checksumChanged ? null : existing.enabledAt,
+        installedAt: existing.installedAt ?? now,
+        lastPreview: checksumChanged ? null : existing.lastPreview,
+        lastPreviewedAt: checksumChanged ? null : existing.lastPreviewedAt
       }
     });
 
