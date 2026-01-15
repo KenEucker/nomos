@@ -8,6 +8,13 @@ export const pageModule = createStaticListModule({
   resourceId: "audit",
   title: "Audit Log",
   subtitle: "Review recent admin events and actions.",
+  pageActions: [
+    {
+      label: "Clear Log",
+      href: "/admin/audit/clear",
+      variant: "outline"
+    }
+  ]
 });
 ---
 <AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>

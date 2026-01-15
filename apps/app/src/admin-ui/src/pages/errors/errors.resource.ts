@@ -10,5 +10,35 @@ export const errorsResource: AdminResourceInput = {
   endpoints: {
     list: "/_/errors",
   },
+  dataKey: "errors",
+  list: {
+    searchable: true,
+    searchPlaceholder: "Search errors...",
+    defaultSort: { key: "timestamp", dir: "desc" },
+    columns: [
+      { key: "timestamp", label: "Timestamp", render: "datetime", sortable: true },
+      {
+        key: "type",
+        label: "Type",
+        render: "badge",
+        badgeVariants: {
+          TypeError: "destructive",
+          ReferenceError: "warning",
+          SyntaxError: "warning",
+          Error: "secondary",
+        },
+      },
+      { key: "error", label: "Message" },
+      { key: "source", label: "Source", hideOnMobile: true },
+      { key: "routeId", label: "Route ID", hideOnMobile: true },
+      { key: "stack", label: "Stack", render: "json", hideOnMobile: true },
+    ],
+  },
+  actions: {
+    create: false,
+    view: false,
+    update: false,
+    delete: false,
+  },
   requiredRole: "admin",
 };

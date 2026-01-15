@@ -11,5 +11,24 @@ export const dashboardResource: AdminResourceInput = {
   endpoints: {
     list: "/_/dashboard",
   },
+  dataKey: "dashboard",
+  list: {
+    summaryCards: {
+      labelKey: "label",
+      valueKey: "value",
+      descriptionKey: "description"
+    },
+    columns: [
+      { key: "label", label: "Label" },
+      { key: "value", label: "Value" },
+      { key: "description", label: "Description", hideOnMobile: true },
+    ],
+  },
+  actions: {
+    create: false,
+    view: false,
+    update: false,
+    delete: false,
+  },
   requiredRole: "admin",
 };

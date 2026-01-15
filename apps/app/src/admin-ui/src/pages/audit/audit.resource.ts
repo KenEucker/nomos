@@ -10,5 +10,27 @@ export const auditResource: AdminResourceInput = {
   endpoints: {
     list: "/_/audit",
   },
+  dataKey: "audit",
+  list: {
+    searchable: true,
+    searchPlaceholder: "Search audit log...",
+    defaultSort: { key: "timestamp", dir: "desc" },
+    columns: [
+      { key: "timestamp", label: "Timestamp", render: "datetime", sortable: true },
+      { key: "event", label: "Event", render: "badge" },
+      { key: "userId", label: "User ID", hideOnMobile: true },
+      { key: "apiKeyId", label: "API Key ID", hideOnMobile: true },
+      { key: "resource", label: "Resource", hideOnMobile: true },
+      { key: "action", label: "Action", hideOnMobile: true },
+      { key: "ip", label: "IP", hideOnMobile: true },
+      { key: "details", label: "Details", render: "json", hideOnMobile: true },
+    ],
+  },
+  actions: {
+    create: false,
+    view: false,
+    update: false,
+    delete: false,
+  },
   requiredRole: "admin",
 };

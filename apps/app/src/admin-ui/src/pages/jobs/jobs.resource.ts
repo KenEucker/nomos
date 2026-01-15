@@ -10,5 +10,23 @@ export const jobsResource: AdminResourceInput = {
   endpoints: {
     list: "/_/jobs",
   },
+  dataKey: "jobs",
+  list: {
+    searchable: true,
+    searchPlaceholder: "Search jobs...",
+    columns: [
+      { key: "id", label: "Job ID", sortable: true },
+      { key: "queue", label: "Queue", hideOnMobile: true },
+      { key: "concurrency", label: "Concurrency", hideOnMobile: true },
+      { key: "retries", label: "Retries", hideOnMobile: true },
+      { key: "schedule", label: "Schedule", hideOnMobile: true },
+    ],
+  },
+  actions: {
+    create: false,
+    view: false,
+    update: false,
+    delete: false,
+  },
   requiredRole: "admin",
 };

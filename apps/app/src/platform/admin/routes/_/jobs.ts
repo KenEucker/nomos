@@ -8,7 +8,24 @@ export const config = {
 import type { Ctx } from "../../../ctx";
 
 export const get = async (ctx: Ctx) => {
-  return ctx.json({ jobs: ctx.services.jobsRuntime.list(), runs: ctx.db.jobRuns.slice(-200) });
+  const search = typeof ctx.query.search === "string" ? ctx.query.search.trim().toLowerCase() : "";
+  let jobs = ctx.services.jobsRuntime.list();
+
+  if (search) {
+    jobs = jobs.filter((job) => {
+      const fields = [
+        job.id,
+        job.queue,
+        job.schedule
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return fields.includes(search);
+    });
+  }
+
+  return ctx.json({ jobs, runs: ctx.db.jobRuns.slice(-200) }, 200, { total: jobs.length });
 };
 
 export const post = async (ctx: Ctx) => {
