@@ -370,15 +370,17 @@ export async function loadNomosConfig(options: LoadNomosConfigOptions = {}): Pro
   const rootDir = options.rootDir ?? process.cwd();
 
   // Load .env files before resolving config
-  // Default search order: cwd, then 3 levels up (monorepo root), then rootDir
+  // Default search order: rootDir (apps/app), then monorepo root, then cwd
+  // Later files override earlier ones, so project root .env takes precedence
   if (!options.skipEnvLoad) {
     const cwd = process.cwd();
-    const monorepoRoot = path.resolve(rootDir, "../../..");
-    const defaultEnvDirs = [cwd, monorepoRoot, rootDir].filter(
+    // From apps/app, go up 2 levels to reach monorepo root
+    const monorepoRoot = path.resolve(rootDir, "../..");
+    // Load in order: app-specific first, then project root (which overrides)
+    const defaultEnvDirs = [rootDir, monorepoRoot, cwd].filter(
       (dir, idx, arr) => arr.indexOf(dir) === idx // dedupe
     );
-    const envDirs = options.envDirs ?? defaultEnvDirs;
-    loadEnvFiles(envDirs);
+    loadEnvFiles(defaultEnvDirs);
   }
 
   let resolvedPath: string | null = null;
