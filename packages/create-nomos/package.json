@@ -1,0 +1,28 @@
+{
+  "name": "create-nomos",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "create-nomos": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --platform node --out-dir dist",
+    "dev": "tsup src/index.ts --format esm --platform node --out-dir dist --watch",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "execa": "^8.0.1",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "tsup": "^8.2.0",
+    "typescript": "^5.4.5"
+  }
+}

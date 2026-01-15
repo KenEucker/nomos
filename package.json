@@ -1,11 +1,12 @@
 {
   "name": "nomos-root",
   "private": true,
-  "workspaces": ["apps/app", "apps/app/src/admin-ui"],
+  "workspaces": ["apps/app", "apps/app/src/admin-ui", "packages/create-nomos"],
   "scripts": {
     "dev": "npm --prefix apps/app run dev",
     "build": "npm --prefix apps/app run build",
     "migrate": "npm --prefix apps/app run prisma:migrate",
-    "seed": "npm --prefix apps/app run prisma:seed"
+    "seed": "npm --prefix apps/app run prisma:seed",
+    "create:nomos": "node packages/create-nomos/dist/index.js"
   }
 }

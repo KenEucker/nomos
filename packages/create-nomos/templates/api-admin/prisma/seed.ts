@@ -1,0 +1,87 @@
+import bcrypt from "bcryptjs";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+async function main() {
+  const roles = [
+    { key: "admin", name: "Administrator" },
+    { key: "editor", name: "Editor" },
+    { key: "viewer", name: "Viewer" }
+  ];
+
+  for (const role of roles) {
+    await prisma.role.upsert({
+      where: { key: role.key },
+      update: { name: role.name },
+      create: role
+    });
+  }
+
+  const passwordHashes = {
+    admin: await bcrypt.hash("admin123", 10),
+    editor: await bcrypt.hash("editor123", 10),
+    viewer: await bcrypt.hash("viewer123", 10)
+  };
+
+  const users = await Promise.all([
+    prisma.user.upsert({
+      where: { email: "admin@nomos.local" },
+      update: { name: "Admin User", passwordHash: passwordHashes.admin },
+      create: {
+        email: "admin@nomos.local",
+        name: "Admin User",
+        passwordHash: passwordHashes.admin
+      }
+    }),
+    prisma.user.upsert({
+      where: { email: "editor@nomos.local" },
+      update: { name: "Editor User", passwordHash: passwordHashes.editor },
+      create: {
+        email: "editor@nomos.local",
+        name: "Editor User",
+        passwordHash: passwordHashes.editor
+      }
+    }),
+    prisma.user.upsert({
+      where: { email: "viewer@nomos.local" },
+      update: { name: "Viewer User", passwordHash: passwordHashes.viewer },
+      create: {
+        email: "viewer@nomos.local",
+        name: "Viewer User",
+        passwordHash: passwordHashes.viewer
+      }
+    })
+  ]);
+
+  const [admin, editor, viewer] = users;
+
+  const roleRecords = await prisma.role.findMany();
+  const roleByKey = new Map(roleRecords.map((role) => [role.key, role.id]));
+
+  const roleAssignments = [
+    { user: admin, role: "admin" },
+    { user: editor, role: "editor" },
+    { user: viewer, role: "viewer" }
+  ];
+
+  for (const assignment of roleAssignments) {
+    const roleId = roleByKey.get(assignment.role);
+    if (!roleId) continue;
+
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId: assignment.user.id, roleId } },
+      update: {},
+      create: { userId: assignment.user.id, roleId }
+    });
+  }
+}
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
