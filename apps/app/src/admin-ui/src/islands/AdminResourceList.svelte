@@ -5,7 +5,7 @@
   import Badge from "../components/ui/badge.svelte";
   import Input from "../components/ui/input.svelte";
   import ConfirmDialog from "../components/ConfirmDialog.svelte";
-  import { apiGet, apiDelete, apiPatch, apiPost, apiPut } from "../lib/api";
+  const sdkModulePromise = import("/sdk/client.js");
   import { toasts } from "../lib/toast";
   import type { AdminResource, ColumnDef } from "../lib/resources/types";
   import { resolveEndpoint } from "../lib/resources/types";
@@ -56,17 +56,17 @@
     error = null;
     try {
       const listEndpoint = requireEndpoint("list");
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(pageSize)
+      const client = (await sdkModulePromise).getSingletonClient();
+      const response = await client.GET(listEndpoint, {
+        params: {
+          query: {
+            page,
+            pageSize,
+            search: search || undefined,
+            sort: sortKey ? `${sortKey}:${sortDir}` : undefined
+          }
+        }
       });
-      if (search) {
-        params.set("search", search);
-      }
-      if (sortKey) {
-        params.set("sort", `${sortKey}:${sortDir}`);
-      }
-      const response = await apiGet<any>(`${listEndpoint}?${params}`);
       const dataKey = resource.dataKey ?? resource.id;
       items = response.data?.[dataKey] ?? response.data ?? [];
       total = response.meta?.total ?? items.length;
@@ -169,19 +169,20 @@
           : resolveEndpoint(action.endpoint, id);
 
       const method = action.method ?? "POST";
+      const client = (await sdkModulePromise).getSingletonClient();
 
       switch (method) {
         case "DELETE":
-          await apiDelete(endpoint);
+          await client.DELETE(endpoint);
           break;
         case "PATCH":
-          await apiPatch(endpoint, {});
+          await client.PATCH(endpoint, { body: {} });
           break;
         case "PUT":
-          await apiPut(endpoint, {});
+          await client.PUT(endpoint, { body: {} });
           break;
         default:
-          await apiPost(endpoint, {});
+          await client.POST(endpoint, { body: {} });
           break;
       }
 
@@ -209,7 +210,8 @@
     try {
       const deleteEndpoint = requireEndpoint("delete");
       const endpoint = resolveEndpoint(deleteEndpoint, deleteId);
-      await apiDelete(endpoint);
+      const client = (await sdkModulePromise).getSingletonClient();
+      await client.DELETE(endpoint);
       deleteDialogOpen = false;
       deleteId = null;
       toasts.success(`${resource.label} deleted successfully`);

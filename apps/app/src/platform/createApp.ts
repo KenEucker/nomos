@@ -281,6 +281,8 @@ export async function createApp(config: ResolvedNomosConfig) {
     services[name] = typeof service === "function" ? service(db, hooks, events) : service;
   }
 
+  app.decorate("services", services);
+
   let jobsRuntime: JobsRuntime;
   let webhooksRuntime: WebhookRuntime;
 

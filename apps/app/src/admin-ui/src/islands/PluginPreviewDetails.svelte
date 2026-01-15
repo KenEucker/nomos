@@ -3,7 +3,7 @@
   import Card from "../components/ui/card.svelte";
   import Badge from "../components/ui/badge.svelte";
   import Button from "../components/ui/button.svelte";
-  import { apiGet } from "../lib/api";
+  const sdkModulePromise = import("/sdk/client.js");
 
   let { slug } = $props<{
     slug?: string;
@@ -46,7 +46,8 @@
     loading = true;
     error = null;
     try {
-      const response = await apiGet<{ plugin: PluginRecord }>(`/plugins/${slug}`);
+      const client = (await sdkModulePromise).getSingletonClient();
+      const response = await client.GET(`/plugins/${slug}`);
       plugin = response.data?.plugin ?? null;
     } catch (err: any) {
       error = err?.message ?? "Failed to load preview.";

@@ -8,7 +8,7 @@
   import Card from "../../components/ui/card.svelte";
   import Tabs from "../../components/ui/tabs.svelte";
   import RelationMultiSelectField from "../../components/fields/RelationMultiSelectField.svelte";
-  import { apiGet, apiPost } from "../../lib/api";
+  const sdkModulePromise = import("/sdk/client.js");
   import { session, hasRole, type SessionUser } from "../../lib/session";
   import { toasts } from "../../lib/toast";
 
@@ -50,7 +50,8 @@
   const loadWebhooks = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ destinations: WebhookDestination[]; deliveries: WebhookDelivery[] }>("/_/webhooks");
+      const client = (await sdkModulePromise).getSingletonClient();
+      const response = await client.GET("/_/webhooks");
       destinations = response.data?.destinations ?? [];
       deliveries = response.data?.deliveries ?? [];
     } catch (e: any) {
@@ -71,7 +72,8 @@
           delayMs: parseInt(newRetryDelay) || 1000
         }
       };
-      await apiPost("/_/webhooks", body);
+      const client = (await sdkModulePromise).getSingletonClient();
+      await client.POST("/_/webhooks", { body });
       showCreate = false;
       newUrl = "";
       newEvents = [];

@@ -3,7 +3,7 @@
   import Card from "../../components/ui/card.svelte";
   import Table from "../../components/ui/table.svelte";
   import Badge from "../../components/ui/badge.svelte";
-  import { apiGet } from "../../lib/api";
+  const sdkModulePromise = import("/sdk/client.js");
 
   let counts = $state({ jobs: 0 });
   let usersCount = $state<number | null>(null);
@@ -13,11 +13,14 @@
   onMount(async () => {
     try {
       const [jobsRes] = await Promise.all([
-        apiGet<{ jobs: any }>("/_/jobs?page=1&pageSize=5")
+        (await sdkModulePromise)
+          .getSingletonClient()
+          .GET("/_/jobs", { params: { query: { page: 1, pageSize: 5 } } })
       ]);
       let usersTotal: number | null = null;
       try {
-        const usersRes = await apiGet<{ users: any }>("/users?page=1&pageSize=1");
+        const client = (await sdkModulePromise).getSingletonClient();
+        const usersRes = await client.GET("/users", { params: { query: { page: 1, pageSize: 1 } } });
         console.log({ usersRes });
         usersTotal = usersRes.meta?.total ?? 0;
       } catch {

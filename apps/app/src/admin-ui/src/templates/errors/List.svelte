@@ -4,7 +4,7 @@
   import Button from "../../components/ui/button.svelte";
   import Badge from "../../components/ui/badge.svelte";
   import Card from "../../components/ui/card.svelte";
-  import { apiGet } from "../../lib/api";
+  const sdkModulePromise = import("/sdk/client.js");
   import { session, hasRole, type SessionUser } from "../../lib/session";
 
   interface ErrorEntry {
@@ -28,7 +28,8 @@
   const loadErrors = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ errors: ErrorEntry[] }>("/_/errors");
+      const client = (await sdkModulePromise).getSingletonClient();
+      const response = await client.GET("/_/errors");
       errors = response.data?.errors ?? [];
     } catch (e) {
       console.error("Failed to load errors", e);

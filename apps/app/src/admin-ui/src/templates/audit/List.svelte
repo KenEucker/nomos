@@ -5,7 +5,7 @@
   import Badge from "../../components/ui/badge.svelte";
   import Input from "../../components/ui/input.svelte";
   import Card from "../../components/ui/card.svelte";
-  import { apiGet } from "../../lib/api";
+  const sdkModulePromise = import("/sdk/client.js");
   import { session, hasRole, type SessionUser } from "../../lib/session";
 
   interface AuditEntry {
@@ -32,7 +32,8 @@
   const loadAudit = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ audit: AuditEntry[] }>("/_/audit");
+      const client = (await sdkModulePromise).getSingletonClient();
+      const response = await client.GET("/_/audit");
       audit = response.data?.audit ?? [];
     } catch (e) {
       console.error("Failed to load audit log", e);

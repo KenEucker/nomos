@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import { apiGet } from "./api";
+const sdkModulePromise = import("/sdk/client.js");
 
 export type SessionUser = {
   id: string;
@@ -19,7 +19,8 @@ export const session = writable<SessionUser | null>(null);
 
 export async function loadSession() {
   try {
-    const response = await apiGet<{ user: SessionUser }>("/auth/me");
+    const client = (await sdkModulePromise).getSingletonClient();
+    const response = await client.GET("/auth/me");
     const user = response.data?.user ?? null;
     session.set(user);
     return user;

@@ -5,7 +5,7 @@
   import Badge from "../../components/ui/badge.svelte";
   import Input from "../../components/ui/input.svelte";
   import Card from "../../components/ui/card.svelte";
-  import { apiGet } from "../../lib/api";
+  const sdkModulePromise = import("/sdk/client.js");
   import { session, hasRole, type SessionUser } from "../../lib/session";
 
   interface RouteEntry {
@@ -38,7 +38,8 @@
   const loadRoutes = async () => {
     loading = true;
     try {
-      const response = await apiGet<{ routes: RouteEntry[] }>("/_/routes");
+      const client = (await sdkModulePromise).getSingletonClient();
+      const response = await client.GET("/_/routes");
       routes = response.data?.routes ?? [];
     } catch (e) {
       console.error("Failed to load routes", e);

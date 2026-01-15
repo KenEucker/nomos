@@ -284,6 +284,25 @@ export function createNomosClient(opts) {
     modules: BUILTIN_MODULES
   };
 }
+
+let singletonClient = null;
+
+const getDefaultBaseUrl = () => {
+  if (typeof globalThis === "undefined") return "";
+  if ("location" in globalThis && globalThis.location?.origin) {
+    return globalThis.location.origin;
+  }
+  return "";
+};
+
+export function getSingletonClient(options = {}) {
+  if (!singletonClient || options.force) {
+    const { force, ...rest } = options;
+    const baseUrl = rest.baseUrl ?? getDefaultBaseUrl();
+    singletonClient = createNomosClient({ ...rest, baseUrl });
+  }
+  return singletonClient;
+}
 `;
 }
 
@@ -296,6 +315,10 @@ export type NomosClientOptions = {
   apiKey?: string | (() => string | Promise<string>);
   authHeaderName?: "Authorization" | "X-API-Key";
   fetch?: typeof fetch;
+};
+
+export type NomosSingletonOptions = NomosClientOptions & {
+  force?: boolean;
 };
 
 export type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
@@ -460,5 +483,6 @@ export type NomosClient = {
 };
 
 export function createNomosClient(opts: NomosClientOptions): NomosClient;
+export function getSingletonClient(opts?: NomosSingletonOptions): NomosClient;
 `;
 }
