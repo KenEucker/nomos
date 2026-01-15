@@ -13,6 +13,12 @@
     routes: number;
     jobs: number;
     events: string[];
+    coreModules: Array<{
+      name: string;
+      enabled: boolean;
+      apiEnabled?: boolean;
+      uiEnabled?: boolean;
+    }>;
   }
 
   interface RouteStats {
@@ -113,6 +119,9 @@
     }
   };
 
+  const formatModuleName = (value: string) =>
+    value.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^\w/, (match) => match.toUpperCase());
+
   onMount(() => {
     const check = setInterval(async () => {
       if (!user) return;
@@ -203,6 +212,40 @@
             <Badge variant="secondary">{event}</Badge>
           {/each}
         </div>
+      </Card>
+    {/if}
+
+    {#if overview?.coreModules?.length}
+      <Card>
+        <h3 class="mb-3 text-sm font-semibold text-slate-300">Installed Core Modules</h3>
+        <Table>
+          <thead class="text-xs text-left uppercase text-slate-400">
+            <tr>
+              <th class="pb-2">Module</th>
+              <th class="pb-2">State</th>
+              <th class="pb-2">API</th>
+              <th class="pb-2">UI</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            {#each overview.coreModules as module}
+              <tr class="border-t border-slate-800">
+                <td class="py-3 text-xs text-slate-100">{formatModuleName(module.name)}</td>
+                <td class="py-3 text-xs">
+                  <Badge variant={module.enabled ? "secondary" : "outline"}>
+                    {module.enabled ? "Enabled" : "Disabled"}
+                  </Badge>
+                </td>
+                <td class="py-3 text-xs text-slate-400">
+                  {module.apiEnabled === undefined ? "-" : module.apiEnabled ? "On" : "Off"}
+                </td>
+                <td class="py-3 text-xs text-slate-400">
+                  {module.uiEnabled === undefined ? "-" : module.uiEnabled ? "On" : "Off"}
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </Table>
       </Card>
     {/if}
   {:else if activeTab === "routes"}
