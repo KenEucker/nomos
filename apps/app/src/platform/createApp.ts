@@ -220,25 +220,28 @@ export async function createApp(config: ResolvedNomosConfig) {
   }
 
   let enabledPluginSlugs: Set<string> | undefined;
+  let knownPluginSlugs: Set<string> | undefined;
   if (config.modules.pluginManager.enabled && config.modules.pluginManager.activation.useDatabase) {
     try {
       const pluginState = getPluginStateStore(prisma);
-      const enabled = await pluginState.findMany();
+      const plugins = await pluginState.findMany();
       enabledPluginSlugs = new Set(
-        enabled
+        plugins
           .filter((plugin) => plugin.enabled && plugin.status === "enabled")
           .map((plugin) => plugin.slug)
       );
+      knownPluginSlugs = new Set(plugins.map((plugin) => plugin.slug));
     } catch (error) {
       serverLog.warn(
         { err: error instanceof Error ? error.message : error },
         "Plugin manager state unavailable; filesystem plugins will not be loaded."
       );
       enabledPluginSlugs = new Set();
+      knownPluginSlugs = new Set();
     }
   }
 
-  const plugins = await loadPlugins(baseDir, corePlugins, { enabledPluginSlugs });
+  const plugins = await loadPlugins(baseDir, corePlugins);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
 
   for (const perm of plugins.registry.permissions) {
@@ -359,9 +362,35 @@ export async function createApp(config: ResolvedNomosConfig) {
   const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
   services.routeRegistry = routeRegistry;
 
-  const openApi = buildOpenApiSpec(routeRegistry);
+  const coreRouteOwners = new Set(["core", "admin", "auth", "pluginManager"]);
+  const filterRoutes = () =>
+    enabledPluginSlugs
+      ? routeRegistry.routes.filter(
+          (route) =>
+            coreRouteOwners.has(route.owner) ||
+            (knownPluginSlugs?.has(route.owner) && enabledPluginSlugs.has(route.owner))
+        )
+      : routeRegistry.routes;
+
+  let openApi = buildOpenApiSpec({
+    ...routeRegistry,
+    routes: filterRoutes()
+  });
   openApiLog.info("OpenAPI schema built.");
   services.openApi = openApi;
+  services.pluginManagerState = {
+    enabledPluginSlugs,
+    knownPluginSlugs,
+    coreRouteOwners,
+    rebuildOpenApi: () => {
+      openApi = buildOpenApiSpec({
+        ...routeRegistry,
+        routes: filterRoutes()
+      });
+      services.openApi = openApi;
+      return openApi;
+    }
+  };
 
   const canAccessDocs = async (req: FastifyRequest) => {
     if (!config.modules.docs.enabled) {
@@ -383,12 +412,18 @@ export async function createApp(config: ResolvedNomosConfig) {
       if (!env.SWAGGER_PUBLIC && env.NODE_ENV === "production") {
         return reply.code(403).send({ error: "forbidden" });
       }
+      if (services.pluginManagerState?.rebuildOpenApi) {
+        services.pluginManagerState.rebuildOpenApi();
+      }
       reply.send(openApi);
     });
 
     app.get(OPENAPI_DOCS_PATH, async (req, reply) => {
       if (!(await canAccessDocs(req))) {
         return reply.code(403).send({ error: "forbidden" });
+      }
+      if (services.pluginManagerState?.rebuildOpenApi) {
+        services.pluginManagerState.rebuildOpenApi();
       }
       reply.type("text/html").send(buildSwaggerUiHtml(OPENAPI_JSON_PATH));
     });
@@ -506,6 +541,13 @@ export async function createApp(config: ResolvedNomosConfig) {
         const ctx = { ...ctxBase, auth: createAuthHelpers(ctxBase) };
 
         try {
+          if (
+            enabledPluginSlugs &&
+            knownPluginSlugs?.has(route.owner) &&
+            !enabledPluginSlugs.has(route.owner)
+          ) {
+            throw new HttpError(404, "not_found", "Plugin route is disabled");
+          }
           if (config.modules.auth.enabled) {
             if (route.config.auth === "required" && !ctx.user && !ctx.apiClient) {
               throw new HttpError(401, "unauthorized", "Authentication required");

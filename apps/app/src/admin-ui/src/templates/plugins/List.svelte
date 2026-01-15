@@ -12,6 +12,10 @@
       Plugin previews generate a deterministic plan of the routes, admin pages, and permissions a plugin
       wants to add without applying side effects. Review the preview details before enabling a plugin.
     </p>
+    <p class="mt-2">
+      Disabled plugins will not expose their API routes or admin pages. Enabling a plugin reactivates its
+      routes and rebuilds the OpenAPI schema.
+    </p>
   </div>
 
   <AdminResourceList resource={resource!} onNavigate={onNavigate} />

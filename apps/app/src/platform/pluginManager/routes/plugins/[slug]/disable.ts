@@ -43,5 +43,15 @@ export const post = async (ctx: Ctx) => {
     }
   });
 
+  if (ctx.services.pluginManagerState?.enabledPluginSlugs) {
+    ctx.services.pluginManagerState.enabledPluginSlugs.delete(slug);
+  }
+  if (ctx.services.pluginManagerState?.knownPluginSlugs) {
+    ctx.services.pluginManagerState.knownPluginSlugs.add(slug);
+  }
+  if (ctx.services.pluginManagerState?.rebuildOpenApi) {
+    ctx.services.pluginManagerState.rebuildOpenApi();
+  }
+
   return ctx.json({ plugin: updated });
 };

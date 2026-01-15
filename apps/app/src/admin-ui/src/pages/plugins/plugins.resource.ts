@@ -80,7 +80,7 @@ export const pluginsResource: AdminResourceInput = {
         endpoint: "/plugins/{id}/disable",
         method: "POST",
         confirm: "Disable this plugin?",
-        showWhen: (record) => record.status === "enabled"
+        showWhen: (record) => record.status === "enabled" && Boolean(record.lastPreview)
       },
       {
         id: "uninstall",
@@ -88,7 +88,7 @@ export const pluginsResource: AdminResourceInput = {
         endpoint: "/plugins/{id}/uninstall",
         method: "POST",
         confirm: "Uninstall this plugin?",
-        showWhen: (record) => record.status === "disabled"
+        showWhen: (record) => record.status === "disabled" && Boolean(record.lastPreview)
       }
     ]
   }
