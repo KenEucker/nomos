@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import dotenv from "dotenv";
 
 export type NomosConfig = {
   app?: {
@@ -19,10 +20,21 @@ export type NomosConfig = {
     url?: string;
     dialect?: "postgres" | "mysql";
   };
+  auth?: {
+    jwtSecret?: string;
+    devAuthSecret?: string;
+  };
   logging?: {
     level?: string;
     pretty?: boolean;
+    errorStack?: boolean;
     domains?: Record<string, boolean>;
+  };
+  swagger?: {
+    public?: boolean;
+  };
+  adminUi?: {
+    devPort?: number;
   };
   modules?: {
     auth?: boolean | { enabled?: boolean };
@@ -83,10 +95,21 @@ export type ResolvedNomosConfig = {
     url: string | undefined;
     dialect?: "postgres" | "mysql";
   };
+  auth: {
+    jwtSecret: string;
+    devAuthSecret?: string;
+  };
   logging: {
     level: string;
     pretty: boolean;
+    errorStack: boolean;
     domains?: Record<string, boolean>;
+  };
+  swagger: {
+    public: boolean;
+  };
+  adminUi: {
+    devPort?: number;
   };
   modules: {
     auth: { enabled: boolean };
@@ -196,12 +219,24 @@ const resolvePluginManager = (
   };
 };
 
+const parseBoolEnv = (value: string | undefined, fallback: boolean): boolean => {
+  if (value === undefined || value.trim() === "") return fallback;
+  return value === "true";
+};
+
+const parseIntEnv = (value: string | undefined): number | undefined => {
+  if (value === undefined || value.trim() === "") return undefined;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : undefined;
+};
+
 export function resolveNomosConfig(
   raw: NomosConfig = {},
   options: { configPath?: string | null } = {}
 ): ResolvedNomosConfig {
   const configPath = options.configPath ?? null;
   const nodeEnv = raw.app?.env ?? process.env.NODE_ENV ?? "development";
+  const isProduction = nodeEnv === "production";
   const appName = raw.app?.name ?? "Nomos App";
   const baseUrl = raw.app?.baseUrl;
   if (baseUrl) {
@@ -228,11 +263,27 @@ export function resolveNomosConfig(
     throw toConfigError(configPath, "database.provider=url requires database.url or DATABASE_URL");
   }
 
-  const loggingLevel = raw.logging?.level ?? process.env.LOG_LEVEL ?? "info";
-  const prettyDefault = nodeEnv !== "production";
-  const loggingPretty = raw.logging?.pretty ?? prettyDefault;
+  // Auth configuration
+  const jwtSecret = raw.auth?.jwtSecret ?? process.env.JWT_SECRET ?? "dev-secret";
+  const devAuthSecret = raw.auth?.devAuthSecret ?? process.env.DEV_AUTH_SECRET;
 
-  const devEnabled = raw.dev?.enabled ?? nodeEnv !== "production";
+  // Logging configuration
+  const loggingLevel = raw.logging?.level ?? process.env.LOG_LEVEL ?? "info";
+  const prettyDefault = !isProduction;
+  const loggingPretty = raw.logging?.pretty ?? parseBoolEnv(process.env.LOG_PRETTY, prettyDefault);
+  const errorStackDefault = !isProduction;
+  const loggingErrorStack = raw.logging?.errorStack ?? parseBoolEnv(process.env.LOG_ERROR_STACK, errorStackDefault);
+
+  // Swagger configuration
+  const swaggerPublicDefault = !isProduction;
+  const swaggerPublic = raw.swagger?.public ?? parseBoolEnv(process.env.SWAGGER_PUBLIC, swaggerPublicDefault);
+
+  // Admin UI configuration
+  const astroDevPort = raw.adminUi?.devPort ?? parseIntEnv(process.env.ASTRO_DEV_PORT);
+
+  const devEnabled = raw.dev?.enabled ?? !isProduction;
+  const diagnosticsDefault = !isProduction;
+  const diagnosticsEnabled = raw.dev?.diagnostics ?? parseBoolEnv(process.env.DIAGNOSTICS_ENABLED, diagnosticsDefault);
 
   return {
     app: {
@@ -251,22 +302,33 @@ export function resolveNomosConfig(
       url: databaseUrl,
       dialect: databaseRaw.dialect
     },
+    auth: {
+      jwtSecret,
+      devAuthSecret
+    },
     logging: {
       level: loggingLevel,
       pretty: Boolean(loggingPretty),
+      errorStack: Boolean(loggingErrorStack),
       domains: raw.logging?.domains
+    },
+    swagger: {
+      public: Boolean(swaggerPublic)
+    },
+    adminUi: {
+      devPort: astroDevPort
     },
     modules: {
       auth: resolveModuleToggle(raw.modules?.auth, true),
       admin: resolveModuleToggle(raw.modules?.admin, true),
       docs: resolveModuleToggle(raw.modules?.docs, true),
       devtools: resolveModuleToggle(raw.modules?.devtools, true),
-      pluginManager: resolvePluginManager(raw.modules?.pluginManager, nodeEnv === "production")
+      pluginManager: resolvePluginManager(raw.modules?.pluginManager, isProduction)
     },
     dev: {
       enabled: Boolean(devEnabled),
       explorer: raw.dev?.explorer ?? devEnabled,
-      diagnostics: raw.dev?.diagnostics ?? devEnabled,
+      diagnostics: diagnosticsEnabled,
       verboseDomains: raw.dev?.verboseDomains
     }
   };
@@ -282,8 +344,43 @@ async function loadConfigModule(configPath: string): Promise<NomosConfig> {
   return (mod as { default?: NomosConfig }).default ?? (mod as NomosConfig);
 }
 
-export async function loadNomosConfig(options: { rootDir?: string } = {}): Promise<LoadedNomosConfig> {
+export type LoadNomosConfigOptions = {
+  /** Directory to search for nomos.config.{ts,mjs,js} */
+  rootDir?: string;
+  /** Additional directories to search for .env files (in order of priority, later overrides earlier) */
+  envDirs?: string[];
+  /** Skip loading .env files (useful if already loaded externally) */
+  skipEnvLoad?: boolean;
+};
+
+/**
+ * Loads .env files from the specified directories.
+ * Files are loaded in order, with later files overriding earlier values.
+ */
+function loadEnvFiles(envDirs: string[]): void {
+  for (const dir of envDirs) {
+    const envPath = path.join(dir, ".env");
+    if (fs.existsSync(envPath)) {
+      dotenv.config({ path: envPath, override: true });
+    }
+  }
+}
+
+export async function loadNomosConfig(options: LoadNomosConfigOptions = {}): Promise<LoadedNomosConfig> {
   const rootDir = options.rootDir ?? process.cwd();
+
+  // Load .env files before resolving config
+  // Default search order: cwd, then 3 levels up (monorepo root), then rootDir
+  if (!options.skipEnvLoad) {
+    const cwd = process.cwd();
+    const monorepoRoot = path.resolve(rootDir, "../../..");
+    const defaultEnvDirs = [cwd, monorepoRoot, rootDir].filter(
+      (dir, idx, arr) => arr.indexOf(dir) === idx // dedupe
+    );
+    const envDirs = options.envDirs ?? defaultEnvDirs;
+    loadEnvFiles(envDirs);
+  }
+
   let resolvedPath: string | null = null;
   for (const filename of CONFIG_FILES) {
     const candidate = path.join(rootDir, filename);
