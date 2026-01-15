@@ -1,4 +1,4 @@
-import type { SessionUser } from "../session";
+import { authBypassUser, type SessionUser } from "../session";
 import { serverApiGet, ServerApiError } from "./api";
 
 type AstroContext = {
@@ -17,6 +17,9 @@ export async function requireAdminSession(Astro: AstroContext) {
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 401) {
       return Astro.redirect("/admin/login");
+    }
+    if (error instanceof ServerApiError && error.status === 404) {
+      return authBypassUser;
     }
     throw error;
   }
