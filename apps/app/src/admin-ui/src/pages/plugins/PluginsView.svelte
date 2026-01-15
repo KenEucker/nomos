@@ -1,8 +1,9 @@
 <script lang="ts">
   import AdminResourceList from "../../islands/AdminResourceList.svelte";
-  import type { ListTemplateProps } from "../../lib/pages/types";
+  import { normalizeResource } from "../../lib/resources/types";
+  import { pluginsResource } from "./plugins.resource";
 
-  let { module, resource, onNavigate }: ListTemplateProps = $props();
+  const resource = normalizeResource(pluginsResource);
 </script>
 
 <div class="space-y-4">
@@ -18,5 +19,5 @@
     </p>
   </div>
 
-  <AdminResourceList resource={resource!} onNavigate={onNavigate} />
+  <AdminResourceList resource={resource} />
 </div>

@@ -110,7 +110,6 @@
 </script>
 
 <div class="space-y-4">
-  <!-- Filters -->
   <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:flex-wrap">
     <div class="flex flex-1 gap-2">
       <Input className="flex-1 sm:max-w-xs" placeholder="Search..." bind:value={search} />
@@ -146,7 +145,6 @@
   {:else}
     <div class="mb-2 text-xs text-slate-500">Showing {filteredAudit.length} entries</div>
 
-    <!-- Mobile: Card layout -->
     <div class="space-y-3 sm:hidden">
       {#each filteredAudit as entry, i}
         <div class="p-4 border rounded-lg border-slate-800 bg-slate-900/40">
@@ -183,7 +181,6 @@
       {/each}
     </div>
 
-    <!-- Desktop: Table layout -->
     <div class="hidden border rounded-lg border-slate-800 bg-slate-900/40 sm:block">
       <Table>
         <thead class="text-xs text-left uppercase text-slate-400">

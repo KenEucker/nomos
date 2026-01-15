@@ -1,8 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
+import LoginView from "./LoginView.svelte";
 import { createStaticListModule } from "../../lib/pages";
-import { loginResource } from "./login.resource";
 
 export const pageModule = createStaticListModule({
   resourceId: "login",
@@ -11,5 +10,5 @@ export const pageModule = createStaticListModule({
 });
 ---
 <BaseLayout title={pageModule.title}>
-  <ResourceView client:load definition={loginResource} view="List" />
+  <LoginView client:load />
 </BaseLayout>

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Card from "../../components/ui/card.svelte";
-  import Table from "../../components/ui/table.svelte";
-  import Badge from "../../components/ui/badge.svelte";
-  import { apiGet } from "../../lib/api";
+  import Card from "../components/ui/card.svelte";
+  import Table from "../components/ui/table.svelte";
+  import Badge from "../components/ui/badge.svelte";
+  import { apiGet } from "../lib/api";
 
   let counts = $state({ jobs: 0 });
   let usersCount = $state<number | null>(null);
@@ -42,7 +42,6 @@
       </div>
     </div>
   {:else}
-    <!-- Stats Grid - responsive: 1 col mobile, 2 col tablet, 3 col desktop -->
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <Card>
         <div class="flex items-center justify-between">
@@ -74,7 +73,6 @@
       </Card>
     </div>
 
-    <!-- Recent Jobs -->
     <div class="mt-6 border rounded-lg border-slate-200 bg-white/40 dark:border-slate-800 dark:bg-slate-900/40">
       <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 sm:px-6">
         <h2 class="text-lg font-semibold">Recent Jobs</h2>
@@ -83,7 +81,6 @@
         {#if recentJobs.length === 0}
           <div class="py-8 text-center text-slate-500 dark:text-slate-400">No jobs yet.</div>
         {:else}
-          <!-- Mobile: Card layout -->
           <div class="space-y-3 sm:hidden">
             {#each recentJobs as job}
               <a
@@ -99,7 +96,6 @@
               </a>
             {/each}
           </div>
-          <!-- Desktop: Table layout -->
           <div class="hidden sm:block">
             <Table>
               <thead class="text-xs text-left uppercase text-slate-500 dark:text-slate-400">

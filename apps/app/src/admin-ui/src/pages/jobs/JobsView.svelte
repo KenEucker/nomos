@@ -140,7 +140,6 @@
 </script>
 
 <div class="space-y-4">
-  <!-- Controls -->
   <div class="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
     <Tabs tabs={[
       { id: "jobs", label: "Jobs" },
@@ -176,7 +175,6 @@
         </div>
       </Card>
     {:else}
-      <!-- Mobile: Card layout -->
       <div class="space-y-3 sm:hidden">
         {#each jobs as job}
           <div class="p-4 border rounded-lg border-slate-800 bg-slate-900/40">
@@ -200,7 +198,6 @@
         {/each}
       </div>
 
-      <!-- Desktop: Table layout -->
       <div class="hidden border rounded-lg border-slate-800 bg-slate-900/40 sm:block">
         <Table>
           <thead class="text-xs text-left uppercase text-slate-400">

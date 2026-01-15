@@ -1,8 +1,7 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
+import WebhooksView from "./WebhooksView.svelte";
 import { createStaticListModule } from "../../lib/pages";
-import { webhooksResource } from "./webhooks.resource";
 
 export const pageModule = createStaticListModule({
   resourceId: "webhooks",
@@ -11,5 +10,5 @@ export const pageModule = createStaticListModule({
 });
 ---
 <AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <ResourceView client:load definition={webhooksResource} view="List" />
+  <WebhooksView client:load />
 </AdminLayout>

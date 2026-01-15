@@ -1,8 +1,7 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
+import JobsView from "./JobsView.svelte";
 import { createStaticListModule } from "../../lib/pages";
-import { jobsResource } from "./jobs.resource";
 
 export const pageModule = createStaticListModule({
   resourceId: "jobs",
@@ -11,5 +10,5 @@ export const pageModule = createStaticListModule({
 });
 ---
 <AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <ResourceView client:load definition={jobsResource} view="List" />
+  <JobsView client:load />
 </AdminLayout>
