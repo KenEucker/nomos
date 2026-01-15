@@ -6,13 +6,14 @@ export const config = {
 };
 
 import type { Ctx } from "../../../ctx";
+import { RouteDefinition } from "../../../router/routeTypes";
 
 export const get = async (ctx: Ctx) => {
   const search = typeof ctx.query.search === "string" ? ctx.query.search.trim().toLowerCase() : "";
   let routes = ctx.services.routeRegistry.routes;
 
   if (search) {
-    routes = routes.filter((route) => {
+    routes = routes.filter((route: RouteDefinition) => {
       const fields = [
         route.id,
         route.method,
