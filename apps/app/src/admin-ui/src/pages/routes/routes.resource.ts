@@ -10,5 +10,34 @@ export const routesResource: AdminResourceInput = {
   endpoints: {
     list: "/_/routes",
   },
+  dataKey: "routes",
+  list: {
+    searchable: true,
+    searchPlaceholder: "Search routes...",
+    columns: [
+      {
+        key: "method",
+        label: "Method",
+        render: "badge",
+        badgeVariants: {
+          GET: "success",
+          POST: "secondary",
+          PUT: "warning",
+          PATCH: "warning",
+          DELETE: "destructive",
+        },
+      },
+      { key: "path", label: "Path" },
+      { key: "id", label: "ID", hideOnMobile: true },
+      { key: "config.summary", label: "Summary", hideOnMobile: true },
+      { key: "config.auth", label: "Auth", hideOnMobile: true },
+    ],
+  },
+  actions: {
+    create: false,
+    view: false,
+    update: false,
+    delete: false,
+  },
   requiredRole: "admin",
 };
