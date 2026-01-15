@@ -282,6 +282,8 @@ export async function createApp(config: ResolvedNomosConfig) {
     services[name] = typeof service === "function" ? service(db, hooks, events) : service;
   }
 
+  app.decorate("services", services);
+
   let jobsRuntime: JobsRuntime;
   let webhooksRuntime: WebhookRuntime;
 
@@ -373,12 +375,29 @@ export async function createApp(config: ResolvedNomosConfig) {
         )
       : routeRegistry.routes;
 
+  const notifyOpenApiUpdate = async (spec: unknown) => {
+    const servicesWithHook = Object.values(services).filter(
+      (service) => service && typeof service.onOpenApiUpdate === "function"
+    );
+    if (servicesWithHook.length === 0) return;
+    await Promise.all(
+      servicesWithHook.map(async (service) => {
+        try {
+          await service.onOpenApiUpdate(spec);
+        } catch (err) {
+          openApiLog.error({ err }, "OpenAPI update hook failed.");
+        }
+      })
+    );
+  };
+
   let openApi = buildOpenApiSpec({
     ...routeRegistry,
     routes: filterRoutes()
   });
   openApiLog.info("OpenAPI schema built.");
   services.openApi = openApi;
+  await notifyOpenApiUpdate(openApi);
   services.pluginManagerState = {
     enabledPluginSlugs,
     knownPluginSlugs,
@@ -389,6 +408,7 @@ export async function createApp(config: ResolvedNomosConfig) {
         routes: filterRoutes()
       });
       services.openApi = openApi;
+      void notifyOpenApiUpdate(openApi);
       return openApi;
     }
   };
