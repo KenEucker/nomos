@@ -834,11 +834,11 @@ export async function createApp(config: ResolvedNomosConfig) {
       } else {
         const handler = astroModule.handler ?? astroModule.default;
         adminLog.info({ adminMount: "/admin/*" }, "Mounted Astro handler for admin UI.");
-        app.all("/", async (req, reply) => {
+        app.all("/admin", async (req, reply) => {
           reply.hijack();
           await handler(req.raw, reply.raw);
         });
-        app.all("/*", async (req, reply) => {
+        app.all("/admin/*", async (req, reply) => {
           reply.hijack();
           await handler(req.raw, reply.raw);
         });
