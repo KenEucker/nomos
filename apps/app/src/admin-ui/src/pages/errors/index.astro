@@ -4,12 +4,12 @@ import ResourceView from "../../islands/ResourceView.svelte";
 import { createStaticListModule } from "../../lib/pages";
 import { errorsResource } from "./errors.resource";
 
-export const pageModule = createStaticListModule({
+export const staticPageDefinition = createStaticListModule({
   resourceId: "errors",
   title: "Errors",
   subtitle: "Review recent error reports and stack traces.",
 });
 ---
-<AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
+<AdminLayout title={staticPageDefinition.title} subtitle={staticPageDefinition.subtitle} breadcrumbs={staticPageDefinition.breadcrumbs} actions={staticPageDefinition.pageActions}>
   <ResourceView client:load definition={errorsResource} view="List" />
 </AdminLayout>

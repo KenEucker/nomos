@@ -14,7 +14,7 @@
 
 import type { z } from "zod";
 import type { Component } from "svelte";
-import type { AdminResource, ColumnDef, FieldDef, FilterDef } from "../resources/types";
+import type { AdminResource, ColumnDef, FieldDef, FilterDef, SummaryCardDef } from "../resources/types";
 
 // ============================================================================
 // View Types
@@ -188,6 +188,8 @@ export interface ListPageModule<T = unknown> extends BasePageModule {
     searchable?: boolean;
     searchPlaceholder?: string;
     pageSize?: number;
+    summaryCards?: ListSummaryCardConfig;
+    sections?: ListSection[];
   };
 
   /** Navigation helpers (can be provided by templates) */
@@ -205,6 +207,19 @@ export interface ListPageModule<T = unknown> extends BasePageModule {
 
   /** Custom layout component (optional override) */
   layout?: Component;
+}
+
+export interface ListSummaryCardConfig extends SummaryCardDef {
+  dataKey?: string;
+}
+
+export interface ListSection {
+  id: string;
+  title: string;
+  description?: string;
+  columns: ColumnDef[];
+  dataKey: string;
+  emptyMessage?: string;
 }
 
 // ============================================================================
