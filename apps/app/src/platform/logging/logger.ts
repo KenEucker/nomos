@@ -1,5 +1,4 @@
 import pino from "pino";
-import type { Env } from "../config/env";
 
 export type LogFn = (...args: any[]) => void;
 export type AppLogger = {
@@ -36,14 +35,14 @@ export function parseLogDomains(raw?: string): Set<string> | null {
   return domains.length ? new Set(domains) : null;
 }
 
-export function createLoggerOptions(env: Env): {
+export function createLoggerOptions(logging: { level: string; pretty: boolean }): {
   level: string;
   transport?: {
     target: string;
     options: Record<string, unknown>;
   };
 } {
-  const transport = env.LOG_PRETTY
+  const transport = logging.pretty
     ? {
         target: "pino-pretty",
         options: {
@@ -54,7 +53,7 @@ export function createLoggerOptions(env: Env): {
       }
     : undefined;
   return {
-    level: env.LOG_LEVEL,
+    level: logging.level,
     transport
   };
 }
