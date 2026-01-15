@@ -8,25 +8,27 @@ export const config = {
 import type { Ctx } from "../../../ctx";
 
 export const get = async (ctx: Ctx) => {
-  const jobsCount = ctx.services.jobsRuntime.list().length;
-  const routesCount = ctx.services.routeRegistry.routes.length;
   const usersCount = ctx.db.users.size;
+  const failedJobs = ctx.db.jobRuns.filter((run) => run.status === "failed").length;
+  const installedPlugins = Array.isArray(ctx.services.pluginManifests)
+    ? ctx.services.pluginManifests.length
+    : 0;
 
   const dashboard = [
-    {
-      label: "Jobs",
-      value: jobsCount,
-      description: "Registered jobs"
-    },
-    {
-      label: "Routes",
-      value: routesCount,
-      description: "Registered routes"
-    },
     {
       label: "Users",
       value: usersCount,
       description: "Users in the system"
+    },
+    {
+      label: "Failed Jobs",
+      value: failedJobs,
+      description: "Jobs that failed in recent runs"
+    },
+    {
+      label: "Installed Plugins",
+      value: installedPlugins,
+      description: "Plugins currently registered"
     }
   ];
 

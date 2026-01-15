@@ -13,6 +13,11 @@ export const dashboardResource: AdminResourceInput = {
   },
   dataKey: "dashboard",
   list: {
+    summaryCards: {
+      labelKey: "label",
+      valueKey: "value",
+      descriptionKey: "description"
+    },
     columns: [
       { key: "label", label: "Label" },
       { key: "value", label: "Value" },

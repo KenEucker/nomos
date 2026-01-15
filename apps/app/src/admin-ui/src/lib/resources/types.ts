@@ -162,6 +162,12 @@ export interface ColumnDef {
   hideOnMobile?: boolean;
 }
 
+export interface SummaryCardDef {
+  labelKey: string;
+  valueKey: string;
+  descriptionKey?: string;
+}
+
 /**
  * Action permissions for a resource
  */
@@ -255,6 +261,8 @@ export interface AdminResourceInput {
   list?: {
     /** Columns to display */
     columns?: ColumnDef[];
+    /** Optional summary cards configuration */
+    summaryCards?: SummaryCardDef;
     /** Default sort configuration */
     defaultSort?: {
       key: string;
@@ -341,6 +349,8 @@ export interface AdminResource {
   list: {
     /** Columns to display */
     columns: ColumnDef[];
+    /** Optional summary cards configuration */
+    summaryCards?: SummaryCardDef;
     /** Default sort configuration */
     defaultSort?: {
       key: string;
@@ -404,6 +414,7 @@ export function normalizeResource(input: AdminResourceInput): AdminResource {
     },
     list: {
       columns: input.list?.columns ?? [],
+      summaryCards: input.list?.summaryCards,
       defaultSort: input.list?.defaultSort,
       filters: input.list?.filters,
       searchable: input.list?.searchable,

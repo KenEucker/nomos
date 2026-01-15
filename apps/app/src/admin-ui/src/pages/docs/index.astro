@@ -13,7 +13,7 @@ export const pageModule = createStaticListModule({
 </AdminLayout>
 
 <script type="module">
-  const root = document.getElementById("docs-root");
+  let root = null;
 
   const render = (state) => {
     if (!root) return;
@@ -109,8 +109,15 @@ export const pageModule = createStaticListModule({
     render(state);
   };
 
-  render(state);
-  window.addEventListener("load", () => {
+  const init = () => {
+    root = document.getElementById("docs-root");
+    render(state);
     void checkDocsAccess();
-  });
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
 </script>

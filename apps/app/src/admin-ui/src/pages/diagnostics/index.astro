@@ -15,7 +15,7 @@ export const pageModule = createStaticListModule({
 <script type="module">
   import { apiGet } from "../../lib/api";
 
-  const root = document.getElementById("diagnostics-root");
+  let root = null;
   const state = {
     loading: true,
     error: null,
@@ -256,8 +256,15 @@ export const pageModule = createStaticListModule({
     render();
   };
 
-  render();
-  window.addEventListener("load", () => {
+  const init = () => {
+    root = document.getElementById("diagnostics-root");
+    render();
     void loadAll();
-  });
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
 </script>

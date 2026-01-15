@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Table from "../components/ui/table.svelte";
+  import Card from "../components/ui/card.svelte";
   import Button from "../components/ui/button.svelte";
   import Badge from "../components/ui/badge.svelte";
   import Input from "../components/ui/input.svelte";
@@ -294,6 +295,15 @@
     resource.actions?.update !== false ||
     resource.actions?.delete !== false
   );
+  const summaryCards = $derived(() => {
+    if (!resource.list.summaryCards) return [];
+    const { labelKey, valueKey, descriptionKey } = resource.list.summaryCards;
+    return items.map((item) => ({
+      label: getNestedValue(item, labelKey),
+      value: getNestedValue(item, valueKey),
+      description: descriptionKey ? getNestedValue(item, descriptionKey) : undefined
+    }));
+  });
 
   onMount(() => {
     loadData();
@@ -302,6 +312,23 @@
 </script>
 
 <div class="space-y-4">
+  {#if summaryCards.length > 0}
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {#each summaryCards as card}
+        <Card>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm text-slate-500 dark:text-slate-400">{card.label}</div>
+              <div class="text-2xl font-semibold sm:text-3xl">{card.value}</div>
+            </div>
+          </div>
+          {#if card.description}
+            <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">{card.description}</div>
+          {/if}
+        </Card>
+      {/each}
+    </div>
+  {/if}
   <!-- Header with search and create button -->
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     {#if resource.list.searchable}

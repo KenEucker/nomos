@@ -272,6 +272,7 @@ export async function createApp(config: ResolvedNomosConfig) {
     env,
     config,
     pluginRegistry: plugins.registry,
+    pluginManifests: plugins.manifests,
     eventsRegistry: events,
     hooksRegistry: hooks,
     storage
