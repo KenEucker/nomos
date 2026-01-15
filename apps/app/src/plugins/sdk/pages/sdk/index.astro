@@ -1,0 +1,8 @@
+---
+import AdminLayout from "../../../../admin-ui/src/layouts/AdminLayout.astro";
+import ResourceView from "../../../../admin-ui/src/islands/ResourceView.svelte";
+import { sdkResource } from "./sdk.resource";
+---
+<AdminLayout title="SDK">
+  <ResourceView client:load definition={sdkResource} view="List" />
+</AdminLayout>
