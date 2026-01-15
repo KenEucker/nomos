@@ -59,7 +59,7 @@ async function artifactsExist(distDir: string) {
 async function writeArtifacts(
   distDir: string,
   revision: string,
-  spec: unknown,
+  spec: any,
   state: SdkArtifactsState
 ) {
   await fs.mkdir(distDir, { recursive: true });
