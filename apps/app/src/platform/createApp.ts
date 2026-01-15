@@ -8,7 +8,6 @@ import cookie from "@fastify/cookie";
 import formbody from "@fastify/formbody";
 import middie from "@fastify/middie";
 import { nanoid } from "nanoid";
-import { loadEnv } from "./config/env";
 import type { ResolvedNomosConfig } from "./config/nomos-config";
 import { createAuthHelpers, errorResponse, jsonResponse } from "./ctx";
 import type { ApiClient, InMemoryStore } from "./ctx";
@@ -41,28 +40,27 @@ import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logg
 import { getPrismaClient } from "./db/prisma";
 
 export async function createApp(config: ResolvedNomosConfig) {
+  // Build DATABASE_URL from config
+  const databaseUrl = config.database.url
+    ?? (config.database.sqliteFile.startsWith("file:")
+      ? config.database.sqliteFile
+      : `file:${config.database.sqliteFile}`);
+
+  // Build LOG_DOMAINS string from config
+  const logDomainsStr = config.logging.domains
+    ? Object.entries(config.logging.domains)
+        .filter(([, enabled]) => enabled)
+        .map(([domain]) => domain)
+        .join(",")
+    : undefined;
+
+  // Set critical process.env values that other modules may depend on
+  process.env.DATABASE_URL = databaseUrl;
   process.env.LOG_LEVEL = config.logging.level;
   process.env.LOG_PRETTY = String(config.logging.pretty);
-  if (config.logging.domains) {
-    process.env.LOG_DOMAINS = Object.entries(config.logging.domains)
-      .filter(([, enabled]) => enabled)
-      .map(([domain]) => domain)
-      .join(",");
+  if (logDomainsStr) {
+    process.env.LOG_DOMAINS = logDomainsStr;
   }
-
-  const databaseUrl =
-    config.database.provider === "url"
-      ? config.database.url ?? ""
-      : config.database.sqliteFile.startsWith("file:")
-        ? config.database.sqliteFile
-        : `file:${config.database.sqliteFile}`;
-  if (databaseUrl) {
-    process.env.DATABASE_URL = databaseUrl;
-  }
-
-  process.env.DIAGNOSTICS_ENABLED = String(config.dev.diagnostics);
-
-  const env = loadEnv();
 
   const contentTypeForPath = (filePath: string) => {
     const ext = path.extname(filePath);
@@ -97,7 +95,7 @@ export async function createApp(config: ResolvedNomosConfig) {
 
   const allowedDomains = config.logging.domains
     ? new Set(Object.entries(config.logging.domains).filter(([, enabled]) => enabled).map(([domain]) => domain))
-    : parseLogDomains(env.LOG_DOMAINS);
+    : parseLogDomains(logDomainsStr);
   const baseLogger = app.log;
   const serverLog = createDomainLogger(baseLogger, "server", allowedDomains);
   const pluginsLog = createDomainLogger(baseLogger, "plugins", allowedDomains);
@@ -160,11 +158,11 @@ export async function createApp(config: ResolvedNomosConfig) {
       return;
     }
 
-    const isDev = env.NODE_ENV !== "production";
+    const isDev = config.app.env !== "production";
     const details: Record<string, unknown> = { requestId };
     if (isDev) {
       details.message = err.message;
-      if (env.LOG_ERROR_STACK && err.stack) {
+      if (config.logging.errorStack && err.stack) {
         details.stack = err.stack;
       }
     }
@@ -269,7 +267,6 @@ export async function createApp(config: ResolvedNomosConfig) {
   }
 
   const services: Record<string, any> = {
-    env,
     config,
     pluginRegistry: plugins.registry,
     pluginManifests: plugins.manifests,
@@ -420,7 +417,7 @@ export async function createApp(config: ResolvedNomosConfig) {
     if (!config.modules.auth.enabled) {
       return true;
     }
-    if (env.NODE_ENV !== "production" || env.SWAGGER_PUBLIC) {
+    if (config.app.env !== "production" || config.swagger.public) {
       return true;
     }
     const sessionId = req.cookies?.session_id;
@@ -430,7 +427,7 @@ export async function createApp(config: ResolvedNomosConfig) {
 
   if (config.modules.docs.enabled) {
     app.get(OPENAPI_JSON_PATH, async (_req, reply) => {
-      if (!env.SWAGGER_PUBLIC && env.NODE_ENV === "production") {
+      if (!config.swagger.public && config.app.env === "production") {
         return reply.code(403).send({ error: "forbidden" });
       }
       if (services.pluginManagerState?.rebuildOpenApi) {
@@ -508,7 +505,7 @@ export async function createApp(config: ResolvedNomosConfig) {
             const authHeader = req.headers.authorization as string | undefined;
             if (authHeader?.startsWith("Bearer ")) {
               const token = authHeader.slice(7);
-              const payload = verifyJwt(token, env.JWT_SECRET);
+              const payload = verifyJwt(token, config.auth.jwtSecret);
               if (payload) {
                 const roles = payload.roles ?? [];
                 user = {
@@ -717,7 +714,7 @@ export async function createApp(config: ResolvedNomosConfig) {
     }
   });
 
-  const astroDevPort = env.ASTRO_DEV_PORT;
+  const astroDevPort = config.adminUi.devPort;
   const adminEnabled = config.modules.admin.enabled;
 
   const shouldSkipAstro = (url: string | undefined, isDev: boolean) => {

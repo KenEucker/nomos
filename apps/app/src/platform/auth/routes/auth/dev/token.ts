@@ -25,15 +25,15 @@ export const config = {
 };
 
 export async function post(ctx: Ctx) {
-  const env = ctx.services.env;
-  if (env.NODE_ENV !== "development") {
+  const appConfig = ctx.services.config;
+  if (appConfig.app.env !== "development") {
     return ctx.error(404, "not_found", "Not found");
   }
-  if (!env.DEV_AUTH_SECRET) {
+  if (!appConfig.auth.devAuthSecret) {
     return ctx.error(403, "dev_auth_disabled", "Development auth is not enabled");
   }
   const secret = ctx.body?.secret;
-  if (!secret || secret !== env.DEV_AUTH_SECRET) {
+  if (!secret || secret !== appConfig.auth.devAuthSecret) {
     return ctx.error(403, "invalid_dev_auth_secret", "Invalid development auth secret");
   }
 
@@ -67,7 +67,7 @@ export async function post(ctx: Ctx) {
       iat: now,
       exp: now + 60 * 60
     },
-    env.JWT_SECRET
+    appConfig.auth.jwtSecret
   );
 
   return {

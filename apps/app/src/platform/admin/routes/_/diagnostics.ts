@@ -8,32 +8,32 @@ export const config = {
 import type { Ctx } from "../../../ctx";
 
 export const get = async (ctx: Ctx) => {
-  if (!ctx.services.env.DIAGNOSTICS_ENABLED) {
+  if (!ctx.services.config.dev.diagnostics) {
     return ctx.error(404, "not_found", "Diagnostics disabled");
   }
-  const config = ctx.services.config;
+  const appConfig = ctx.services.config;
   const coreModules = [
     {
       name: "admin",
-      enabled: config.modules.admin.enabled
+      enabled: appConfig.modules.admin.enabled
     },
     {
       name: "auth",
-      enabled: config.modules.auth.enabled
+      enabled: appConfig.modules.auth.enabled
     },
     {
       name: "docs",
-      enabled: config.modules.docs.enabled
+      enabled: appConfig.modules.docs.enabled
     },
     {
       name: "devtools",
-      enabled: config.modules.devtools.enabled
+      enabled: appConfig.modules.devtools.enabled
     },
     {
       name: "pluginManager",
-      enabled: config.modules.pluginManager.enabled,
-      apiEnabled: config.modules.pluginManager.api.enabled,
-      uiEnabled: config.modules.pluginManager.ui.enabled
+      enabled: appConfig.modules.pluginManager.enabled,
+      apiEnabled: appConfig.modules.pluginManager.api.enabled,
+      uiEnabled: appConfig.modules.pluginManager.ui.enabled
     }
   ];
   return ctx.json({
