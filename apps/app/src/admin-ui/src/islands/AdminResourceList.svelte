@@ -71,7 +71,14 @@
       items = response.data?.[dataKey] ?? response.data ?? [];
       total = response.meta?.total ?? items.length;
     } catch (err: any) {
-      error = err.message ?? "Failed to load data";
+      const message = err?.message ?? "Failed to load data";
+      const status = err?.status;
+      const code = err?.code;
+      const detail = [
+        status ? `status ${status}` : null,
+        code ? `code ${code}` : null
+      ].filter(Boolean).join(", ");
+      error = detail ? `${message} (${detail})` : message;
       items = [];
     } finally {
       loading = false;

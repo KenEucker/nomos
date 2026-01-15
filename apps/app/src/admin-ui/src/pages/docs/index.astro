@@ -13,8 +13,6 @@ export const pageModule = createStaticListModule({
 </AdminLayout>
 
 <script type="module">
-  import { session } from "../../lib/session";
-
   const root = document.getElementById("docs-root");
 
   const render = (state) => {
@@ -111,11 +109,8 @@ export const pageModule = createStaticListModule({
     render(state);
   };
 
-  const unsubscribe = session.subscribe((value) => {
-    if (!value) return;
-    unsubscribe();
-    checkDocsAccess();
-  });
-
   render(state);
+  window.addEventListener("load", () => {
+    void checkDocsAccess();
+  });
 </script>

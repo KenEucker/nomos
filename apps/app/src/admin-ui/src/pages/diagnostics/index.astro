@@ -14,7 +14,6 @@ export const pageModule = createStaticListModule({
 
 <script type="module">
   import { apiGet } from "../../lib/api";
-  import { session, hasRole } from "../../lib/session";
 
   const root = document.getElementById("diagnostics-root");
   const state = {
@@ -257,15 +256,8 @@ export const pageModule = createStaticListModule({
     render();
   };
 
-  const unsubscribe = session.subscribe((value) => {
-    if (!value) return;
-    unsubscribe();
-    if (!hasRole(value, "admin")) {
-      window.location.href = "/";
-      return;
-    }
-    loadAll();
-  });
-
   render();
+  window.addEventListener("load", () => {
+    void loadAll();
+  });
 </script>

@@ -11,6 +11,7 @@ export const dashboardResource: AdminResourceInput = {
   endpoints: {
     list: "/_/dashboard",
   },
+  dataKey: "dashboard",
   list: {
     columns: [
       { key: "label", label: "Label" },
