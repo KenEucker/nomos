@@ -1,5 +1,3 @@
-export const OPENAPI_FETCH_URL = "https://esm.sh/openapi-fetch@0.5.0";
-
 type ClientSourceOptions = {
   includeTypes: boolean;
 };
@@ -19,7 +17,7 @@ export type NomosClient = ReturnType<typeof createNomosClient>;
 `
     : "";
 
-  return `import createClient from "${OPENAPI_FETCH_URL}";
+  return `${buildOpenApiFetchSource()}
 
 ${typeExports}export class NomosApiError extends Error {
   status;
@@ -303,6 +301,90 @@ export function getSingletonClient(options = {}) {
   }
   return singletonClient;
 }
+`;
+}
+
+function buildOpenApiFetchSource() {
+  return `const buildQueryString = (query) => {
+  if (!query) return "";
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item === undefined || item === null) continue;
+        params.append(key, String(item));
+      }
+      continue;
+    }
+    params.append(key, String(value));
+  }
+  const queryString = params.toString();
+  return queryString ? \`?\${queryString}\` : "";
+};
+
+const replacePathParams = (path, params) => {
+  if (!params) return path;
+  return path.replace(/\\{(.*?)\\}/g, (match, key) => {
+    if (!(key in params)) return match;
+    return encodeURIComponent(String(params[key]));
+  });
+};
+
+const resolveUrl = (baseUrl, path, params) => {
+  const base = baseUrl.replace(/\\/$/, "");
+  const resolvedPath = replacePathParams(path, params?.path);
+  const prefix = resolvedPath.startsWith("/") ? "" : "/";
+  return \`\${base}\${prefix}\${resolvedPath}\${buildQueryString(params?.query)}\`;
+};
+
+const parseResponse = async (response) => {
+  if (response.status === 204) return undefined;
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+  return response.text();
+};
+
+const createClient = ({ baseUrl, fetch: fetchImpl = fetch }) => {
+  const request = async ({ method, path, params, body, headers, ...rest }) => {
+    const url = resolveUrl(baseUrl, path, params);
+    const mergedHeaders = { ...(headers ?? {}) };
+    const init = {
+      ...rest,
+      method: method?.toUpperCase?.() ?? method,
+      headers: mergedHeaders
+    };
+
+    if (body !== undefined) {
+      if (!mergedHeaders["content-type"] && !mergedHeaders["Content-Type"]) {
+        mergedHeaders["content-type"] = "application/json";
+      }
+      init.body = mergedHeaders["content-type"]?.includes("application/json")
+        ? JSON.stringify(body)
+        : body;
+    }
+
+    const response = await fetchImpl(url, init);
+    const payload = await parseResponse(response);
+    if (!response.ok) {
+      return { data: undefined, error: payload, response };
+    }
+    return { data: payload, error: undefined, response };
+  };
+
+  const makeMethod = (method) => (path, options) => request({ method, path, ...options });
+
+  return {
+    request,
+    GET: makeMethod("GET"),
+    POST: makeMethod("POST"),
+    PUT: makeMethod("PUT"),
+    PATCH: makeMethod("PATCH"),
+    DELETE: makeMethod("DELETE")
+  };
+};
 `;
 }
 
