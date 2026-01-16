@@ -1,6 +1,8 @@
 import path from "node:path";
 import fs from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import openapiTS from "openapi-typescript";
+import esbuild from "esbuild";
 import { createApiRevision } from "../../../platform/openapi/revision";
 import { buildClientSource, buildClientTypeDeclarations } from "./clientTemplate";
 
@@ -8,6 +10,11 @@ const META_FILE = "metadata.json";
 const CLIENT_JS = "client.js";
 const CLIENT_TS = "client.ts";
 const CLIENT_DTS = "client.d.ts";
+const OPENAPI_FETCH_GLOBAL = "__NomosOpenApiFetch";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const appRoot = path.join(__dirname, "..", "..", "..", "..");
+
+let cachedOpenApiFetchSource: string | null = null;
 
 type SdkArtifactsMeta = {
   revision: string;
@@ -65,8 +72,9 @@ async function writeArtifacts(
   await fs.mkdir(distDir, { recursive: true });
   const types = await openapiTS(spec);
   const typeDeclarations = `${types}\n${buildClientTypeDeclarations()}`;
-  const clientJs = buildClientSource({ includeTypes: false });
-  const clientTs = buildClientSource({ includeTypes: true });
+  const openApiFetchSource = await getOpenApiFetchSource();
+  const clientJs = buildClientSource({ includeTypes: false, openApiFetchSource });
+  const clientTs = buildClientSource({ includeTypes: true, openApiFetchSource });
 
   await Promise.all([
     fs.writeFile(path.join(distDir, CLIENT_JS), clientJs, "utf-8"),
@@ -127,4 +135,29 @@ function toArtifacts(distDir: string, meta: SdkArtifactsMeta) {
       dts: path.join(distDir, CLIENT_DTS)
     }
   };
+}
+
+async function getOpenApiFetchSource() {
+  if (cachedOpenApiFetchSource) return cachedOpenApiFetchSource;
+  const result = await esbuild.build({
+    absWorkingDir: appRoot,
+    bundle: true,
+    format: "iife",
+    globalName: OPENAPI_FETCH_GLOBAL,
+    platform: "browser",
+    target: "es2019",
+    write: false,
+    stdin: {
+      contents: `import createClient from "openapi-fetch";\nexport default createClient;`,
+      loader: "js",
+      resolveDir: appRoot,
+      sourcefile: "openapi-fetch-entry.js"
+    }
+  });
+  const output = result.outputFiles?.[0]?.text;
+  if (!output) {
+    throw new Error("Failed to bundle openapi-fetch source.");
+  }
+  cachedOpenApiFetchSource = output;
+  return output;
 }

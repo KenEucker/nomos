@@ -1,10 +1,9 @@
-export const OPENAPI_FETCH_URL = "https://esm.sh/openapi-fetch@0.5.0";
-
 type ClientSourceOptions = {
   includeTypes: boolean;
+  openApiFetchSource: string;
 };
 
-export function buildClientSource({ includeTypes }: ClientSourceOptions) {
+export function buildClientSource({ includeTypes, openApiFetchSource }: ClientSourceOptions) {
   const typeExports = includeTypes
     ? `export type NomosClientOptions = {
   baseUrl: string;
@@ -19,7 +18,8 @@ export type NomosClient = ReturnType<typeof createNomosClient>;
 `
     : "";
 
-  return `import createClient from "${OPENAPI_FETCH_URL}";
+  return `${openApiFetchSource}
+const createClient = __NomosOpenApiFetch.default ?? __NomosOpenApiFetch;
 
 ${typeExports}export class NomosApiError extends Error {
   status;
