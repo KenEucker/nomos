@@ -238,6 +238,7 @@ export async function createApp(config: ResolvedNomosConfig) {
       knownPluginSlugs = new Set();
     }
   }
+  corePlugins.push(path.join(platformDir, "sdk", "plugin.ts"));
 
   const plugins = await loadPlugins(baseDir, corePlugins);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");

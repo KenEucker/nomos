@@ -34,7 +34,6 @@ const sdkModule: ListPageModule<SdkStatusRow> = {
   view: "List",
   title: "SDK",
   subtitle: "Validate the generated SDK and manage artifacts.",
-
   query: {
     list: async () => {
       let sdkStatus = "Failed";
@@ -47,8 +46,8 @@ const sdkModule: ListPageModule<SdkStatusRow> = {
         if (!versionResponse.ok) {
           throw new Error(`Version request failed (${versionResponse.status})`);
         }
-        const versionPayload = normalizeOkPayload(await versionResponse.json()) as VersionInfo;
-        const apiRevision = versionPayload?.apiRevision;
+        const version = normalizeOkPayload(await versionResponse.json()) as VersionInfo;
+        const apiRevision = version?.apiRevision;
         if (!apiRevision) {
           throw new Error("Missing apiRevision from /version response");
         }
@@ -81,7 +80,7 @@ const sdkModule: ListPageModule<SdkStatusRow> = {
       const sdkRows = statusResponse.data?.sdk ?? [];
       const total = statusResponse.meta?.total ?? sdkRows.length;
       const page = statusResponse.meta?.page ?? 1;
-      const pageSize = statusResponse.meta?.pageSize ?? sdkRows.length || 1;
+      const pageSize = statusResponse.meta?.pageSize ? sdkRows.length : 1;
 
       const cards = [
         {

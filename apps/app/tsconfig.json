@@ -14,5 +14,5 @@
     "allowArbitraryExtensions": true
   },
   "include": ["src/**/*"],
-  "exclude": ["src/plugins/sdk/dist/**"]
+  "exclude": ["src/platform/sdk/dist/**"]
 }

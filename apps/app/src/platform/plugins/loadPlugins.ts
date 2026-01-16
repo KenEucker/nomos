@@ -52,6 +52,7 @@ export async function loadPlugins(
   for (const corePath of corePluginPaths) {
     const manifest = await importPlugin(corePath);
     const name = manifest.name ?? path.basename(path.dirname(corePath));
+    console.log(`Discovered core plugin: ${name} (${corePath})`);
     discovered.push({ name, manifest: { ...manifest, name } });
   }
 

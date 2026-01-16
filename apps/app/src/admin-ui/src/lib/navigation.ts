@@ -153,6 +153,7 @@ const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
     seen.add(topRoute);
 
     const resourceMeta = getResourceMetaForRoute(resourceMetadata, topRoute, basePath);
+    console.log({resourceMeta})
     const label = resourceMeta?.label ?? (topRoute === "/" ? "Dashboard" : toTitleCase(topRoute.slice(1)));
     const icon = resourceMeta?.icon ?? DEFAULT_ICON;
     const order = resourceMeta?.order ?? (topRoute === "/" ? -1 : undefined);
