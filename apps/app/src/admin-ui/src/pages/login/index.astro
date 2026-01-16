@@ -8,6 +8,16 @@ export const staticPageDefinition = createStaticListModule({
   title: "Admin Login",
   subtitle: "Sign in to manage Nomos.",
 });
+
+const authResponse = await fetch(new URL("/auth/me", Astro.request.url), {
+  headers: {
+    cookie: Astro.request.headers.get("cookie") ?? "",
+  },
+});
+
+if (authResponse.ok) {
+  return Astro.redirect("/admin");
+}
 ---
 <BaseLayout title={staticPageDefinition.title}>
   <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
