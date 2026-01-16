@@ -335,7 +335,7 @@
           {/each}
         </div>
       {/if}
-    {/else}
+    {/if}
   </div>
 {:else}
   <AdminResourceList
