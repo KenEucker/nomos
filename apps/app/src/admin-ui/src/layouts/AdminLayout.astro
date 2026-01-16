@@ -5,6 +5,7 @@ import Toast from "../components/ui/toast.svelte";
 import ShellState from "../islands/ShellState.svelte";
 import SessionLoader from "../islands/SessionLoader.svelte";
 import NavHighlight from "../islands/NavHighlight.svelte";
+import NavGroupState from "../islands/NavGroupState.svelte";
 import LogoutButton from "../components/LogoutButton.svelte";
 import type { PageAction, PageBreadcrumb } from "../lib/pages/types";
 import type { SessionUser } from "../lib/session";
@@ -78,6 +79,7 @@ const actionClass = (variant?: string) => {
   <ShellState client:load />
   <SessionLoader client:load />
   <NavHighlight client:load />
+  <NavGroupState client:load />
   <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
     <header class="sticky top-0 z-40 border-b admin-mobile-header border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
       <div class="flex items-center h-12 gap-2 px-3">
@@ -155,7 +157,11 @@ const actionClass = (variant?: string) => {
               )}
             </div>
             {navGroups.map((group) => (
-              <details class="space-y-2" open={group.items.some((item) => isActive(item.path))}>
+              <details
+                class="space-y-2"
+                open={group.items.some((item) => isActive(item.path))}
+                data-nav-group={group.label}
+              >
                 <summary class="admin-nav-group-label px-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 cursor-pointer select-none">
                   {group.label}
                 </summary>
