@@ -53,6 +53,16 @@ const handwrittenModules = import.meta.glob<{ default: PageModule }>(
   { eager: false }
 );
 
+const pluginHandwrittenModules = import.meta.glob<{ default: PageModule }>(
+  "../../../../plugins/**/pages/**/*.page.ts",
+  { eager: false }
+);
+
+const allHandwrittenModules = {
+  ...handwrittenModules,
+  ...pluginHandwrittenModules,
+};
+
 // Discover Astro page definitions that export `staticPageDefinition`
 // Astro route files live at: pages/<resource>/index.astro
 const astroPageModules = import.meta.glob<{ staticPageDefinition?: PageModule }>(
@@ -91,7 +101,7 @@ function normalizeModulePath(path: string): string | null {
 // Build lookup map
 const handwrittenModuleMap = new Map<string, () => Promise<{ default: PageModule }>>();
 
-for (const [path, loader] of Object.entries(handwrittenModules)) {
+for (const [path, loader] of Object.entries(allHandwrittenModules)) {
   const key = normalizeModulePath(path);
   if (key) {
     handwrittenModuleMap.set(key, loader as () => Promise<{ default: PageModule }>);
@@ -203,108 +213,63 @@ function compileModule(resource: AdminResource, view: ViewType): PageModule {
 // Main Resolver
 // ============================================================================
 
-/**
- * Resolve a page module for the given resource and view
- *
- * @param resourceId - The resource identifier (e.g., "users")
- * @param view - The view type (List, Form, or Show)
- * @param options - Resolution options
- * @returns The resolved page module
- * @throws PageModuleError if resource not found or view invalid
- */
 export async function resolvePageModule(
   resource: AdminResource,
   view: ViewType,
   options: ResolveOptions = {},
   params?: { mode?: FormMode }
 ): Promise<PageModule> {
-  // Validate view type
-  if (!["List", "Form", "Show"].includes(view)) {
-    throw new PageModuleError(
-      `Invalid view "${view}". Must be one of: List, Form, Show`,
-      "VIEW_INVALID"
-    );
+  // Validate resource
+  if (!resource) {
+    throw new PageModuleError("Resource not found", "RESOURCE_NOT_FOUND");
   }
 
-  const resourceId = resource.id;
-
-  // Try handwritten module first (unless skipped)
+  // Try to load handwritten module unless skipped
   if (!options.skipHandwritten) {
-    const handwritten = await loadHandwrittenModule(resourceId, view, params);
-    if (handwritten) {
-      return handwritten;
-    }
+    const handwritten = await loadHandwrittenModule(resource.id, view, params);
+    if (handwritten) return handwritten;
+  }
+
+  // For List view, try to load static Astro page definition
+  if (view === "List") {
+    const staticDef = await loadStaticPageDefinition(resource.id);
+    if (staticDef) return staticDef;
   }
 
   // Fall back to compiled module
-  const compiled = compileModule(resource, view);
-
-  if (view === "List") {
-    const staticDefinition = await loadStaticPageDefinition(resourceId);
-    if (staticDefinition) {
-      return {
-        ...compiled,
-        title: staticDefinition.title,
-        subtitle: staticDefinition.subtitle,
-        breadcrumbs: staticDefinition.breadcrumbs,
-        pageActions: staticDefinition.pageActions,
-      };
-    }
-  }
-
-  return compiled;
+  return compileModule(resource, view);
 }
 
-/**
- * Resolve a List page module
- */
+// ============================================================================
+// Helpers
+// ============================================================================
+
 export async function resolveListModule(
   resource: AdminResource,
-  options?: ResolveOptions
+  options: ResolveOptions = {}
 ): Promise<ListPageModule> {
-  return resolvePageModule(resource, "List", options) as Promise<ListPageModule>;
+  return (await resolvePageModule(resource, "List", options)) as ListPageModule;
 }
 
-/**
- * Resolve a Form page module
- */
 export async function resolveFormModule(
   resource: AdminResource,
-  options?: ResolveOptions
+  mode: FormMode = "create",
+  options: ResolveOptions = {}
 ): Promise<FormPageModule> {
-  return resolvePageModule(resource, "Form", options) as Promise<FormPageModule>;
+  return (await resolvePageModule(resource, "Form", options, { mode })) as FormPageModule;
 }
 
-/**
- * Resolve a Show page module
- */
 export async function resolveShowModule(
   resource: AdminResource,
-  options?: ResolveOptions
+  options: ResolveOptions = {}
 ): Promise<ShowPageModule> {
-  return resolvePageModule(resource, "Show", options) as Promise<ShowPageModule>;
+  return (await resolvePageModule(resource, "Show", options)) as ShowPageModule;
 }
 
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-/**
- * Check if a handwritten module exists for a resource/view
- */
-export function hasHandwrittenModule(
-  resourceId: string,
-  view: ViewType,
-  params?: { mode?: FormMode }
-): boolean {
-  return getHandwrittenModuleLookupKeys(resourceId, view, params).some((key) =>
-    handwrittenModuleMap.has(key)
-  );
+export function hasHandwrittenModule(resourceId: string, view: ViewType): boolean {
+  return getHandwrittenModuleLookupKeys(resourceId, view).some((key) => handwrittenModuleMap.has(key));
 }
 
-/**
- * Get all resources with handwritten modules
- */
 export function getHandwrittenModuleKeys(): string[] {
   return Array.from(handwrittenModuleMap.keys());
 }

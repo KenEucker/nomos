@@ -65,6 +65,7 @@
   const effectiveResource = $derived(normalizeResource(resource ?? createResourceFromModule(module)));
   const isSectionedLayout = $derived(Boolean(module.list.sections?.length));
   const hasSummaryCards = $derived(Boolean(module.list.summaryCards));
+  const shouldLoadSupplemental = $derived(isSectionedLayout || hasSummaryCards);
 
   let sectionData = $state<Record<string, unknown> | null>(null);
   let sectionLoading = $state(false);
@@ -234,7 +235,7 @@
   }
 
   onMount(() => {
-    if (isSectionedLayout) {
+    if (shouldLoadSupplemental) {
       void loadSectionedData();
     }
   });
@@ -338,6 +339,47 @@
     {/if}
   </div>
 {:else}
+  {#if hasSummaryCards}
+    <div class="space-y-4">
+      {#if sectionLoading}
+        <div class="flex items-center justify-center py-6 text-slate-500 dark:text-slate-400">
+          <div class="flex flex-col items-center gap-2">
+            <div class="w-5 h-5 border-2 rounded-full animate-spin border-slate-300 border-t-slate-600 dark:border-slate-600 dark:border-t-slate-200"></div>
+            <span>Loading summary...</span>
+          </div>
+        </div>
+      {:else if sectionError}
+        <div class="p-3 text-sm text-red-700 border border-red-200 rounded-lg bg-red-50 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+          {sectionError}
+        </div>
+      {:else if sectionData}
+        {@const cardConfig = module.list.summaryCards}
+        {@const cards = Array.isArray(getNestedValue(sectionData, cardConfig?.dataKey ?? "cards"))
+          ? (getNestedValue(sectionData, cardConfig?.dataKey ?? "cards") as Array<Record<string, unknown>>)
+          : []}
+        {#if cards.length > 0 && cardConfig}
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {#each cards as card}
+              <Card>
+                <div class="text-sm text-slate-500 dark:text-slate-400">
+                  {getNestedValue(card, cardConfig.labelKey) ?? "-"}
+                </div>
+                <div class="text-2xl font-semibold sm:text-3xl">
+                  {getNestedValue(card, cardConfig.valueKey) ?? "-"}
+                </div>
+                {#if cardConfig.descriptionKey}
+                  <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    {getNestedValue(card, cardConfig.descriptionKey) ?? ""}
+                  </div>
+                {/if}
+              </Card>
+            {/each}
+          </div>
+        {/if}
+      {/if}
+    </div>
+  {/if}
+
   <AdminResourceList
     resource={effectiveResource}
     onNavigate={handleNavigate}
