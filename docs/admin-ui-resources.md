@@ -43,7 +43,7 @@ import ResourceView from "../../islands/ResourceView.svelte";
 import { createStaticListModule } from "../../lib/pages";
 import { widgetsResource } from "./widgets.resource";
 
-export const pageModule = createStaticListModule({
+export const staticPageDefinition = createStaticListModule({
   resourceId: "widgets",
   title: "Widgets",
   subtitle: "Manage widgets.",
@@ -51,7 +51,7 @@ export const pageModule = createStaticListModule({
 ---
 
 <!-- List -->
-<BaseLayout title={pageModule.title}>
+<BaseLayout title={staticPageDefinition.title}>
   <ResourceView client:load definition={widgetsResource} view="List" />
 </BaseLayout>
 
@@ -67,7 +67,7 @@ export const pageModule = createStaticListModule({
 
 **Anti-patterns:**
 * Do not create `templates/<resource>/<View>.svelte` files that only render a single island component.
-* Do not create adjacent `List.ts` / `Detail.ts` files for the same route; keep `pageModule` in the route’s `index.astro`.
+* Do not create adjacent `List.ts` / `Detail.ts` files for the same route; keep `staticPageDefinition` in the route’s `index.astro`.
 
 ## Resource Definition
 

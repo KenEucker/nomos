@@ -373,16 +373,16 @@ export const config = {
 
 ## View-Only Resources (Not Admin-Managed)
 
-These resources use page modules + custom templates (not the generic CRUD renderer):
+These resources use static page definitions or handwritten page modules (not the generic CRUD renderer):
 
 | Resource | Page | Notes |
 |----------|------|-------|
-| Jobs | JobsPage.svelte | System-managed, view + trigger only |
-| Webhooks | WebhooksPage.svelte | Platform-configured, view-only |
-| Audit Log | AuditPage.svelte | System-generated, view-only |
-| Error Log | ErrorsPage.svelte | System-generated, view-only |
-| Routes | RoutesPage.svelte | Runtime introspection, view-only |
-| Diagnostics | DiagnosticsPage.svelte | System health, view-only |
+| Jobs | jobs/index.astro | System-managed, view + trigger only |
+| Webhooks | webhooks/index.astro | Platform-configured, view-only |
+| Audit Log | audit/index.astro | System-generated, view-only |
+| Error Log | errors/index.astro | System-generated, view-only |
+| Routes | routes/index.astro | Runtime introspection, view-only |
+| Diagnostics | diagnostics.page.ts | System health, view-only |
 
 ## Adding New Resources
 

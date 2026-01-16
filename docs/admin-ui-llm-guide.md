@@ -215,19 +215,90 @@ import ResourceView from "../../islands/ResourceView.svelte";
 import { createStaticListModule } from "../../lib/pages";
 import { jobsResource } from "./jobs.resource";
 
-export const pageModule = createStaticListModule({
+export const staticPageDefinition = createStaticListModule({
   resourceId: "jobs",
   title: "Jobs",
   subtitle: "Monitor scheduled work and job runs.",
 });
 ---
 
-<BaseLayout title={pageModule.title}>
+<BaseLayout title={staticPageDefinition.title}>
   <ResourceView client:load definition={jobsResource} view="List" />
 </BaseLayout>
 ```
 
-Page modules are resolved automatically by `ResourceView` and rendered by a template. For internal admin pages, export `pageModule` directly from the route’s `index.astro`.
+Page modules are resolved automatically by `ResourceView` and rendered by a template. For internal admin pages, export `staticPageDefinition` directly from the route’s `index.astro` to describe the static header without defining a full handwritten module.
+
+### Static Page Definitions (Astro Exports)
+
+* `staticPageDefinition` is **not** the full Page Module contract.
+* It is a static, route-aligned convenience export used for page titles, subtitles, and navigation metadata.
+* It should not contain custom queries or action logic (keep it declarative).
+
+### Handwritten Page Modules (`*.page.ts`)
+
+* `*.page.ts` files are the **real Page Module contract**.
+* Use them when a page needs custom queries, actions, or complex layout composition.
+
+### Diagnostics (Canonical Page Module Example)
+
+Diagnostics demonstrates the full Page Module contract with custom queries, sections, and lifecycle hooks. The Astro page exports `staticPageDefinition`, while the handwritten module lives alongside the route.
+
+```ts
+// apps/app/src/admin-ui/src/pages/diagnostics/diagnostics.page.ts
+import { apiGet } from "../../lib/api";
+import type { ListPageModule } from "../../lib/pages/types";
+
+const diagnosticsModule: ListPageModule = {
+  resourceId: "diagnostics",
+  view: "List",
+  title: "Diagnostics",
+  subtitle: "Inspect runtime health and system status.",
+
+  query: {
+    list: async () => {
+      const [overview, routes, jobs, events] = await Promise.all([
+        apiGet("/_/diagnostics"),
+        apiGet("/_/diagnostics/routes"),
+        apiGet("/_/diagnostics/jobs"),
+        apiGet("/_/diagnostics/events"),
+      ]);
+      return {
+        items: [
+          {
+            cards: [
+              { label: "Status", value: overview.data.status },
+              { label: "Total Routes", value: overview.data.routes },
+              { label: "Registered Jobs", value: overview.data.jobs },
+              { label: "Event Types", value: overview.data.events.length },
+            ],
+            coreModules: overview.data.coreModules,
+            routes: routes.data.routes,
+            jobs: jobs.data.jobs,
+            events: events.data.events.map((name: string) => ({ name })),
+          },
+        ],
+        total: 1,
+        page: 1,
+        pageSize: 1,
+      };
+    },
+  },
+
+  list: {
+    summaryCards: { dataKey: "cards", labelKey: "label", valueKey: "value" },
+    sections: [
+      { id: "core-modules", title: "Core Modules", dataKey: "coreModules", columns: [] },
+      { id: "routes", title: "Routes", dataKey: "routes", columns: [] },
+      { id: "jobs", title: "Jobs", dataKey: "jobs", columns: [] },
+      { id: "events", title: "Events", dataKey: "events", columns: [] },
+    ],
+  },
+
+  onError: () => "Unable to load diagnostics.",
+  onSuccess: () => "Diagnostics loaded.",
+};
+```
 
 ### Location
 
@@ -262,7 +333,7 @@ Use handwritten page modules when:
 ### Anti-patterns
 
 * **Wrapper templates:** do **not** create templates that only import an island and render it (for example, a 5-line `List.svelte` that only returns `<SomePage />`).
-* **Split route modules:** do **not** create adjacent `List.ts` / `Detail.ts` files for simple routes. Export `pageModule` from `index.astro` instead.
+* **Split route modules:** do **not** create adjacent `List.ts` / `Detail.ts` files for simple routes. Export `staticPageDefinition` from `index.astro` instead.
 
 ### Structure: List Module
 

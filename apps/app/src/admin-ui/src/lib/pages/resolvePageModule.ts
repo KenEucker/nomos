@@ -53,9 +53,9 @@ const handwrittenModules = import.meta.glob<{ default: PageModule }>(
   { eager: false }
 );
 
-// Discover Astro page modules that export `pageModule`
+// Discover Astro page definitions that export `staticPageDefinition`
 // Astro route files live at: pages/<resource>/index.astro
-const astroPageModules = import.meta.glob<{ pageModule?: PageModule }>(
+const astroPageModules = import.meta.glob<{ staticPageDefinition?: PageModule }>(
   "../../pages/**/index.astro",
   { eager: false }
 );
@@ -99,17 +99,17 @@ for (const [path, loader] of Object.entries(handwrittenModules)) {
 }
 
 // Build lookup map for Astro index.astro exports (List view only)
-const astroModuleMap = new Map<string, () => Promise<{ pageModule?: PageModule }>>();
-let rootAstroLoader: (() => Promise<{ pageModule?: PageModule }>) | null = null;
+const astroModuleMap = new Map<string, () => Promise<{ staticPageDefinition?: PageModule }>>();
+let rootAstroLoader: (() => Promise<{ staticPageDefinition?: PageModule }>) | null = null;
 
 for (const [path, loader] of Object.entries(astroPageModules)) {
   const match = path.match(/pages\/([^/]+)\/index\.astro$/);
   if (match) {
-    astroModuleMap.set(match[1], loader as () => Promise<{ pageModule?: PageModule }>);
+    astroModuleMap.set(match[1], loader as () => Promise<{ staticPageDefinition?: PageModule }>);
     continue;
   }
   if (path.endsWith("/pages/index.astro")) {
-    rootAstroLoader = loader as () => Promise<{ pageModule?: PageModule }>;
+    rootAstroLoader = loader as () => Promise<{ staticPageDefinition?: PageModule }>;
   }
 }
 
@@ -139,30 +139,6 @@ async function loadHandwrittenModule(
     .find((entry) => entry.loader);
 
   if (!loaderEntry?.loader) {
-    if (view === "List") {
-      const astroLoader = astroModuleMap.get(resourceId);
-      if (astroLoader) {
-        try {
-          const mod = await astroLoader();
-          return mod.pageModule ?? null;
-        } catch (error) {
-          console.warn(`Failed to load Astro page module for ${resourceId}:`, error);
-          return null;
-        }
-      }
-      if (rootAstroLoader) {
-        try {
-          const mod = await rootAstroLoader();
-          if (mod.pageModule?.resourceId === resourceId) {
-            return mod.pageModule;
-          }
-        } catch (error) {
-          console.warn(`Failed to load root Astro page module:`, error);
-          return null;
-        }
-      }
-      return null;
-    }
     return null;
   }
 
@@ -173,6 +149,31 @@ async function loadHandwrittenModule(
     console.warn(`Failed to load handwritten module for ${loaderEntry.key}:`, error);
     return null;
   }
+}
+
+async function loadStaticPageDefinition(resourceId: string): Promise<ListPageModule | null> {
+  const astroLoader = astroModuleMap.get(resourceId);
+  if (astroLoader) {
+    try {
+      const mod = await astroLoader();
+      return (mod.staticPageDefinition ?? null) as ListPageModule | null;
+    } catch (error) {
+      console.warn(`Failed to load Astro page module for ${resourceId}:`, error);
+      return null;
+    }
+  }
+  if (rootAstroLoader) {
+    try {
+      const mod = await rootAstroLoader();
+      if (mod.staticPageDefinition?.resourceId === resourceId) {
+        return mod.staticPageDefinition as ListPageModule;
+      }
+    } catch (error) {
+      console.warn(`Failed to load root Astro page module:`, error);
+      return null;
+    }
+  }
+  return null;
 }
 
 // ============================================================================
@@ -236,7 +237,22 @@ export async function resolvePageModule(
   }
 
   // Fall back to compiled module
-  return compileModule(resource, view);
+  const compiled = compileModule(resource, view);
+
+  if (view === "List") {
+    const staticDefinition = await loadStaticPageDefinition(resourceId);
+    if (staticDefinition) {
+      return {
+        ...compiled,
+        title: staticDefinition.title,
+        subtitle: staticDefinition.subtitle,
+        breadcrumbs: staticDefinition.breadcrumbs,
+        pageActions: staticDefinition.pageActions,
+      };
+    }
+  }
+
+  return compiled;
 }
 
 /**
