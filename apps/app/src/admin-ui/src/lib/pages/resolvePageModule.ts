@@ -139,30 +139,6 @@ async function loadHandwrittenModule(
     .find((entry) => entry.loader);
 
   if (!loaderEntry?.loader) {
-    if (view === "List") {
-      const astroLoader = astroModuleMap.get(resourceId);
-      if (astroLoader) {
-        try {
-          const mod = await astroLoader();
-          return mod.staticPageDefinition ?? null;
-        } catch (error) {
-          console.warn(`Failed to load Astro page module for ${resourceId}:`, error);
-          return null;
-        }
-      }
-      if (rootAstroLoader) {
-        try {
-          const mod = await rootAstroLoader();
-          if (mod.staticPageDefinition?.resourceId === resourceId) {
-            return mod.staticPageDefinition;
-          }
-        } catch (error) {
-          console.warn(`Failed to load root Astro page module:`, error);
-          return null;
-        }
-      }
-      return null;
-    }
     return null;
   }
 
@@ -173,6 +149,31 @@ async function loadHandwrittenModule(
     console.warn(`Failed to load handwritten module for ${loaderEntry.key}:`, error);
     return null;
   }
+}
+
+async function loadStaticPageDefinition(resourceId: string): Promise<ListPageModule | null> {
+  const astroLoader = astroModuleMap.get(resourceId);
+  if (astroLoader) {
+    try {
+      const mod = await astroLoader();
+      return (mod.staticPageDefinition ?? null) as ListPageModule | null;
+    } catch (error) {
+      console.warn(`Failed to load Astro page module for ${resourceId}:`, error);
+      return null;
+    }
+  }
+  if (rootAstroLoader) {
+    try {
+      const mod = await rootAstroLoader();
+      if (mod.staticPageDefinition?.resourceId === resourceId) {
+        return mod.staticPageDefinition as ListPageModule;
+      }
+    } catch (error) {
+      console.warn(`Failed to load root Astro page module:`, error);
+      return null;
+    }
+  }
+  return null;
 }
 
 // ============================================================================
@@ -236,7 +237,22 @@ export async function resolvePageModule(
   }
 
   // Fall back to compiled module
-  return compileModule(resource, view);
+  const compiled = compileModule(resource, view);
+
+  if (view === "List") {
+    const staticDefinition = await loadStaticPageDefinition(resourceId);
+    if (staticDefinition) {
+      return {
+        ...compiled,
+        title: staticDefinition.title,
+        subtitle: staticDefinition.subtitle,
+        breadcrumbs: staticDefinition.breadcrumbs,
+        pageActions: staticDefinition.pageActions,
+      };
+    }
+  }
+
+  return compiled;
 }
 
 /**
