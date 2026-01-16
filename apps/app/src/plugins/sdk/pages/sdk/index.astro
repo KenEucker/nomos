@@ -1,8 +1,12 @@
 ---
 import AdminLayout from "../../../../admin-ui/src/layouts/AdminLayout.astro";
 import ResourceView from "../../../../admin-ui/src/islands/ResourceView.svelte";
+import SdkApiTestCard from "./SdkApiTestCard.svelte";
 import { sdkResource } from "./sdk.resource";
 ---
 <AdminLayout title="SDK">
-  <ResourceView client:load definition={sdkResource} view="List" />
+  <div class="space-y-6">
+    <SdkApiTestCard client:load />
+    <ResourceView client:load definition={sdkResource} view="List" />
+  </div>
 </AdminLayout>
