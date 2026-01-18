@@ -2,7 +2,7 @@
 
 **Status:** Active Draft
 
-**Version:** 0.1.0
+**Version:** 0.1.1
 
 **Audience:** Framework users, platform contributors, operators
 
@@ -23,6 +23,10 @@ This configuration controls:
 * API-level settings (rate limiting, CORS, etc.)
 
 Nomos configuration is **explicit**, **normalized**, and **deterministic**.
+
+> This configuration file is for **runtime behavior**.
+>
+> **Tooling behavior** (e.g. project scaffolding, vendor-import syncing) is generally out of scope, but this spec includes a small, explicit section describing how tooling may reference config **without changing runtime semantics**.
 
 ---
 
@@ -87,6 +91,36 @@ Before runtime boot, Nomos normalizes module entries so that **every module is a
 ```
 
 This guarantees deterministic downstream behavior.
+
+### 4.3 Admin Module UI Source (Optional)
+
+Nomos ships with a built-in admin UI. Some development flows use a **vendor-import** approach to keep the admin runtime synchronized with an upstream reference UI.
+
+This is **optional** and does not affect the runtime module contract beyond providing a declarative place to express intent.
+
+Suggested shape:
+
+```ts
+export default {
+  modules: {
+    admin: {
+      enabled: true,
+
+      // Optional: where the admin UI runtime is sourced from.
+      // "builtin" means “use the code in this repo as-is”.
+      // "vendored" means “tooling may overlay a vendored runtime into admin-ui”.
+      ui: {
+        source: "builtin" | "vendored"
+      }
+    }
+  }
+}
+```
+
+Rules:
+
+* If omitted, `modules.admin.ui.source` defaults to `"builtin"`.
+* Setting `source: "vendored"` **does not** change runtime behavior by itself; it only indicates that tooling (e.g. `nomos sync`) is expected to manage upstream overlays.
 
 ---
 
@@ -286,6 +320,7 @@ Nomos maps environment variables into config with the following patterns:
 * `PORT` → `runtime.port`
 
 Env var parsing:
+
 * must be type-safe
 * must fail fast on invalid values
 * must never log secrets in plaintext
@@ -310,7 +345,23 @@ Unknown keys should produce warnings or errors (platform-defined), but must not 
 
 ---
 
-## 10. Complete Configuration Example
+## 10. Tooling Notes (Non-runtime)
+
+### 10.1 Vendor Imports and Sync
+
+Some Nomos workflows use **vendor import** overlays to synchronize certain code (commonly the Admin UI runtime) from an upstream repo.
+
+Principles:
+
+* Vendor import is **overlay-only** (no deletes).
+* Tooling records **the upstream SHA** and **the imported paths** (e.g. in `.vendor/*.json`).
+* Tooling behavior must be **repeatable** and **diff-friendly**.
+
+This tooling is intentionally separate from runtime behavior. The config file may optionally express intent (e.g. `modules.admin.ui.source = "vendored"`), but the presence of that value alone must not mutate runtime behavior.
+
+---
+
+## 11. Complete Configuration Example
 
 ```typescript
 // nomos.config.ts
@@ -319,8 +370,11 @@ export default {
   // Module configuration
   modules: {
     auth: true,
-    admin: true,
-    docs: { 
+    admin: {
+      enabled: true,
+      ui: { source: 'builtin' }
+    },
+    docs: {
       enabled: true,
       openApiPath: "/api/docs"
     },
@@ -385,7 +439,7 @@ export default {
 
 ---
 
-## 11. Environment-Specific Configurations
+## 12. Environment-Specific Configurations
 
 While Nomos uses a single config file, environment-specific behavior can be achieved through environment variables:
 
@@ -398,7 +452,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 export default {
   database: {
     provider: isDevelopment ? "sqlite" : "postgresql",
-    url: isDevelopment 
+    url: isDevelopment
       ? "file:./prisma/dev.db"
       : process.env.DATABASE_URL
   },
@@ -429,7 +483,7 @@ export default {
 
 ---
 
-## 12. Required Invariants
+## 13. Required Invariants
 
 A Nomos implementation must preserve the following invariants:
 
@@ -439,9 +493,3 @@ A Nomos implementation must preserve the following invariants:
 * Plugin manager defaults differ between production and non-production
 * All config is validated with actionable errors
 * Single database per environment (v1 constraint)
-
----
-
-## 13. Reference Notes
-
-This spec incorporates the current documented behavior from the existing configuration document and elevates it into a stable contract. It explicitly scopes out multi-database support for v1 while leaving room for future enhancement.
