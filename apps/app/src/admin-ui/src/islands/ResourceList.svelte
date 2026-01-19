@@ -67,7 +67,8 @@
     const currentRequest = ++requestId
     loading = true
     try {
-      const response = await apiGet<any>(buildUrl(nextQuery))
+      const queryUrl = buildUrl(nextQuery)
+      const response = await apiGet<any>(queryUrl)
       if (currentRequest !== requestId) return
       const { items: nextItems, total: nextTotal } = unwrapItems(response, definition.dataKey)
       const resolvedItems = Array.isArray(nextItems) ? nextItems : []

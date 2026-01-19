@@ -193,6 +193,12 @@ export const createResourcePanel = ({
             ? { key: resource.list.defaultSort.key, dir: resource.list.defaultSort.direction }
             : undefined)
         : undefined
+      const queryUrl = buildListUrl(resource.endpoints.list, {
+        page: serverSideList ? ctx.state.page : 1,
+        pageSize,
+        search: serverSideList ? ctx.state.search : undefined,
+        sort,
+      })
       const url = buildListUrl(resource.endpoints.list, {
         page: serverSideList ? ctx.state.page : 1,
         pageSize,
