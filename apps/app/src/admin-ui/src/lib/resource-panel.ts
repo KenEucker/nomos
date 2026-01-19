@@ -31,6 +31,13 @@ const resolveSingleKey = (resource: ResourceDefinition) =>
 const interpolateEndpoint = (endpoint: string, params?: Record<string, string>) =>
   endpoint.replace(/\{(\w+)\}/g, (_, key) => params?.[key] ?? "")
 
+const requireEndpoint = (endpoint: string | undefined, label: string) => {
+  if (!endpoint) {
+    throw new Error(`Missing required endpoint: ${label}`)
+  }
+  return endpoint
+}
+
 const buildListUrl = (endpoint: string, state: { page: number; pageSize: number; search?: string; sort?: {
   key: string
   dir: "asc" | "desc"
@@ -118,6 +125,7 @@ export const createResourcePanel = ({
   const viewHref = (id: string) => `${basePath}/view?id=${id}`
   const intents = resource.intents ?? {}
   const rowActionConfig = resource.list?.rowActions
+  const deleteEndpoint = resource.endpoints.delete
   const rowActionCandidates: Array<RowAction | null> = [
     rowActionConfig?.view ?? true
       ? { id: "view", label: "View", variant: "secondary", intent: intents.read }
@@ -126,7 +134,9 @@ export const createResourcePanel = ({
       ? { id: "edit", label: "Edit", variant: "secondary", intent: intents.update }
       : null,
     rowActionConfig?.delete ?? true
-      ? { id: "delete", label: "Delete", variant: "destructive", intent: intents.delete }
+      ? deleteEndpoint
+        ? { id: "delete", label: "Delete", variant: "destructive", intent: intents.delete }
+        : null
       : null,
   ]
   const rowActions = rowActionCandidates.filter((action): action is RowAction => Boolean(action))
@@ -166,20 +176,22 @@ export const createResourcePanel = ({
         return [
           { type: "link", label: `View ${labels.label}`, href: viewHref(id), intent: intents.read },
           { type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read },
-          {
-            type: "method",
-            label: `Delete ${labels.label}`,
-            endpoint: interpolateEndpoint(resource.endpoints.delete, { id }),
-            method: "DELETE",
-            intent: intents.delete,
-            confirm: {
-              title: `Delete ${labels.label}?`,
-              body: `This will permanently remove the ${labels.label.toLowerCase()}.`,
-            },
-            after: "navigate",
-            toast: { success: `${labels.label} deleted` },
-          },
-        ]
+          deleteEndpoint
+            ? {
+                type: "method",
+                label: `Delete ${labels.label}`,
+                endpoint: interpolateEndpoint(deleteEndpoint, { id }),
+                method: "DELETE",
+                intent: intents.delete,
+                confirm: {
+                  title: `Delete ${labels.label}?`,
+                  body: `This will permanently remove the ${labels.label.toLowerCase()}.`,
+                },
+                after: "navigate",
+                toast: { success: `${labels.label} deleted` },
+              }
+            : null,
+        ].filter((action): action is ActionDescriptor => Boolean(action))
       case "view":
         if (!id) {
           return [{ type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read }]
@@ -195,6 +207,7 @@ export const createResourcePanel = ({
 
   const query: PanelModule["query"] = async (ctx) => {
     if (mode === "list") {
+      const listEndpoint = requireEndpoint(resource.endpoints.list, "list")
       const pageSize = serverSideList
         ? ctx.query.pageSize !== undefined
           ? ctx.state.pageSize
@@ -206,13 +219,7 @@ export const createResourcePanel = ({
             ? { key: resource.list.defaultSort.key, dir: resource.list.defaultSort.direction }
             : undefined)
         : undefined
-      const queryUrl = buildListUrl(resource.endpoints.list, {
-        page: serverSideList ? ctx.state.page : 1,
-        pageSize,
-        search: serverSideList ? ctx.state.search : undefined,
-        sort,
-      })
-      const url = buildListUrl(resource.endpoints.list, {
+      const url = buildListUrl(listEndpoint, {
         page: serverSideList ? ctx.state.page : 1,
         pageSize,
         search: serverSideList ? ctx.state.search : undefined,
@@ -239,7 +246,7 @@ export const createResourcePanel = ({
     }
 
     const id = requireId(resolveId(ctx.params, ctx.query) ?? normalizeId(new URL(ctx.url).searchParams.get("id")))
-    const endpoint = interpolateEndpoint(resource.endpoints.get, { id })
+    const endpoint = interpolateEndpoint(requireEndpoint(resource.endpoints.get, "get"), { id })
     const response = await panelApiFetch(ctx, endpoint)
     const { record } = unwrapSingleResponse(response, resource)
     return {
@@ -259,7 +266,10 @@ export const createResourcePanel = ({
           Layouts.table({
             key: resource.name,
             title: labels.labelPlural,
-            description: `Showing ${labels.labelPlural.toLowerCase()} from ${resource.endpoints.list}.`,
+            description: `Showing ${labels.labelPlural.toLowerCase()} from ${requireEndpoint(
+              resource.endpoints.list,
+              "list"
+            )}.`,
             rowsKey: listKey,
             paginationKey: serverSideList ? "meta" : undefined,
             serverSide: serverSideList,
@@ -272,7 +282,7 @@ export const createResourcePanel = ({
             searchPlaceholder: resource.list?.searchPlaceholder,
             rowActions: combinedRowActions.length ? combinedRowActions : undefined,
             rowActionBasePath: basePath,
-            rowActionDeleteEndpoint: resource.endpoints.delete,
+            rowActionDeleteEndpoint: deleteEndpoint,
             requiredIntent: intents.read,
           }),
         ]),
@@ -289,7 +299,7 @@ export const createResourcePanel = ({
         }),
         Layouts.card({
           title: labels.label,
-          description: `Details from ${resource.endpoints.get}.`,
+          description: `Details from ${requireEndpoint(resource.endpoints.get, "get")}.`,
           requiredIntent: intents.read,
           nodes: fields.map((field) =>
             Layouts.stat({
@@ -308,7 +318,9 @@ export const createResourcePanel = ({
     const id = isCreate
       ? undefined
       : requireId(resolveId(ctx.params, ctx.query) ?? normalizeId(new URL(ctx.url).searchParams.get("id")))
-    const endpoint = isCreate ? resource.endpoints.create : interpolateEndpoint(resource.endpoints.update, { id })
+    const endpoint = isCreate
+      ? requireEndpoint(resource.endpoints.create, "create")
+      : interpolateEndpoint(requireEndpoint(resource.endpoints.update, "update"), { id })
 
     return [
       Layouts.rows([

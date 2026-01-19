@@ -233,12 +233,14 @@ export type PanelModule = {
   commandBar: (ctx: PanelCtx, data: Record<string, any>) => ActionDescriptor[]
 }
 
+export type ResourceEndpointValue = string | true
+
 export type ResourceEndpoints = {
-  list: string
-  get: string
-  create: string
-  update: string
-  delete: string
+  list?: string
+  get?: string
+  create?: string
+  update?: string
+  delete?: string
 }
 
 export type ResourceLabels =
@@ -304,5 +306,5 @@ export type ResourceDefinition = ResourceLabels & {
 
 export type ResourceDefinitionPartial = Partial<Omit<ResourceDefinition, "name" | "endpoints">> & {
   name: string
-  endpoints: Partial<ResourceEndpoints>
+  endpoints?: Partial<Record<keyof ResourceEndpoints, ResourceEndpointValue>>
 }
