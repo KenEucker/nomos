@@ -4,6 +4,7 @@ import type {
   FieldsetNode,
   FormNode,
   HeaderNode,
+  IframeNode,
   RowsNode,
   LayoutNode,
   StatNode,
@@ -54,6 +55,11 @@ export const Layouts = {
 
   header: (props: HeaderNode["props"]): HeaderNode => ({
     type: "header",
+    props,
+  }),
+
+  iframe: (props: IframeNode["props"]): IframeNode => ({
+    type: "iframe",
     props,
   }),
 }

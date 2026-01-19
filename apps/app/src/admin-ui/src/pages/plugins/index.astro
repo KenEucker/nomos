@@ -1,15 +1,11 @@
 ---
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import { createStaticListModule } from "../../lib/pages";
-import ResourceView from "../../islands/ResourceView.svelte";
+import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../lib/resource-panel";
 import { pluginsResource } from "./plugins.resource";
-
-export const staticPageDefinition = createStaticListModule({
-  resourceId: "plugins",
-  title: "Plugins",
-  subtitle: "Discover, preview, and activate plugins.",
-});
+const resourceConfig = {
+  resource: pluginsResource,
+  mode: "list",
+};
+const panel = createResourcePanel(resourceConfig);
 ---
-<AdminLayout title={staticPageDefinition.title} subtitle={staticPageDefinition.subtitle} breadcrumbs={staticPageDefinition.breadcrumbs} actions={staticPageDefinition.pageActions}>
-  <ResourceView client:load definition={pluginsResource} view="List" />
-</AdminLayout>
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

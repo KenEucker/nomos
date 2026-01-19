@@ -8,7 +8,7 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 - Preserve deterministic resolution order.
 
 ## What counts as platform work
-- Registries and resolution order (resources/templates/page modules).
+- Registries and resolution order (resources/templates/panel modules).
 - Shared types and contracts used across the app.
 - Middleware/hook infrastructure used by plugins and routes.
 

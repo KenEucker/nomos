@@ -40,6 +40,10 @@ export type ColumnDef = {
   key: string
   label: string
   sortable?: boolean
+  render?: "text" | "badge" | "date" | "datetime" | "boolean" | "json" | "link" | "email"
+  badgeVariants?: Record<string, string>
+  linkTemplate?: string
+  width?: string
   hideOnMobile?: boolean
 }
 
@@ -48,6 +52,19 @@ export type RowAction = {
   label: string
   variant?: "default" | "secondary" | "ghost" | "destructive"
   intent?: string
+  type?: "link" | "method"
+  href?: string
+  endpoint?: string
+  method?: "POST" | "PUT" | "PATCH" | "DELETE"
+  confirm?: { title: string; body?: string }
+  after?: "refresh" | "navigate"
+  toast?: { success?: string; error?: string }
+  showWhen?: {
+    key: string
+    equals?: string | number | boolean
+    notEquals?: string | number | boolean
+    truthy?: boolean
+  }
 }
 
 export type FieldDef = {
@@ -63,10 +80,21 @@ export type FieldDef = {
     | "select"
     | "multiselect"
     | "date"
+    | "datetime"
   placeholder?: string
   helperText?: string
+  help?: string
   options?: Array<{ value: string; label: string }>
+  optionsEndpoint?: string
+  optionsKey?: string
+  valueKey?: string
+  labelKey?: string
   required?: boolean
+  readonly?: boolean
+  showOnCreate?: boolean
+  showOnEdit?: boolean
+  showOnView?: boolean
+  transform?: "lines" | "csv"
 }
 
 export type RowsNode = {
@@ -173,6 +201,16 @@ export type HeaderNode = {
   }
 }
 
+export type IframeNode = {
+  type: "iframe"
+  props: {
+    src: string
+    title: string
+    height?: string
+    requiredIntent?: string
+  }
+}
+
 export type LayoutNode =
   | RowsNode
   | ColumnsNode
@@ -183,6 +221,7 @@ export type LayoutNode =
   | StatNode
   | HeaderNode
   | FormNode
+  | IframeNode
 
 export type PanelModule = {
   id: string
@@ -229,6 +268,7 @@ export type ResourceListConfig = {
     edit?: boolean
     delete?: boolean
   }
+  customRowActions?: RowAction[]
   defaultSort?: {
     key: string
     direction: "asc" | "desc"

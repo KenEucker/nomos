@@ -7,10 +7,20 @@ import SessionLoader from "../islands/SessionLoader.svelte";
 import NavHighlight from "../islands/NavHighlight.svelte";
 import NavGroupState from "../islands/NavGroupState.svelte";
 import LogoutButton from "../components/LogoutButton.svelte";
-import type { PageAction, PageBreadcrumb } from "../lib/pages/types";
 import type { SessionUser } from "../lib/session";
 import { requireAdminSession } from "../lib/server/session";
 import { buildAdminNav } from "../lib/navigation";
+
+type PageBreadcrumb = {
+  label: string;
+  href?: string;
+};
+
+type PageAction = {
+  label: string;
+  href: string;
+  variant?: "secondary" | "outline" | "ghost" | "destructive";
+};
 
 type Props = {
   title?: string;

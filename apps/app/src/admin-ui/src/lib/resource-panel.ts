@@ -65,8 +65,15 @@ const unwrapSingleResponse = (response: any, resource: ResourceDefinition) => {
   return { record, key }
 }
 
-const resolveFields = (resource: ResourceDefinition): FieldDef[] => {
-  if (resource.form?.fields?.length) return resource.form.fields
+const resolveFields = (resource: ResourceDefinition, mode: ResourcePanelMode): FieldDef[] => {
+  if (resource.form?.fields?.length) {
+    return resource.form.fields.filter((field) => {
+      if (mode === "create" && field.showOnCreate === false) return false
+      if (mode === "edit" && field.showOnEdit === false) return false
+      if (mode === "view" && field.showOnView === false) return false
+      return true
+    })
+  }
   if (resource.list?.columns?.length) {
     return resource.list.columns.map((column) => ({
       name: column.key,
@@ -78,7 +85,9 @@ const resolveFields = (resource: ResourceDefinition): FieldDef[] => {
 }
 
 const resolveColumns = (resource: ResourceDefinition): ColumnDef[] => {
-  if (resource.list?.columns?.length) return resource.list.columns
+  if (resource.list?.columns?.length) {
+    return resource.list.columns.filter((column) => column.render !== "action")
+  }
   if (resource.form?.fields?.length) {
     return resource.form.fields.map((field) => ({
       key: field.name,
@@ -98,7 +107,7 @@ export const createResourcePanel = ({
   const labels = getLabels(resource)
   const listKey = resolveListKey(resource)
   const singleKey = resolveSingleKey(resource)
-  const fields = resolveFields(resource)
+  const fields = resolveFields(resource, mode)
   const columns = resolveColumns(resource)
   const serverSideList = false
 
@@ -120,6 +129,8 @@ export const createResourcePanel = ({
       : null,
   ]
   const rowActions = rowActionCandidates.filter((action): action is RowAction => Boolean(action))
+  const customRowActions = resource.list?.customRowActions ?? []
+  const combinedRowActions = [...rowActions, ...customRowActions]
 
   const normalizeId = (value?: string | string[] | null) => {
     const raw = Array.isArray(value) ? value[0] : value
@@ -242,7 +253,7 @@ export const createResourcePanel = ({
             saveMethod: "PATCH",
             searchable: resource.list?.searchable ?? true,
             searchPlaceholder: resource.list?.searchPlaceholder,
-            rowActions: rowActions.length ? rowActions : undefined,
+            rowActions: combinedRowActions.length ? combinedRowActions : undefined,
             rowActionBasePath: basePath,
             rowActionDeleteEndpoint: resource.endpoints.delete,
             requiredIntent: intents.read,

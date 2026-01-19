@@ -23,7 +23,7 @@
   let currentState: QueryState = parseStateFromUrl(
     new URL(typeof window === "undefined" ? href : window.location.href)
   )
-  const panelModules = import.meta.glob(["/src/pages/**/*.panel.ts", "/src/lib/resource.panel.ts"])
+  const panelModules = import.meta.glob(["/src/panels/**/*.panel.ts", "/src/lib/resource.panel.ts"])
 
   const buildClientCtx = (): PanelCtx => {
     const url = new URL(window.location.href)

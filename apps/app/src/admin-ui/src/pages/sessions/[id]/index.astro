@@ -1,10 +1,14 @@
 ---
-import AdminLayout from "../../../layouts/AdminLayout.astro";
-import ResourceView from "../../../islands/ResourceView.svelte";
+import ResourcePanelPage from "../../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../../lib/resource-panel";
 import { sessionsResource } from "../sessions.resource";
 
 const { id } = Astro.params;
+const resourceConfig = {
+  resource: sessionsResource,
+  mode: "view",
+  params: { id },
+};
+const panel = createResourcePanel(resourceConfig);
 ---
-<AdminLayout title="Session Details">
-  <ResourceView client:load definition={sessionsResource} view="Show" params={{ id }} />
-</AdminLayout>
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

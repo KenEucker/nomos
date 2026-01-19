@@ -4,6 +4,7 @@
   import PanelHeader from "../components/PanelHeader.svelte"
   import PanelForm from "./PanelForm.svelte"
   import { can } from "../lib/authz/authorize.client"
+  import { notify, toastError } from "../lib/toast"
 
   export let nodes: LayoutNode[] = []
   export let data: Record<string, any> = {}
@@ -149,6 +150,40 @@
           const id = row?.[idKey]
           if (!id) return
           const basePath = node.props.rowActionBasePath ?? ""
+          if (action.type === "link" && action.href) {
+            const href = action.href.includes("{id}")
+              ? action.href.replace("{id}", encodeURIComponent(String(id)))
+              : action.href
+            window.location.href = href
+            return
+          }
+          if (action.type === "method" && action.endpoint) {
+            const confirmed = action.confirm
+              ? window.confirm(`${action.confirm.title}\n${action.confirm.body ?? ""}`)
+              : true
+            if (!confirmed) return
+            try {
+              const endpoint = action.endpoint.includes("{id}")
+                ? action.endpoint.replace("{id}", encodeURIComponent(String(id)))
+                : action.endpoint
+              const response = await fetch(endpoint, { method: action.method ?? "POST" })
+              if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`)
+              }
+              if (action.toast?.success) {
+                notify(action.toast.success, "success")
+              }
+              if (action.after === "navigate" && action.href) {
+                window.location.href = action.href.replace("{id}", encodeURIComponent(String(id)))
+                return
+              }
+              onStateChange(state)
+            } catch (err) {
+              const message = err instanceof Error ? err.message : "Action failed"
+              toastError(action.toast?.error ?? action.label, message)
+            }
+            return
+          }
           if (action.id === "view") {
             window.location.href = `${basePath}/view?id=${encodeURIComponent(String(id))}`
             return
@@ -236,6 +271,15 @@
         {commands}
         {onCommand}
       />
+    {:else if node.type === "iframe"}
+      <div class="overflow-hidden rounded-xl border bg-card">
+        <iframe
+          src={node.props.src}
+          title={node.props.title}
+          class="w-full border-0"
+          style={`height: ${node.props.height ?? "600px"}`}
+        ></iframe>
+      </div>
     {/if}
   {/each}
 </div>

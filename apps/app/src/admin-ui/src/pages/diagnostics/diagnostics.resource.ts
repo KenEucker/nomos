@@ -1,14 +1,18 @@
-import type { AdminResourceInput } from "../../lib/resources/types";
+import { createResourceDefinition } from "../../lib/utils";
 
-export const diagnosticsResource: AdminResourceInput = {
-  id: "diagnostics",
+export const diagnosticsResource = createResourceDefinition({
+  name: "diagnostics",
   label: "Diagnostics",
   labelPlural: "Diagnostics",
-  menuGroup: "System",
-  icon:
-    '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>',
+  menu: {
+    group: "System",
+    icon:
+      '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>',
+  },
   endpoints: {
     list: "/_/diagnostics",
   },
-  requiredRole: "admin",
-};
+  intents: {
+    read: "admin.access",
+  },
+});

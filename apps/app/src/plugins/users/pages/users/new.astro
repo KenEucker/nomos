@@ -1,8 +1,11 @@
 ---
-import AdminLayout from "../../../../admin-ui/src/layouts/AdminLayout.astro";
-import ResourceView from "../../../../admin-ui/src/islands/ResourceView.svelte";
+import ResourcePanelPage from "../../../../admin-ui/src/components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../../../admin-ui/src/lib/resource-panel";
 import { usersResource } from "./users.resource";
+const resourceConfig = {
+  resource: usersResource,
+  mode: "create",
+};
+const panel = createResourcePanel(resourceConfig);
 ---
-<AdminLayout title="Create User">
-  <ResourceView client:load definition={usersResource} view="Form" params={{ mode: "create" }} />
-</AdminLayout>
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

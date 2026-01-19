@@ -1,12 +1,14 @@
-import type { AdminResourceInput } from "../../lib/resources/types";
+import { createResourceDefinition } from "../../lib/utils";
 
-export const sessionsResource: AdminResourceInput = {
-  id: "sessions",
+export const sessionsResource = createResourceDefinition({
+  name: "sessions",
   label: "Session",
   labelPlural: "Sessions",
-  menuGroup: "Access",
-  icon:
-    '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>',
+  menu: {
+    group: "Access",
+    icon:
+      '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>',
+  },
   endpoints: {
     list: "/_/sessions",
     get: "/_/sessions/{id}",
@@ -55,11 +57,29 @@ export const sessionsResource: AdminResourceInput = {
     ],
     defaultSort: {
       key: "createdAt",
-      dir: "desc",
+      direction: "desc",
     },
     searchable: true,
     searchPlaceholder: "Search by user...",
     pageSize: 20,
+    rowActions: {
+      edit: false,
+    },
+    customRowActions: [
+      {
+        id: "revoke",
+        label: "Revoke",
+        variant: "destructive",
+        type: "method",
+        endpoint: "/_/sessions/{id}",
+        method: "DELETE",
+        confirm: {
+          title: "Revoke session?",
+          body: "The user will be logged out immediately.",
+        },
+        toast: { success: "Session revoked" },
+      },
+    ],
   },
   form: {
     fields: [
@@ -97,20 +117,10 @@ export const sessionsResource: AdminResourceInput = {
       },
     ],
   },
-  actions: {
-    delete: false,
-    custom: [
-      {
-        id: "revoke",
-        label: "Revoke Session",
-        variant: "destructive",
-        confirm: "Are you sure you want to revoke this session? The user will be logged out.",
-        endpoint: "/_/sessions/{id}",
-        method: "DELETE",
-      },
-    ],
+  intents: {
+    read: "admin.access",
+    delete: "admin.access",
   },
-  requiredRole: "admin",
   dataKey: "sessions",
   singleDataKey: "session",
-};
+});
