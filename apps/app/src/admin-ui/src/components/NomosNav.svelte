@@ -10,7 +10,7 @@
     savePreferences,
     type NavPreferences,
   } from "$lib/navPreferences"
-  import { buildAdminNav, type NavItem } from "$lib/navigation"
+  import type { NavItem } from "$lib/navigation"
   import {
     applyThemePreference,
     effectiveTheme,
@@ -25,14 +25,49 @@
   import LogOutIcon from "@lucide/svelte/icons/log-out"
   import MoonIcon from "@lucide/svelte/icons/moon"
   import SunIcon from "@lucide/svelte/icons/sun"
+  import UsersIcon from "@lucide/svelte/icons/users"
+  import ShieldIcon from "@lucide/svelte/icons/shield"
+  import KeyIcon from "@lucide/svelte/icons/key"
+  import UserRoundIcon from "@lucide/svelte/icons/user-round"
 
   type NavMode = "nav" | "settings"
 
   export let navItems: NavItem[] | null = null
 
-  const normalizeNavItems = (items: NavItem[]) => {
-    const grouped = new Map<string, NavItem[]>()
-    const ungrouped: NavItem[] = []
+  type LocalNavItem = {
+    label: string
+    path: string
+    icon?: string
+    iconComponent?: typeof UsersIcon
+    group?: string
+  }
+
+  const defaultNavGroups: Array<{
+    id: string
+    label: string
+    items: LocalNavItem[]
+  }> = [
+    {
+      id: "identity",
+      label: "Identity",
+      items: [
+        { label: "Users", path: "/admin/users", iconComponent: UsersIcon },
+        { label: "Subjects", path: "/admin/subjects", iconComponent: UserRoundIcon },
+      ],
+    },
+    {
+      id: "access",
+      label: "Access",
+      items: [
+        { label: "Roles", path: "/admin/roles", iconComponent: ShieldIcon },
+        { label: "Permissions", path: "/admin/permissions", iconComponent: KeyIcon },
+      ],
+    },
+  ]
+
+  const normalizeNavItems = (items: LocalNavItem[]) => {
+    const grouped = new Map<string, LocalNavItem[]>()
+    const ungrouped: LocalNavItem[] = []
 
     items.forEach((item) => {
       if (item.group) {
@@ -57,8 +92,9 @@
     return groups
   }
 
-  $: resolvedNavItems = navItems ?? buildAdminNav({ basePath: import.meta.env.BASE_URL })
-  $: navGroups = normalizeNavItems(resolvedNavItems)
+  $: resolvedNavItems = (navItems ?? []) as LocalNavItem[]
+  $: navGroups =
+    resolvedNavItems.length > 0 ? normalizeNavItems(resolvedNavItems) : defaultNavGroups
   $: mobileItems = navGroups.flatMap((group) => group.items)
 
   let mode: NavMode = "nav"
@@ -176,7 +212,11 @@
                       aria-current={currentPath.startsWith(item.path) ? "page" : undefined}
                       aria-label={item.label}
                     >
-                      <span class="size-4 text-foreground" aria-hidden="true">{@html item.icon}</span>
+                      {#if item.iconComponent}
+                        <svelte:component this={item.iconComponent} class="size-4" />
+                      {:else}
+                        <span class="size-4 text-foreground" aria-hidden="true">{@html item.icon}</span>
+                      {/if}
                       <span class="sr-only">{item.label}</span>
                     </a>
                   </li>
@@ -290,7 +330,11 @@
                           : undefined
                       }
                     >
-                      <span class="size-4 text-foreground" aria-hidden="true">{@html item.icon}</span>
+                      {#if item.iconComponent}
+                        <svelte:component this={item.iconComponent} class="size-4" />
+                      {:else}
+                        <span class="size-4 text-foreground" aria-hidden="true">{@html item.icon}</span>
+                      {/if}
                       <span class={$navPreferences.sidebarCollapsed ? "sr-only" : "truncate"}
                         >{item.label}</span
                       >
