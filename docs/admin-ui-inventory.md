@@ -32,8 +32,7 @@ For detailed implementation guidance, see `docs/admin-ui-llm-guide.md`.
 apps/app/src/admin-ui/src/
 ├── pages/                    # Astro page routes (wrappers)
 │   └── <resource>/           # Per-resource routes
-├── panels/                   # Panel modules
-│   └── *.panel.ts
+│   └── *.panel.ts            # Route-aligned panel modules (next to pages)
 ├── islands/                  # Panel runtime + layout renderers
 │   ├── PanelRuntime.svelte
 │   └── LayoutRenderer.svelte
@@ -374,7 +373,7 @@ These resources use handwritten panel modules (not the generic CRUD renderer):
 | Audit Log | audit/index.astro | System-generated, view-only |
 | Error Log | errors/index.astro | System-generated, view-only |
 | Routes | routes/index.astro | Runtime introspection, view-only |
-| Diagnostics | diagnostics.panel.ts | System health, view-only |
+| Diagnostics | diagnostics/index.panel.ts | System health, view-only |
 
 ## Adding New Resources
 
@@ -382,6 +381,6 @@ To add a new admin-managed resource:
 
 1. Create a resource definition in `pages/<resource>/<resource>.resource.ts`
 2. Create Astro pages in `pages/<resource>/` using `ResourcePanelPage` or `PanelPage`
-3. Optionally create route-aligned panel modules in `panels/*.panel.ts` for complex behavior
+3. Optionally create route-aligned panel modules next to the Astro page (`pages/**/<route>.panel.ts`) for complex behavior
 
 See `docs/admin-ui-llm-guide.md` for complete examples and the three-layer architecture.

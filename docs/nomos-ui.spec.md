@@ -108,7 +108,7 @@ The Nomos-UI runtime handles the import and rendering of PanelModules in both SS
 Example PanelModule:
 
 ```typescript
-// users/panels/list.panel.ts
+// users/index.panel.ts
 
 import { definePanelModule } from '@nomos/ui'
 import { userContract } from '../user.contract'

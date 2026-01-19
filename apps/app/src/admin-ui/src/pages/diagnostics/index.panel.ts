@@ -1,6 +1,6 @@
-import { Layouts } from "../lib/layouts"
-import { panelApiFetch } from "../lib/panel-api"
-import type { PanelModule } from "../lib/types"
+import { Layouts } from "../../lib/layouts"
+import { panelApiFetch } from "../../lib/panel-api"
+import type { PanelModule } from "../../lib/types"
 
 type DiagnosticsCoreModule = {
   name: string

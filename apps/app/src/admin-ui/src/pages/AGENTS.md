@@ -9,7 +9,7 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 ## Three-layer model (non-negotiable)
 1. **Astro route template** — required; defines the route and composes the page.
-2. **Panel module** — optional; per-route behavior contract (`src/panels/<name>.panel.ts`).
+2. **Panel module** — optional; per-route behavior contract (`src/pages/**/<route>.panel.ts`, next to the `.astro` page).
 3. **Resource definition** — optional; per-resource defaults (`<name>.resource.ts`).
 
 Notes:
@@ -19,7 +19,7 @@ Notes:
 
 ## Panel runtime (renderer behavior)
 - `PanelRuntime` is a **renderer/assembler**, not a router.
-- Panels are loaded from `src/panels/**/*.panel.ts` or the resource panel factory.
+- Panels are loaded from `src/pages/**/*.panel.ts` or the resource panel factory.
 - Pages should pass `panelModuleKey` for CSR hydration.
 
 ## How agents should reason about admin UI pages
