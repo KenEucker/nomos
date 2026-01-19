@@ -66,6 +66,8 @@ export const createResourceDefinition = (input: ResourceDefinitionPartial): Reso
           searchable: input.list.searchable,
           searchPlaceholder: input.list.searchPlaceholder,
           pageSize: input.list.pageSize ?? 20,
+          rowActions: input.list.rowActions,
+          customRowActions: input.list.customRowActions,
         }
       : undefined,
 

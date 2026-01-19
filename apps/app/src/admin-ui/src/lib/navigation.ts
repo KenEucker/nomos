@@ -1,7 +1,7 @@
 import path from "node:path";
-import type { AdminResourceInput } from "./resources/types";
+import type { ResourceDefinition } from "./types";
 
-type NavItem = {
+export type NavItem = {
   label: string;
   path: string;
   icon: string;
@@ -54,28 +54,29 @@ const buildResourceMetadata = () => {
       (value) =>
         typeof value === "object" &&
         value !== null &&
-        "id" in (value as AdminResourceInput) &&
-        "label" in (value as AdminResourceInput)
-    ) as AdminResourceInput | undefined;
+        "name" in (value as ResourceDefinition) &&
+        ("label" in (value as ResourceDefinition) || "labels" in (value as ResourceDefinition))
+    ) as ResourceDefinition | undefined;
 
     if (!resourceExport) continue;
 
-    const label = resourceExport.labelPlural ?? resourceExport.label ?? toTitleCase(resourceExport.id);
-    resourceMetadata.set(resourceExport.id, {
+    const label =
+      "labels" in resourceExport && resourceExport.labels
+        ? resourceExport.labels.labelPlural
+        : resourceExport.labelPlural ?? resourceExport.label ?? toTitleCase(resourceExport.name);
+    const icon = resourceExport.menu?.icon;
+    const order = resourceExport.menu?.order;
+    const group = resourceExport.menu?.group;
+
+    resourceMetadata.set(resourceExport.name, {
       label,
-      icon: resourceExport.icon,
-      order: resourceExport.menuOrder,
-      group: resourceExport.menuGroup
+      icon,
+      order,
+      group
     });
 
-    if (resourceExport.routeBase) {
-      const normalizedRoute = normalizePath(resourceExport.routeBase);
-      resourceMetadata.set(normalizedRoute, {
-        label,
-        icon: resourceExport.icon,
-        order: resourceExport.menuOrder,
-        group: resourceExport.menuGroup
-      });
+    if (resourceExport.name === "dashboard") {
+      resourceMetadata.set("/", { label, icon, order, group });
     }
   }
 
@@ -153,7 +154,6 @@ const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
     seen.add(topRoute);
 
     const resourceMeta = getResourceMetaForRoute(resourceMetadata, topRoute, basePath);
-    console.log({resourceMeta})
     const label = resourceMeta?.label ?? (topRoute === "/" ? "Dashboard" : toTitleCase(topRoute.slice(1)));
     const icon = resourceMeta?.icon ?? DEFAULT_ICON;
     const order = resourceMeta?.order ?? (topRoute === "/" ? -1 : undefined);

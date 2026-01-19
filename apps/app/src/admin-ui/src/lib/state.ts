@@ -49,12 +49,13 @@ export const parseStateFromUrl = (url: URL): QueryState => {
   }
 }
 
-export const buildPanelCtx = (url: URL, params: Record<string, string>): PanelCtx => {
+export const buildPanelCtx = (url: URL, params: Record<string, string>, request?: Request): PanelCtx => {
   return {
     url: url.toString(),
     params,
     query: parseQueryParams(url),
     state: parseStateFromUrl(url),
+    request,
   }
 }
 

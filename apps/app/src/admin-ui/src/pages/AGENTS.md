@@ -4,33 +4,28 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 ## Mission for AI agents
 - Keep admin UI **route-aligned** and predictable.
-- Use the three-layer model: **Astro route container + (page module / resource definition inputs)**; templates render only.
+- Use the three-layer model: **Astro route container + PanelModule + ResourceDefinition inputs**; templates render only.
 - Prefer the lowest layer that satisfies the use case.
 
 ## Three-layer model (non-negotiable)
 1. **Astro route template** — required; defines the route and composes the page.
-2. **Page module** — optional; per-route behavior contract (`<route>.page.ts`).
+2. **Panel module** — optional; per-route behavior contract (`src/panels/<name>.panel.ts`).
 3. **Resource definition** — optional; per-resource defaults (`<name>.resource.ts`).
 
 Notes:
 - `.astro` files are required by Astro routing; keep them thin.
-- `.page.ts` files are **optional** and apply to a single page only.
+- `.panel.ts` files are **optional** and apply to a single panel.
 - `.resource.ts` files are **optional**, resource-wide, and not route-aware.
 
-## ResourceView (renderer behavior)
-- `ResourceView` is a **renderer/assembler**, not a router.
-- It can render with minimal props; passing a `pageModule` prop is optional.
-- Page module resolution can be automatic.
-
-**View resolution priority** (effective view):
-1. From the page module (if present)
-2. Else from the resource definition (if present)
-3. Else default to `List`
+## Panel runtime (renderer behavior)
+- `PanelRuntime` is a **renderer/assembler**, not a router.
+- Panels are loaded from `src/panels/**/*.panel.ts` or the resource panel factory.
+- Pages should pass `panelModuleKey` for CSR hydration.
 
 ## How agents should reason about admin UI pages
-- Add a **page module** only when a page needs custom behavior, data composition, or page-level actions.
+- Add a **panel module** only when a page needs custom behavior, data composition, or page-level actions.
 - Add a **resource definition** when you want shared defaults across multiple pages for the same resource.
-- A **simple `.astro` file** is sufficient when it only composes `AdminLayout` + `ResourceView`.
+- A **simple `.astro` file** is sufficient when it only composes `AdminLayout` + `ResourcePanelPage` or `PanelPage`.
 
 ## Anti-patterns (do not do this)
 - Wrapper templates that only render an island.
@@ -40,13 +35,14 @@ Notes:
 ## Minimal canonical example (CRUD route)
 ```astro
 ---
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
+import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../lib/resource-panel";
 import { usersResource } from "./users.resource";
+
+const resourceConfig = { resource: usersResource, mode: "list" };
+const panel = createResourcePanel(resourceConfig);
 ---
-<AdminLayout title="Users">
-  <ResourceView client:load definition={usersResource} view="List" />
-</AdminLayout>
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />
 ```
 
 ## Base-path principle

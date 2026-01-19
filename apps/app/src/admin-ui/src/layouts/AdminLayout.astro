@@ -1,16 +1,23 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
-import ThemeToggle from "../components/ui/theme-toggle.svelte";
 import Toast from "../components/ui/toast.svelte";
+import NomosNav from "../components/NomosNav.svelte";
 import ShellState from "../islands/ShellState.svelte";
 import SessionLoader from "../islands/SessionLoader.svelte";
-import NavHighlight from "../islands/NavHighlight.svelte";
-import NavGroupState from "../islands/NavGroupState.svelte";
-import LogoutButton from "../components/LogoutButton.svelte";
-import type { PageAction, PageBreadcrumb } from "../lib/pages/types";
 import type { SessionUser } from "../lib/session";
 import { requireAdminSession } from "../lib/server/session";
 import { buildAdminNav } from "../lib/navigation";
+
+type PageBreadcrumb = {
+  label: string;
+  href?: string;
+};
+
+type PageAction = {
+  label: string;
+  href: string;
+  variant?: "secondary" | "outline" | "ghost" | "destructive";
+};
 
 type Props = {
   title?: string;
@@ -31,34 +38,7 @@ if (sessionResult instanceof Response) {
   return sessionResult;
 }
 const user = sessionResult as SessionUser;
-
-const activePath = Astro.url.pathname;
-
 const navItems = buildAdminNav({ basePath: import.meta.env.BASE_URL });
-const groupedNav = navItems.reduce(
-  (acc, item) => {
-    if (item.group) {
-      const groupItems = acc.groups.get(item.group) ?? [];
-      groupItems.push(item);
-      acc.groups.set(item.group, groupItems);
-    } else {
-      acc.ungrouped.push(item);
-    }
-    return acc;
-  },
-  { ungrouped: [] as typeof navItems, groups: new Map<string, typeof navItems>() }
-);
-const navGroups = Array.from(groupedNav.groups.entries()).map(([label, items]) => ({
-  label,
-  items
-}));
-
-const logoutIcon =
-  '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>';
-
-const hasRole = (role?: string) => !role || user?.roles?.includes(role);
-const isActive = (path: string) =>
-  path === "/admin" ? activePath === "/admin" : activePath === path || activePath.startsWith(`${path}/`);
 
 const actionClass = (variant?: string) => {
   switch (variant) {
@@ -78,137 +58,11 @@ const actionClass = (variant?: string) => {
 <BaseLayout title={title}>
   <ShellState client:load />
   <SessionLoader client:load />
-  <NavHighlight client:load />
-  <NavGroupState client:load />
   <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-    <header class="sticky top-0 z-40 border-b admin-mobile-header border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
-      <div class="flex items-center h-12 gap-2 px-3">
-        <span class="text-lg font-semibold">Nomos</span>
-        <div class="flex-1"></div>
-        <ThemeToggle client:load collapsed={true} />
-        <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-md p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-          data-shell-toggle="mobile"
-          aria-label="Toggle menu"
-          title="Toggle menu"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-        <LogoutButton
-          client:load
-          showLabel={false}
-          label="Log out"
-          icon={logoutIcon}
-          className="p-1 inline-flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-        />
-      </div>
-
-      <nav class="flex overflow-x-auto border-t admin-mobile-nav scrollbar-hide border-slate-200/50 dark:border-slate-800/50">
-        <div class="flex gap-1 px-2 py-2 admin-mobile-nav-items">
-          {navItems.map((item) =>
-            hasRole(item.role) ? (
-              <a
-                href={item.path}
-                data-nav-path={item.path}
-                data-active={isActive(item.path) ? "true" : "false"}
-                class="flex items-center flex-shrink-0 gap-2 text-sm font-medium transition rounded-md admin-mobile-nav-link whitespace-nowrap"
-              >
-                <Fragment set:html={item.icon ?? ""} />
-                <span class="mobile-nav-label">{item.label}</span>
-              </a>
-            ) : null
-          )}
-        </div>
-      </nav>
-      <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
-        <ThemeToggle client:load collapsed={false} />
-      </div>
-    </header>
-
     <div class="flex min-h-screen">
-      <aside class="hidden transition-all duration-200 border-r admin-sidebar border-slate-200 bg-slate-50/40 dark:border-slate-800 dark:bg-slate-900/40 md:block">
-        <div class="sticky top-0 flex flex-col h-full">
-          <div class="flex items-center px-4 border-b admin-sidebar-logo h-14 border-slate-200 dark:border-slate-800">
-            <span class="text-xl font-bold admin-logo-short text-slate-900 dark:text-slate-100">N</span>
-            <span class="text-lg font-semibold admin-logo-full">Nomos Admin</span>
-          </div>
-
-          <div class="px-4 py-3 border-b admin-user-block border-slate-200 dark:border-slate-800">
-            <div class="text-sm truncate text-slate-500 dark:text-slate-400">{user?.email}</div>
-          </div>
-
-          <nav class="flex-1 p-2 space-y-3">
-            <div class="space-y-1">
-              {groupedNav.ungrouped.map((item) =>
-                hasRole(item.role) ? (
-                  <a
-                    href={item.path}
-                    data-nav-path={item.path}
-                    data-active={isActive(item.path) ? "true" : "false"}
-                    class="flex items-center text-sm font-medium transition rounded-md admin-nav-item group"
-                  >
-                    <Fragment set:html={item.icon ?? ""} />
-                    <span class="admin-nav-label">{item.label}</span>
-                  </a>
-                ) : null
-              )}
-            </div>
-            {navGroups.map((group) => (
-              <details
-                class="space-y-2"
-                open={group.items.some((item) => isActive(item.path))}
-                data-nav-group={group.label}
-              >
-                <summary class="admin-nav-group-label px-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 cursor-pointer select-none">
-                  {group.label}
-                </summary>
-                <div class="space-y-1 pl-2">
-                  {group.items.map((item) =>
-                    hasRole(item.role) ? (
-                      <a
-                        href={item.path}
-                        data-nav-path={item.path}
-                        data-active={isActive(item.path) ? "true" : "false"}
-                        class="flex items-center text-sm font-medium transition rounded-md admin-nav-item group"
-                      >
-                        <Fragment set:html={item.icon ?? ""} />
-                        <span class="admin-nav-label">{item.label}</span>
-                      </a>
-                    ) : null
-                  )}
-                </div>
-              </details>
-            ))}
-          </nav>
-
-          <div class="p-2 border-t border-slate-200 dark:border-slate-800">
-            <ThemeToggle client:load collapsed={false} />
-            <button
-              type="button"
-              data-shell-toggle="sidebar"
-              class="flex items-center w-full text-sm font-medium transition rounded-md admin-sidebar-toggle text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-              title="Toggle sidebar"
-            >
-              <svg
-                class="flex-shrink-0 w-5 h-5 admin-sidebar-toggle-icon"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-              <span class="admin-collapse-label">Collapse</span>
-            </button>
-            <LogoutButton
-              client:load
-              label="Log out"
-              icon={logoutIcon}
-              className="admin-sidebar-toggle flex w-full items-center rounded-md text-sm font-medium text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-            />
-          </div>
+      <aside class="w-full border-b border-slate-200 bg-slate-50/40 dark:border-slate-800 dark:bg-slate-900/40 md:w-72 md:border-b-0 md:border-r">
+        <div class="sticky top-0 h-full">
+          <NomosNav client:load {navItems} />
         </div>
       </aside>
 

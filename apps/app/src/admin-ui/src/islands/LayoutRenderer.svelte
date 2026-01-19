@@ -4,6 +4,8 @@
   import PanelHeader from "../components/PanelHeader.svelte"
   import PanelForm from "./PanelForm.svelte"
   import { can } from "../lib/authz/authorize.client"
+  import { apiFetch } from "../lib/api"
+  import { notify, toastError } from "../lib/toast"
 
   export let nodes: LayoutNode[] = []
   export let data: Record<string, any> = {}
@@ -149,6 +151,37 @@
           const id = row?.[idKey]
           if (!id) return
           const basePath = node.props.rowActionBasePath ?? ""
+          if (action.type === "link" && action.href) {
+            const href = action.href.includes("{id}")
+              ? action.href.replace("{id}", encodeURIComponent(String(id)))
+              : action.href
+            window.location.href = href
+            return
+          }
+          if (action.type === "method" && action.endpoint) {
+            const confirmed = action.confirm
+              ? window.confirm(`${action.confirm.title}\n${action.confirm.body ?? ""}`)
+              : true
+            if (!confirmed) return
+            try {
+              const endpoint = action.endpoint.includes("{id}")
+                ? action.endpoint.replace("{id}", encodeURIComponent(String(id)))
+                : action.endpoint
+              await apiFetch(endpoint, { method: action.method ?? "POST" })
+              if (action.toast?.success) {
+                notify(action.toast.success, "success")
+              }
+              if (action.after === "navigate" && action.href) {
+                window.location.href = action.href.replace("{id}", encodeURIComponent(String(id)))
+                return
+              }
+              onStateChange(state)
+            } catch (err) {
+              const message = err instanceof Error ? err.message : "Action failed"
+              toastError(action.toast?.error ?? action.label, message)
+            }
+            return
+          }
           if (action.id === "view") {
             window.location.href = `${basePath}/view?id=${encodeURIComponent(String(id))}`
             return
@@ -163,10 +196,7 @@
             const endpoint = node.props.rowActionDeleteEndpoint.includes("{id}")
               ? node.props.rowActionDeleteEndpoint.replace("{id}", String(id))
               : `${node.props.rowActionDeleteEndpoint}?id=${encodeURIComponent(String(id))}`
-            const response = await fetch(endpoint, { method: "DELETE" })
-            if (!response.ok) {
-              throw new Error(`Delete failed with status ${response.status}`)
-            }
+            await apiFetch(endpoint, { method: "DELETE" })
             onStateChange(state)
           }
         }}
@@ -176,14 +206,10 @@
                 const endpoint = node.props.saveEndpoint!.includes("{id}")
                   ? node.props.saveEndpoint!.replace("{id}", String(row.id))
                   : node.props.saveEndpoint!
-                const response = await fetch(endpoint, {
+                await apiFetch(endpoint, {
                   method: node.props.saveMethod ?? "PATCH",
-                  headers: { "content-type": "application/json" },
                   body: JSON.stringify({ id: row.id, patch }),
                 })
-                if (!response.ok) {
-                  throw new Error(`Save failed with status ${response.status}`)
-                }
                 onStateChange(state)
               }
             : undefined
@@ -236,6 +262,15 @@
         {commands}
         {onCommand}
       />
+    {:else if node.type === "iframe"}
+      <div class="overflow-hidden rounded-xl border bg-card">
+        <iframe
+          src={node.props.src}
+          title={node.props.title}
+          class="w-full border-0"
+          style={`height: ${node.props.height ?? "600px"}`}
+        ></iframe>
+      </div>
     {/if}
   {/each}
 </div>

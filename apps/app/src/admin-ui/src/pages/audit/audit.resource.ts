@@ -1,12 +1,14 @@
-import type { AdminResourceInput } from "../../lib/resources/types";
+import { createResourceDefinition } from "../../lib/utils";
 
-export const auditResource: AdminResourceInput = {
-  id: "audit",
+export const auditResource = createResourceDefinition({
+  name: "audit",
   label: "Audit Log",
   labelPlural: "Audit Log",
-  menuGroup: "System",
-  icon:
-    '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
+  menu: {
+    group: "System",
+    icon:
+      '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
+  },
   endpoints: {
     list: "/_/audit",
   },
@@ -14,7 +16,7 @@ export const auditResource: AdminResourceInput = {
   list: {
     searchable: true,
     searchPlaceholder: "Search audit log...",
-    defaultSort: { key: "timestamp", dir: "desc" },
+    defaultSort: { key: "timestamp", direction: "desc" },
     columns: [
       { key: "timestamp", label: "Timestamp", render: "datetime", sortable: true },
       { key: "event", label: "Event", render: "badge" },
@@ -25,12 +27,13 @@ export const auditResource: AdminResourceInput = {
       { key: "ip", label: "IP", hideOnMobile: true },
       { key: "details", label: "Details", render: "json", hideOnMobile: true },
     ],
+    rowActions: {
+      view: false,
+      edit: false,
+      delete: false,
+    },
   },
-  actions: {
-    create: false,
-    view: false,
-    update: false,
-    delete: false,
+  intents: {
+    read: "admin.access",
   },
-  requiredRole: "admin",
-};
+});

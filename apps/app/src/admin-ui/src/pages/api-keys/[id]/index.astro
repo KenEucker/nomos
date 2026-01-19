@@ -1,10 +1,14 @@
 ---
-import AdminLayout from "../../../layouts/AdminLayout.astro";
-import ResourceView from "../../../islands/ResourceView.svelte";
+import ResourcePanelPage from "../../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../../lib/resource-panel";
 import { apiKeysResource } from "../api-keys.resource";
 
 const { id } = Astro.params;
+const resourceConfig = {
+  resource: apiKeysResource,
+  mode: "view",
+  params: { id },
+};
+const panel = createResourcePanel(resourceConfig);
 ---
-<AdminLayout title="API Key Details">
-  <ResourceView client:load definition={apiKeysResource} view="Show" params={{ id }} />
-</AdminLayout>
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

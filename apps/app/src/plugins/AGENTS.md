@@ -132,19 +132,19 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 ---
 
-### `templates/`
+### `panels/`
 **Purpose**
-- Admin UI template overrides for resource views.
+- Optional custom PanelModules for admin UI pages owned by the plugin.
 
 **Expected exports / entry points**
-- Svelte components at `templates/<resource>/<View>.svelte`.
+- TypeScript modules at `panels/**/*.panel.ts` with a default PanelModule export.
 
 **How the platform discovers/uses it**
-- Admin UI resolves templates using `import.meta.glob` and the override order defined in `resolveTemplate`. (`apps/app/src/admin-ui/src/lib/templates/resolveTemplate.ts`)
+- Plugin pages import PanelModules directly and pass `panelModuleKey` for CSR hydration.
 
 **Common pitfalls**
-- Wrapper templates that only render a single island component (anti-pattern).
-- Placing templates in the wrong path so the resolver cannot find them.
+- Mixing routing logic into panel modules.
+- Exporting panel modules that rely on non-serializable resource definitions.
 
 ---
 
@@ -178,7 +178,7 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 ## Admin UI layering (coordination)
 - Follow the Admin UI guide for the full layering model and renderer behavior. See [../admin-ui/src/pages/AGENTS.md](../admin-ui/src/pages/AGENTS.md).
-- Template override priority (highest → lowest): plugin → platform → resource-specific → default. (`apps/app/src/admin-ui/src/lib/templates/resolveTemplate.ts`)
+- Panel override priority is defined by page composition; prefer PanelModules over templates.
 - Do **not** create wrapper templates that only render a single island.
 
 ## Practical checklist: extend Nomos via a plugin

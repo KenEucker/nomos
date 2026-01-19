@@ -10,6 +10,7 @@
     savePreferences,
     type NavPreferences,
   } from "$lib/navPreferences"
+  import type { NavItem } from "$lib/navigation"
   import {
     applyThemePreference,
     effectiveTheme,
@@ -20,37 +21,81 @@
     type ThemePreference,
   } from "$lib/theme"
   import SettingsIcon from "@lucide/svelte/icons/settings"
-  import UsersIcon from "@lucide/svelte/icons/users"
-  import ShieldIcon from "@lucide/svelte/icons/shield"
-  import KeyIcon from "@lucide/svelte/icons/key"
-  import UserRoundIcon from "@lucide/svelte/icons/user-round"
   import ChevronDownIcon from "@lucide/svelte/icons/chevron-down"
   import LogOutIcon from "@lucide/svelte/icons/log-out"
   import MoonIcon from "@lucide/svelte/icons/moon"
   import SunIcon from "@lucide/svelte/icons/sun"
+  import UsersIcon from "@lucide/svelte/icons/users"
+  import ShieldIcon from "@lucide/svelte/icons/shield"
+  import KeyIcon from "@lucide/svelte/icons/key"
+  import UserRoundIcon from "@lucide/svelte/icons/user-round"
 
   type NavMode = "nav" | "settings"
 
-  const navGroups = [
+  export let navItems: NavItem[] | null = null
+
+  type LocalNavItem = {
+    label: string
+    path: string
+    icon?: string
+    iconComponent?: typeof UsersIcon
+    group?: string
+  }
+
+  const defaultNavGroups: Array<{
+    id: string
+    label: string
+    items: LocalNavItem[]
+  }> = [
     {
       id: "identity",
       label: "Identity",
       items: [
-        { label: "Users", href: "/admin/users", icon: UsersIcon },
-        { label: "Subjects", href: "/admin/subjects", icon: UserRoundIcon },
+        { label: "Users", path: "/admin/users", iconComponent: UsersIcon },
+        { label: "Subjects", path: "/admin/subjects", iconComponent: UserRoundIcon },
       ],
     },
     {
       id: "access",
       label: "Access",
       items: [
-        { label: "Roles", href: "/admin/roles", icon: ShieldIcon },
-        { label: "Permissions", href: "/admin/permissions", icon: KeyIcon },
+        { label: "Roles", path: "/admin/roles", iconComponent: ShieldIcon },
+        { label: "Permissions", path: "/admin/permissions", iconComponent: KeyIcon },
       ],
     },
   ]
 
-  const mobileItems = navGroups.flatMap((group) => group.items)
+  const normalizeNavItems = (items: LocalNavItem[]) => {
+    const grouped = new Map<string, LocalNavItem[]>()
+    const ungrouped: LocalNavItem[] = []
+
+    items.forEach((item) => {
+      if (item.group) {
+        const existing = grouped.get(item.group) ?? []
+        existing.push(item)
+        grouped.set(item.group, existing)
+      } else {
+        ungrouped.push(item)
+      }
+    })
+
+    const groups = Array.from(grouped.entries()).map(([label, items]) => ({
+      id: label,
+      label,
+      items,
+    }))
+
+    if (ungrouped.length) {
+      groups.unshift({ id: "general", label: "General", items: ungrouped })
+    }
+
+    return groups
+  }
+
+  $: resolvedNavItems = (navItems ?? []) as LocalNavItem[]
+  $: navGroups =
+    resolvedNavItems.length > 0 ? normalizeNavItems(resolvedNavItems) : defaultNavGroups
+  $: mobileItems = navGroups.flatMap((group) => group.items)
 
   let mode: NavMode = "nav"
   let draft: NavPreferences = createDraftFromSaved(defaultNavPreferences)
@@ -156,21 +201,25 @@
         <ul class="flex items-center justify-around gap-2 px-2 py-2">
           {#each mobileItems as item}
             <li class="flex-1">
-              <a
-                href={item.href}
-                class={cn(
-                  "flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition",
-                  currentPath.startsWith(item.href)
-                    ? "bg-accent text-foreground"
-                    : "hover:bg-accent hover:text-foreground"
-                )}
-                aria-current={currentPath.startsWith(item.href) ? "page" : undefined}
-                aria-label={item.label}
-              >
-                <svelte:component this={item.icon} class="size-4" />
-                <span class="sr-only">{item.label}</span>
-              </a>
-            </li>
+                    <a
+                      href={item.path}
+                      class={cn(
+                        "flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition",
+                        currentPath.startsWith(item.path)
+                          ? "bg-accent text-foreground"
+                          : "hover:bg-accent hover:text-foreground"
+                      )}
+                      aria-current={currentPath.startsWith(item.path) ? "page" : undefined}
+                      aria-label={item.label}
+                    >
+                      {#if item.iconComponent}
+                        <svelte:component this={item.iconComponent} class="size-4" />
+                      {:else}
+                        <span class="size-4 text-foreground" aria-hidden="true">{@html item.icon}</span>
+                      {/if}
+                      <span class="sr-only">{item.label}</span>
+                    </a>
+                  </li>
           {/each}
           <li class="flex-1">
             <button
@@ -247,7 +296,7 @@
             {@const collapsed =
               $navPreferences.sidebarCollapsed ? false : $navPreferences.collapsedGroups[group.id] ?? false}
           <div class="space-y-2">
-            {#if $navPreferences.showGroupHeadings && !$navPreferences.sidebarCollapsed}
+            {#if $navPreferences.showGroupHeadings && !$navPreferences.sidebarCollapsed && group.label !== "General"}
               <button
                 type="button"
                 class="flex w-full items-center justify-between gap-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
@@ -265,15 +314,15 @@
                 {#each group.items as item}
                   <li>
                     <a
-                      href={item.href}
+                      href={item.path}
                       class={cn(
                         "flex items-center gap-3 rounded-md px-3 text-sm font-medium text-foreground transition",
                         $navPreferences.denseMode ? "py-1.5" : "py-2",
-                        currentPath.startsWith(item.href)
+                        currentPath.startsWith(item.path)
                           ? "bg-accent text-foreground"
                           : "text-muted-foreground hover:bg-accent hover:text-foreground"
                       )}
-                      aria-current={currentPath.startsWith(item.href) ? "page" : undefined}
+                      aria-current={currentPath.startsWith(item.path) ? "page" : undefined}
                       aria-label={item.label}
                       title={
                         $navPreferences.sidebarCollapsed && $navPreferences.enableTooltips
@@ -281,7 +330,11 @@
                           : undefined
                       }
                     >
-                      <svelte:component this={item.icon} class="size-4" />
+                      {#if item.iconComponent}
+                        <svelte:component this={item.iconComponent} class="size-4" />
+                      {:else}
+                        <span class="size-4 text-foreground" aria-hidden="true">{@html item.icon}</span>
+                      {/if}
                       <span class={$navPreferences.sidebarCollapsed ? "sr-only" : "truncate"}
                         >{item.label}</span
                       >

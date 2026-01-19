@@ -7,6 +7,7 @@
   import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "$ui/card"
   import { Input } from "$ui/input"
   import { Button } from "$ui/button"
+  import { Badge } from "$ui/badge"
   import {
     Table,
     TableHeader,
@@ -102,6 +103,44 @@
     const bIsNum = !Number.isNaN(bn) && b !== "" && b !== null && b !== undefined
     if (aIsNum && bIsNum) return an - bn
     return String(a ?? "").localeCompare(String(b ?? ""))
+  }
+
+  const getNestedValue = (obj: Record<string, any>, path: string) =>
+    path.split(".").reduce((acc, key) => (acc ? acc[key] : undefined), obj)
+
+  const formatDate = (value: string) => {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString()
+  }
+
+  const formatDateTime = (value: string) => {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString()
+  }
+
+  const formatCellValue = (value: unknown, render?: ColumnDef["render"]) => {
+    if (value === null || value === undefined) return "—"
+    if (render === "datetime") return formatDateTime(String(value))
+    if (render === "date") return formatDate(String(value))
+    if (render === "boolean") return value ? "Yes" : "No"
+    if (render === "json") return JSON.stringify(value)
+    if (Array.isArray(value)) return value.join(", ")
+    return String(value)
+  }
+
+  const resolveBadgeVariant = (column: ColumnDef, value: unknown) => {
+    if (!column.badgeVariants) return "secondary"
+    const key = String(value)
+    return column.badgeVariants[key] ?? "secondary"
+  }
+
+  const actionVisible = (action: RowAction, row: Row) => {
+    if (!action.showWhen) return true
+    const value = getNestedValue(row, action.showWhen.key)
+    if (action.showWhen.equals !== undefined) return value === action.showWhen.equals
+    if (action.showWhen.notEquals !== undefined) return value !== action.showWhen.notEquals
+    if (action.showWhen.truthy) return Boolean(value)
+    return true
   }
 
   const deriveRows = (
@@ -337,8 +376,42 @@
                 {/if}
 
                 {#each columns as col (col.key)}
-                  <TableCell class={col.hideOnMobile ? "hidden sm:table-cell" : ""}>
-                    {String(row[col.key] ?? "")}
+                  {@const value = getNestedValue(row, col.key)}
+                  <TableCell
+                    class={col.hideOnMobile ? "hidden sm:table-cell" : ""}
+                    style={col.width ? `width: ${col.width}` : undefined}
+                  >
+                    {#if col.render === "badge"}
+                      <Badge variant={resolveBadgeVariant(col, value)}>{formatCellValue(value)}</Badge>
+                    {:else if col.render === "email"}
+                      {#if value == null}
+                        {formatCellValue(value)}
+                      {:else}
+                        <a
+                          class="text-primary underline-offset-2 hover:underline"
+                          href={`mailto:${String(value)}`}
+                        >
+                          {formatCellValue(value)}
+                        </a>
+                      {/if}
+                    {:else if col.render === "link"}
+                      {#if value == null}
+                        {formatCellValue(value)}
+                      {:else}
+                        {@const href = col.linkTemplate
+                          ? col.linkTemplate.replace("{value}", encodeURIComponent(String(value)))
+                          : String(value)}
+                        <a class="text-primary underline-offset-2 hover:underline" href={href}>
+                          {formatCellValue(value)}
+                        </a>
+                      {/if}
+                    {:else if col.render === "json"}
+                      <code class="whitespace-pre-wrap break-words text-xs text-muted-foreground">
+                        {formatCellValue(value, "json")}
+                      </code>
+                    {:else}
+                      {formatCellValue(value, col.render)}
+                    {/if}
                   </TableCell>
                 {/each}
 
@@ -347,20 +420,22 @@
                     <div class="flex justify-end gap-2">
                       {#if rowActions?.length}
                         {#each rowActions as action (action.id)}
-                          {@const actionDenied = isDenied(action.intent)}
-                          <Button
-                            size="sm"
-                            variant={action.variant ?? "secondary"}
-                            onclick={() => {
-                              if (denyIfNeeded(action.intent)) return
-                              onRowAction?.(action, row)
-                            }}
-                            aria-disabled={actionDenied}
-                            class={actionDenied ? "opacity-60 cursor-not-allowed" : ""}
-                            disabled={disableControlsWhileLoading && loading}
-                          >
-                            {action.label}
-                          </Button>
+                          {#if actionVisible(action, row)}
+                            {@const actionDenied = isDenied(action.intent)}
+                            <Button
+                              size="sm"
+                              variant={action.variant ?? "secondary"}
+                              onclick={() => {
+                                if (denyIfNeeded(action.intent)) return
+                                onRowAction?.(action, row)
+                              }}
+                              aria-disabled={actionDenied}
+                              class={actionDenied ? "opacity-60 cursor-not-allowed" : ""}
+                              disabled={disableControlsWhileLoading && loading}
+                            >
+                              {action.label}
+                            </Button>
+                          {/if}
                         {/each}
                       {/if}
                       {#if enableEdit}

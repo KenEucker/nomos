@@ -1,8 +1,7 @@
 ---
-import AdminLayout from "../../../../admin-ui/src/layouts/AdminLayout.astro";
-import ResourceView from "../../../../admin-ui/src/islands/ResourceView.svelte";
-import { sdkResource } from "./sdk.resource";
+import PanelPage from "../../components/PanelPage.astro";
+import sdkPanel from "../../panels/sdk.panel";
+
+const panelModuleKey = "/src/panels/sdk.panel.ts";
 ---
-<AdminLayout title="SDK">
-  <ResourceView client:load definition={sdkResource} view="List" />
-</AdminLayout>
+<PanelPage panel={sdkPanel} panelModuleKey={panelModuleKey} />

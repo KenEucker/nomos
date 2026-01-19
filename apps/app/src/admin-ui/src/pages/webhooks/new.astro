@@ -1,8 +1,11 @@
 ---
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
+import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../lib/resource-panel";
 import { webhooksResource } from "./webhooks.resource";
+const resourceConfig = {
+  resource: webhooksResource,
+  mode: "create",
+};
+const panel = createResourcePanel(resourceConfig);
 ---
-<AdminLayout title="Create Webhook">
-  <ResourceView client:load definition={webhooksResource} view="Form" params={{ mode: "create" }} />
-</AdminLayout>
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

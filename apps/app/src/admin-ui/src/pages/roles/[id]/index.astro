@@ -1,10 +1,14 @@
 ---
-import AdminLayout from "../../../layouts/AdminLayout.astro";
-import ResourceView from "../../../islands/ResourceView.svelte";
+import ResourcePanelPage from "../../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../../lib/resource-panel";
 import { rolesResource } from "../roles.resource";
 
 const { id } = Astro.params;
+const resourceConfig = {
+  resource: rolesResource,
+  mode: "view",
+  params: { id },
+};
+const panel = createResourcePanel(resourceConfig);
 ---
-<AdminLayout title="Role Details">
-  <ResourceView client:load definition={rolesResource} view="Show" params={{ id }} />
-</AdminLayout>
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

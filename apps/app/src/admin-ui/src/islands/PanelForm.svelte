@@ -7,6 +7,8 @@
   import { NativeSelect, NativeSelectOption } from "$ui/native-select"
   import MultiSelect from "../components/svelte-multiselect"
   import type { JSONSchema7 } from "json-schema"
+  import { onMount } from "svelte"
+  import { apiFetch } from "../lib/api"
   import type { FieldDef } from "../lib/types"
 
   export let id: string
@@ -54,8 +56,68 @@
   let fieldErrors: Record<string, string> = {}
   let formError: string | null = null
   let submitting = false
+  let remoteOptions: Record<string, Array<{ value: string; label: string }>> = {}
 
   $: values = { ...values, ...(initialValuesKey ? data?.[initialValuesKey] ?? {} : {}) }
+
+  const resolveHelperText = (field: FieldDef) => field.helperText ?? field.help
+
+  const resolveOptions = (field: FieldDef) => {
+    if (field.options?.length) return field.options
+    return remoteOptions[field.name] ?? []
+  }
+
+  const normalizeOptionsPayload = (
+    field: FieldDef,
+    payload: unknown
+  ): Array<{ value: string; label: string }> => {
+    if (!payload) return []
+
+    const data = (payload as { data?: unknown }).data ?? payload
+    const raw =
+      field.optionsKey && typeof data === "object" && data !== null
+        ? (data as Record<string, unknown>)[field.optionsKey]
+        : data
+
+    const list = Array.isArray(raw) ? raw : []
+
+    return list.map((item) => {
+      if (typeof item === "object" && item !== null) {
+        const valueKey = field.valueKey ?? "id"
+        const labelKey = field.labelKey ?? "name"
+        const record = item as Record<string, unknown>
+        return {
+          value: String(record[valueKey] ?? ""),
+          label: String(record[labelKey] ?? record[valueKey] ?? ""),
+        }
+      }
+      return { value: String(item), label: String(item) }
+    })
+  }
+
+  const loadRemoteOptions = async () => {
+    const fieldsNeedingOptions = fields.filter(
+      (field) => field.optionsEndpoint && !(field.options?.length)
+    )
+
+    if (!fieldsNeedingOptions.length) return
+
+    await Promise.all(
+      fieldsNeedingOptions.map(async (field) => {
+        try {
+          const payload = await apiFetch<Record<string, unknown>>(field.optionsEndpoint!)
+          const options = normalizeOptionsPayload(field, payload)
+          remoteOptions = { ...remoteOptions, [field.name]: options }
+        } catch {
+          remoteOptions = { ...remoteOptions, [field.name]: [] }
+        }
+      })
+    )
+  }
+
+  onMount(() => {
+    loadRemoteOptions()
+  })
 
   const validate = () => {
     const requiredErrors = validateRequiredFields(fields, schema, values)
@@ -81,15 +143,27 @@
     submitting = true
     formError = null
     try {
-      const response = await fetch(submitEndpoint, {
-        method: submitMethod ?? "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(values),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`)
+      const payload: Record<string, any> = {}
+      for (const field of fields) {
+        let value = values[field.name]
+        if (field.transform === "lines" && typeof value === "string") {
+          value = value
+            .split(/[\n,]+/)
+            .map((entry) => entry.trim())
+            .filter(Boolean)
+        }
+        if (field.transform === "csv" && typeof value === "string") {
+          value = value
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter(Boolean)
+        }
+        payload[field.name] = value
       }
+      await apiFetch(submitEndpoint, {
+        method: submitMethod ?? "POST",
+        body: JSON.stringify(payload),
+      })
 
       if (after === "navigate" && redirectTo) {
         window.location.href = redirectTo
@@ -130,7 +204,11 @@
       <div class="space-y-2">
         <label class="text-sm font-medium" for={`${id}-${field.name}`}>{field.label}</label>
 
-        {#if field.type === "textarea"}
+        {#if field.readonly}
+          <div class="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+            {values[field.name] ?? "—"}
+          </div>
+        {:else if field.type === "textarea"}
           <Textarea
             id={`${id}-${field.name}`}
             placeholder={field.placeholder}
@@ -149,18 +227,19 @@
             {/if}
           </div>
         {:else if field.type === "select"}
+          {@const options = resolveOptions(field)}
           <NativeSelect
             id={`${id}-${field.name}`}
             value={values[field.name] ?? ""}
             onchange={(event) => updateValue(field.name, (event.currentTarget as HTMLSelectElement).value)}
           >
             <NativeSelectOption value="">Select {field.label}</NativeSelectOption>
-            {#each field.options ?? [] as option (option.value)}
+            {#each options as option (option.value)}
               <NativeSelectOption value={option.value}>{option.label}</NativeSelectOption>
             {/each}
           </NativeSelect>
         {:else if field.type === "multiselect"}
-          {@const options = field.options ?? []}
+          {@const options = resolveOptions(field)}
           {@const selectedItems = options.filter((option) =>
             Array.isArray(values[field.name]) ? values[field.name].includes(option.value) : false
           )}
@@ -176,17 +255,29 @@
               )}
           />
         {:else}
+          {@const inputType =
+            field.type === "email"
+              ? "email"
+              : field.type === "password"
+                ? "password"
+                : field.type === "number"
+                  ? "number"
+                  : field.type === "date"
+                    ? "date"
+                    : field.type === "datetime"
+                      ? "datetime-local"
+                      : "text"}
           <Input
             id={`${id}-${field.name}`}
-            type={field.type === "email" ? "email" : field.type === "password" ? "password" : "text"}
+            type={inputType}
             placeholder={field.placeholder}
             value={values[field.name] ?? ""}
             oninput={(e) => updateValue(field.name, (e.currentTarget as HTMLInputElement).value)}
           />
         {/if}
 
-        {#if field.helperText && field.type !== "checkbox"}
-          <div class="text-xs text-muted-foreground">{field.helperText}</div>
+        {#if resolveHelperText(field) && field.type !== "checkbox"}
+          <div class="text-xs text-muted-foreground">{resolveHelperText(field)}</div>
         {/if}
 
         {#if fieldErrors[field.name]}
