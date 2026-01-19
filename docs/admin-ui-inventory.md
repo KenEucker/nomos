@@ -276,7 +276,6 @@ export const config = {
 - `input.svelte` - Text input
 - `table.svelte` - Data table
 - `tabs.svelte` - Tab navigation
-- `theme-toggle.svelte` - Dark mode toggle
 
 ### Form Field Components (`islands/fields/`)
 - `TextField.svelte` - Text input

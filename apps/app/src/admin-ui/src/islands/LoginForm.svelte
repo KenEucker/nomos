@@ -1,7 +1,7 @@
 <script lang="ts">
   import { apiPost } from "../lib/api";
-  import Button from "../components/ui/button.svelte";
-  import Input from "../components/ui/input.svelte";
+  import { Input } from "$ui/input"
+  import { Button } from "$ui/button"
 
   let email = $state("");
   let password = $state("");
@@ -26,15 +26,15 @@
 
 <form class="space-y-4" onsubmit={submit}>
   <div>
-    <label for="email" class="mb-1 block text-sm text-slate-600 dark:text-slate-300">Email</label>
+    <label for="email" class="block mb-1 text-sm text-slate-600 dark:text-slate-300">Email</label>
     <Input id="email" type="email" bind:value={email} placeholder="admin@nomos.local" />
   </div>
   <div>
-    <label for="password" class="mb-1 block text-sm text-slate-600 dark:text-slate-300">Password</label>
+    <label for="password" class="block mb-1 text-sm text-slate-600 dark:text-slate-300">Password</label>
     <Input id="password" type="password" bind:value={password} placeholder="••••••" />
   </div>
   {#if error}
-    <div class="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-200">
+    <div class="p-3 text-sm text-red-700 border rounded-md border-red-500/40 bg-red-500/10 dark:text-red-200">
       {error}
     </div>
   {/if}

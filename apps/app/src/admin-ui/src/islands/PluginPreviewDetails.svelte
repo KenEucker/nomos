@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Card from "../components/ui/card.svelte";
-  import Badge from "../components/ui/badge.svelte";
-  import Button from "../components/ui/button.svelte";
+  import { card } from "$ui/card"
+  import { Badge } from "$ui/badge"
+  import { Button } from "$ui/button"
   import { apiGet } from "../lib/api";
 
   let { slug } = $props<{
@@ -105,7 +105,7 @@
       {#if plugin.lastPreview.warnings?.length}
         <Card>
           <h3 class="mb-2 text-sm font-semibold text-slate-300">Warnings</h3>
-          <ul class="space-y-1 text-sm text-slate-200 list-disc list-inside">
+          <ul class="space-y-1 text-sm list-disc list-inside text-slate-200">
             {#each plugin.lastPreview.warnings as warning}
               <li>{warning}</li>
             {/each}

@@ -21,14 +21,19 @@
     type ThemePreference,
   } from "$lib/theme"
   import SettingsIcon from "@lucide/svelte/icons/settings"
-  import ChevronDownIcon from "@lucide/svelte/icons/chevron-down"
-  import LogOutIcon from "@lucide/svelte/icons/log-out"
-  import MoonIcon from "@lucide/svelte/icons/moon"
-  import SunIcon from "@lucide/svelte/icons/sun"
   import UsersIcon from "@lucide/svelte/icons/users"
   import ShieldIcon from "@lucide/svelte/icons/shield"
   import KeyIcon from "@lucide/svelte/icons/key"
   import UserRoundIcon from "@lucide/svelte/icons/user-round"
+  import LogOutIcon from "@lucide/svelte/icons/log-out"
+  import MoonIcon from "@lucide/svelte/icons/moon"
+  import SunIcon from "@lucide/svelte/icons/sun"
+  import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+  } from "../shadcn-svelte/accordion"
 
   type NavMode = "nav" | "settings"
 
@@ -152,14 +157,16 @@
     persistThemePreference(next)
   }
 
-  const toggleGroup = (id: string) => {
-    const collapsed = $navPreferences.collapsedGroups[id] ?? false
+  const handleGroupChange = (nextValue: string[] | string) => {
+    if ($navPreferences.sidebarCollapsed || !$navPreferences.showGroupHeadings) return
+    const nextValues = Array.isArray(nextValue) ? nextValue : [nextValue]
+    const collapsedGroups = navGroups.reduce<Record<string, boolean>>((acc, group) => {
+      acc[group.id] = !nextValues.includes(group.id)
+      return acc
+    }, {})
     savePreferences({
       ...$navPreferences,
-      collapsedGroups: {
-        ...$navPreferences.collapsedGroups,
-        [id]: !collapsed,
-      },
+      collapsedGroups,
     })
   }
 
@@ -186,6 +193,14 @@
   $: appliedPrefs = mode === "settings" ? draft : $navPreferences
   $: updateDocumentPrefs(appliedPrefs)
   $: variant = isMobile || appliedPrefs.sidebarCollapsed ? "quick" : "form"
+  $: expandedGroups = navGroups
+    .filter((group) => {
+      if (appliedPrefs.sidebarCollapsed || !appliedPrefs.showGroupHeadings) return true
+      return !(appliedPrefs.collapsedGroups[group.id] ?? false)
+    })
+    .map((group) => group.id)
+  $: useCompactMobileNav = isMobile
+  $: isRightDock = appliedPrefs.desktopDock === "right" && !isMobile
 </script>
 
   <nav
@@ -196,23 +211,23 @@
     aria-label="Nomos admin navigation"
   >
   {#if mode === "nav"}
-    {#if isMobile}
+    {#if useCompactMobileNav}
       <div class="flex-1">
         <ul class="flex items-center justify-around gap-2 px-2 py-2">
           {#each mobileItems as item}
             <li class="flex-1">
-                    <a
-                      href={item.path}
-                      class={cn(
-                        "flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition",
-                        currentPath.startsWith(item.path)
-                          ? "bg-accent text-foreground"
-                          : "hover:bg-accent hover:text-foreground"
-                      )}
-                      aria-current={currentPath.startsWith(item.path) ? "page" : undefined}
-                      aria-label={item.label}
-                    >
-                      {#if item.iconComponent}
+              <a
+                href={item.path}
+                class={cn(
+                  "flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition",
+                  currentPath.startsWith(item.path)
+                    ? "bg-accent text-foreground"
+                    : "hover:bg-accent hover:text-foreground"
+                )}
+                aria-current={currentPath.startsWith(item.path) ? "page" : undefined}
+                aria-label={item.label}
+              >
+                {#if item.iconComponent}
                         <svelte:component this={item.iconComponent} class="size-4" />
                       {:else}
                         <span class="size-4 text-foreground" aria-hidden="true">{@html item.icon}</span>
@@ -224,7 +239,7 @@
           <li class="flex-1">
             <button
               type="button"
-              class="flex w-full items-center justify-center rounded-md px-3 py-2 text-muted-foreground transition hover:bg-accent hover:text-foreground"
+              class="flex items-center justify-center w-full px-3 py-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Open screen settings"
               on:click={openSettings}
             >
@@ -234,7 +249,7 @@
           <li class="flex-1">
             <button
               type="button"
-              class="flex w-full items-center justify-center rounded-md px-3 py-2 text-muted-foreground transition hover:bg-accent hover:text-foreground"
+              class="flex items-center justify-center w-full px-3 py-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label={`Switch to ${$effectiveTheme === "dark" ? "light" : "dark"} mode`}
               aria-pressed={$effectiveTheme === "dark"}
               on:click={toggleTheme}
@@ -249,7 +264,7 @@
           <li class="flex-1">
             <a
               href="/admin/logout"
-              class="flex items-center justify-center rounded-md px-3 py-2 text-muted-foreground transition hover:bg-accent hover:text-foreground"
+              class="flex items-center justify-center px-3 py-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Log out"
             >
               <LogOutIcon class="size-4" />
@@ -262,7 +277,8 @@
         <div
           class={cn(
             "flex items-center justify-between gap-2 border-b border-border px-3 py-3",
-            $navPreferences.sidebarCollapsed && "w-full"
+            $navPreferences.sidebarCollapsed && "w-full",
+            isRightDock && "flex-row-reverse"
           )}
         >
           <div
@@ -271,7 +287,7 @@
               $navPreferences.sidebarCollapsed && "justify-center w-full"
             )}
           >
-          <div class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-semibold">
+          <div class="flex items-center justify-center text-sm font-semibold rounded-lg size-8 bg-primary text-primary-foreground">
             N
           </div>
           <span class={cn("text-sm font-semibold", $navPreferences.sidebarCollapsed && "sr-only")}
@@ -282,7 +298,7 @@
           type="button"
           class={cn(
             "rounded-md p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground",
-            $navPreferences.sidebarCollapsed && "ml-auto"
+            $navPreferences.sidebarCollapsed && (isRightDock ? "mr-auto" : "ml-auto")
           )}
           aria-label="Open screen settings"
           on:click={openSettings}
@@ -291,67 +307,66 @@
         </button>
       </div>
 
-        <div class="flex-1 space-y-4 overflow-y-auto px-2 py-4">
-          {#each navGroups as group}
-            {@const collapsed =
-              $navPreferences.sidebarCollapsed ? false : $navPreferences.collapsedGroups[group.id] ?? false}
-          <div class="space-y-2">
-            {#if $navPreferences.showGroupHeadings && !$navPreferences.sidebarCollapsed && group.label !== "General"}
-              <button
-                type="button"
-                class="flex w-full items-center justify-between gap-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-                aria-expanded={!collapsed}
-                on:click={() => toggleGroup(group.id)}
-              >
-                <span>{group.label}</span>
-                <ChevronDownIcon
-                  class={cn("size-3 transition-transform", collapsed && "-rotate-90")}
-                />
-              </button>
-            {/if}
-            {#if !collapsed}
-              <ul class="space-y-1">
-                {#each group.items as item}
-                  <li>
-                    <a
-                      href={item.path}
-                      class={cn(
-                        "flex items-center gap-3 rounded-md px-3 text-sm font-medium text-foreground transition",
-                        $navPreferences.denseMode ? "py-1.5" : "py-2",
-                        currentPath.startsWith(item.path)
-                          ? "bg-accent text-foreground"
-                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                      )}
-                      aria-current={currentPath.startsWith(item.path) ? "page" : undefined}
-                      aria-label={item.label}
-                      title={
-                        $navPreferences.sidebarCollapsed && $navPreferences.enableTooltips
-                          ? item.label
-                          : undefined
-                      }
-                    >
-                      {#if item.iconComponent}
-                        <svelte:component this={item.iconComponent} class="size-4" />
-                      {:else}
-                        <span class="size-4 text-foreground" aria-hidden="true">{@html item.icon}</span>
-                      {/if}
-                      <span class={$navPreferences.sidebarCollapsed ? "sr-only" : "truncate"}
-                        >{item.label}</span
-                      >
-                    </a>
-                  </li>
-                {/each}
-              </ul>
-            {/if}
-          </div>
-        {/each}
-      </div>
+        <div class="flex-1 px-2 py-4 overflow-y-auto">
+          <Accordion
+            type="multiple"
+            value={expandedGroups}
+            onValueChange={handleGroupChange}
+            class="space-y-2"
+          >
+            {#each navGroups as group}
+              <AccordionItem value={group.id} class="border-0">
+                {#if $navPreferences.showGroupHeadings && !$navPreferences.sidebarCollapsed}
+                  <AccordionTrigger
+                    class="px-2 py-2 text-xs font-semibold tracking-wide uppercase text-muted-foreground hover:no-underline"
+                  >
+                    <span>{group.label}</span>
+                  </AccordionTrigger>
+                {/if}
+                <AccordionContent class={$navPreferences.showGroupHeadings ? "pb-2" : "pb-0"}>
+                  <ul class="space-y-1">
+                    {#each group.items as item}
+                      <li>
+                        <a
+                          href={item.path}
+                          class={cn(
+                            "flex items-center gap-3 rounded-md px-3 text-sm font-medium text-foreground transition",
+                            $navPreferences.denseMode ? "py-1.5" : "py-2",
+                            currentPath.startsWith(item.path)
+                              ? "bg-accent text-foreground"
+                              : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                          )}
+                          aria-current={currentPath.startsWith(item.path) ? "page" : undefined}
+                          aria-label={item.label}
+                          title={
+                            $navPreferences.sidebarCollapsed && $navPreferences.enableTooltips
+                              ? item.label
+                              : undefined
+                          }
+                        >
+                          {#if item.iconComponent}
+                            <svelte:component this={item.iconComponent} class="size-4" />
+                          {:else}
+                            <span class="size-4 text-foreground" aria-hidden="true">{@html item.icon}</span>
+                          {/if}                          <span class={$navPreferences.sidebarCollapsed ? "sr-only" : "truncate"}
+                            >{item.label}</span
+                          >
+                        </a>
+                      </li>
+                    {/each}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            {/each}
+          </Accordion>
+        </div>
 
-      <div class="border-t border-border px-3 py-3">
+      <div class="py-3 border-t border-border">
         <div
           class={cn(
-            "flex items-center gap-2",
-            $navPreferences.sidebarCollapsed ? "justify-center" : "justify-between"
+            "flex items-center",
+            $navPreferences.sidebarCollapsed ? "justify-center" : "justify-between",
+            isRightDock && "flex-row-reverse"
           )}
         >
           <a

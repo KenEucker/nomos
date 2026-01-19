@@ -2,8 +2,8 @@
   import { onMount } from "svelte";
   import { cn } from "../../lib/utils";
   import { apiGet } from "../../lib/api";
-  import Badge from "../../components/ui/badge.svelte";
-  import Button from "../../components/ui/button.svelte";
+  import { Badge } from "$ui/input"
+  import { Button } from "$ui/button"
 
   interface Props {
     label: string;
@@ -153,13 +153,13 @@
 
       {#if showDropdown && availableOptions.length > 0}
         <div
-          class="absolute z-10 mt-1 w-full max-h-48 overflow-auto rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900"
+          class="absolute z-10 w-full mt-1 overflow-auto bg-white border rounded-md shadow-lg max-h-48 border-slate-200 dark:border-slate-800 dark:bg-slate-900"
           role="listbox"
         >
           {#each availableOptions as option}
             <button
               type="button"
-              class="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+              class="w-full px-3 py-2 text-sm text-left hover:bg-slate-100 dark:hover:bg-slate-800"
               onclick={() => { toggleOption(option.value); showDropdown = false; }}
             >
               {option.label}
