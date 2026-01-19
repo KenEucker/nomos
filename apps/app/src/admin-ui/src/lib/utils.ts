@@ -25,6 +25,12 @@ const pluralize = (value: string) => (value.endsWith("s") ? value : `${value}s`)
 export const createResourceDefinition = (input: ResourceDefinitionPartial): ResourceDefinition => {
   const derivedLabel = titleCase(input.name)
   const derivedLabelPlural = pluralize(derivedLabel)
+  const requireEndpoint = (value: string | undefined, label: string) => {
+    if (!value) {
+      throw new Error(`Missing required endpoint: ${label}`)
+    }
+    return value
+  }
 
   // Resolve labels union:
   // - If input.labels exists, use it
@@ -42,11 +48,11 @@ export const createResourceDefinition = (input: ResourceDefinitionPartial): Reso
     name: input.name,
 
     endpoints: {
-      list: input.endpoints.list,
-      get: input.endpoints.get,
-      create: input.endpoints.create,
-      update: input.endpoints.update,
-      delete: input.endpoints.delete,
+      list: requireEndpoint(input.endpoints.list, "list"),
+      get: requireEndpoint(input.endpoints.get, "get"),
+      create: requireEndpoint(input.endpoints.create, "create"),
+      update: requireEndpoint(input.endpoints.update, "update"),
+      delete: requireEndpoint(input.endpoints.delete, "delete"),
     },
 
     ...resolved,

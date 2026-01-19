@@ -41,7 +41,7 @@ export type ColumnDef = {
   key: string
   label: string
   sortable?: boolean
-  render?: "text" | "badge" | "date" | "datetime" | "boolean" | "json" | "link" | "email"
+  render?: "text" | "badge" | "date" | "datetime" | "boolean" | "json" | "link" | "email" | "action"
   badgeVariants?: Record<string, string>
   linkTemplate?: string
   width?: string

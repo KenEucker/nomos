@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { card } from "$ui/card"
+  import { Card } from "$ui/card"
   import { Badge } from "$ui/badge"
   import { Button } from "$ui/button"
   import { apiGet } from "../lib/api";

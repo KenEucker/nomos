@@ -145,6 +145,13 @@ export const createResourcePanel = ({
     normalizeId(ctxQuery?.id) ??
     normalizeId(params?.["id"])
 
+  const requireId = (id?: string) => {
+    if (!id) {
+      throw new Error("Missing resource id")
+    }
+    return id
+  }
+
   const commandBar = (ctxParams: Record<string, string>, ctxQuery?: Record<string, string | string[]>): ActionDescriptor[] => {
     const id = resolveId(ctxParams, ctxQuery)
     switch (mode) {
@@ -153,6 +160,9 @@ export const createResourcePanel = ({
       case "create":
         return [{ type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read }]
       case "edit":
+        if (!id) {
+          return [{ type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read }]
+        }
         return [
           { type: "link", label: `View ${labels.label}`, href: viewHref(id), intent: intents.read },
           { type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read },
@@ -171,6 +181,9 @@ export const createResourcePanel = ({
           },
         ]
       case "view":
+        if (!id) {
+          return [{ type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read }]
+        }
         return [
           { type: "link", label: `Edit ${labels.label}`, href: editHref(id), intent: intents.update },
           { type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read },
@@ -225,10 +238,7 @@ export const createResourcePanel = ({
       }
     }
 
-    const id = resolveId(ctx.params, ctx.query) ?? normalizeId(new URL(ctx.url).searchParams.get("id"))
-    if (!id) {
-      throw new Error("Missing resource id")
-    }
+    const id = requireId(resolveId(ctx.params, ctx.query) ?? normalizeId(new URL(ctx.url).searchParams.get("id")))
     const endpoint = interpolateEndpoint(resource.endpoints.get, { id })
     const response = await panelApiFetch(ctx, endpoint)
     const { record } = unwrapSingleResponse(response, resource)
@@ -292,40 +302,40 @@ export const createResourcePanel = ({
       ]
     }
 
-    const formTitle = mode === "create" ? `Create ${labels.label}` : `Edit ${labels.label}`
-    const submitLabel = mode === "create" ? `Create ${labels.label}` : `Save ${labels.label}`
-    const id = resolveId(ctx.params, ctx.query) ?? ""
-    const endpoint =
-      mode === "create"
-        ? resource.endpoints.create
-        : interpolateEndpoint(resource.endpoints.update, { id })
+    const isCreate = mode === "create"
+    const formTitle = isCreate ? `Create ${labels.label}` : `Edit ${labels.label}`
+    const submitLabel = isCreate ? `Create ${labels.label}` : `Save ${labels.label}`
+    const id = isCreate
+      ? undefined
+      : requireId(resolveId(ctx.params, ctx.query) ?? normalizeId(new URL(ctx.url).searchParams.get("id")))
+    const endpoint = isCreate ? resource.endpoints.create : interpolateEndpoint(resource.endpoints.update, { id })
 
     return [
       Layouts.rows([
         Layouts.header({
           title: formTitle,
           subtitle:
-            mode === "create"
+            isCreate
               ? `Add a new ${labels.label.toLowerCase()}.`
               : `Update ${labels.label.toLowerCase()} details.`,
-          requiredIntent: mode === "create" ? intents.create : intents.update,
+          requiredIntent: isCreate ? intents.create : intents.update,
         }),
         Layouts.form({
           id: `${resource.name}-${mode}-form`,
           title: formTitle,
           description:
-            mode === "create"
+            isCreate
               ? `Create a new ${labels.label.toLowerCase()} record.`
               : `Edit the ${labels.label.toLowerCase()} record.`,
           schema: resource.schema,
           fields,
           submitLabel,
           submitEndpoint: endpoint,
-          submitMethod: mode === "create" ? "POST" : "PATCH",
+          submitMethod: isCreate ? "POST" : "PATCH",
           initialValuesKey: singleKey,
           after: "navigate",
-          redirectTo: mode === "create" ? listHref : viewHref(id),
-          requiredIntent: mode === "create" ? intents.create : intents.update,
+          redirectTo: isCreate ? listHref : viewHref(requireId(id)),
+          requiredIntent: isCreate ? intents.create : intents.update,
         }),
       ]),
     ]

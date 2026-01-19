@@ -1,6 +1,6 @@
 import { Layouts } from "../../lib/layouts"
 import { panelApiFetch } from "../../lib/panel-api"
-import type { PanelModule } from "../../lib/types"
+import type { LayoutNode, PanelModule } from "../../lib/types"
 
 const panel: PanelModule = {
   id: "docs",
@@ -23,7 +23,7 @@ const panel: PanelModule = {
     const docsAccessible = Boolean(data.docsAccessible)
     const error = data.error as string | null | undefined
 
-    const nodes = [
+    const nodes: LayoutNode[] = [
       Layouts.header({
         title: "API Documentation",
         subtitle: "Browse the OpenAPI reference for Nomos.",

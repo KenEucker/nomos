@@ -50,7 +50,8 @@ const panel: PanelModule = {
           throw new Error("Missing apiRevision from /version response")
         }
 
-        const sdk = await import(`/sdk/client.js?rev=${apiRevision}`)
+        const sdkUrl = `/sdk/client.js?rev=${apiRevision}`
+        const sdk = await import(/* @vite-ignore */ sdkUrl)
         const client = sdk.createNomosClient({
           baseUrl: window.location.origin,
           credentials: "include",
