@@ -64,6 +64,13 @@ export type InMemoryStore = {
   jobRuns: any[];
 };
 
+const hasWildcard = (permissions?: string[]) => permissions?.includes("*") ?? false;
+
+const hasPermission = (permission: string, permissions?: string[]) => {
+  if (!permissions) return false;
+  return permissions.includes(permission) || hasWildcard(permissions);
+};
+
 export function createAuthHelpers(ctx: Omit<Ctx, "auth">): Ctx["auth"] {
   return {
     requireUser: () => {
@@ -73,16 +80,16 @@ export function createAuthHelpers(ctx: Omit<Ctx, "auth">): Ctx["auth"] {
       return ctx.user;
     },
     requirePermission: (permission: string) => {
-      const has = ctx.user?.permissions.includes(permission) ||
-        ctx.apiClient?.permissions.includes(permission);
+      const has = hasPermission(permission, ctx.user?.permissions) ||
+        hasPermission(permission, ctx.apiClient?.permissions);
       if (!has) {
         throw new HttpError(403, "forbidden", "Missing permission", { permission });
       }
     },
     hasPermission: (permission: string) => {
       return (
-        ctx.user?.permissions.includes(permission) ||
-        ctx.apiClient?.permissions.includes(permission) ||
+        hasPermission(permission, ctx.user?.permissions) ||
+        hasPermission(permission, ctx.apiClient?.permissions) ||
         false
       );
     }

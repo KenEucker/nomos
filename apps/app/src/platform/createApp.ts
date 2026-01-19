@@ -249,6 +249,9 @@ export async function createApp(config: ResolvedNomosConfig) {
   if (!db.roles.has("admin")) {
     db.roles.set("admin", Array.from(db.permissions));
   }
+  if (!db.roles.has("platform_admin")) {
+    db.roles.set("platform_admin", ["*"]);
+  }
 
   const authBypassUser = config.modules.auth.enabled
     ? null
@@ -584,7 +587,10 @@ export async function createApp(config: ResolvedNomosConfig) {
 
             if (route.config.roles?.length && ctx.user) {
               const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
-              if (!hasRole) throw new HttpError(403, "forbidden", "Missing role");
+              const hasPlatformAdmin = ctx.user.roles.includes("platform_admin");
+              if (!hasRole && !hasPlatformAdmin) {
+                throw new HttpError(403, "forbidden", "Missing role");
+              }
             }
           }
 
