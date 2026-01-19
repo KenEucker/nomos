@@ -6,6 +6,7 @@
     "dev": "npm --prefix apps/app run dev",
     "build": "npm --prefix apps/app run build",
     "migrate": "npm --prefix apps/app run prisma:migrate",
-    "seed": "npm --prefix apps/app run prisma:seed"
+    "seed": "npm --prefix apps/app run prisma:seed",
+    "nomos": "node scripts/nomos.mjs"
   }
 }
