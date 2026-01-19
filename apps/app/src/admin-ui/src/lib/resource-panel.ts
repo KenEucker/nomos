@@ -173,25 +173,28 @@ export const createResourcePanel = ({
         if (!id) {
           return [{ type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read }]
         }
-        return [
-          { type: "link", label: `View ${labels.label}`, href: viewHref(id), intent: intents.read },
-          { type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read },
-          deleteEndpoint
-            ? {
-                type: "method",
-                label: `Delete ${labels.label}`,
-                endpoint: interpolateEndpoint(deleteEndpoint, { id }),
-                method: "DELETE",
-                intent: intents.delete,
-                confirm: {
-                  title: `Delete ${labels.label}?`,
-                  body: `This will permanently remove the ${labels.label.toLowerCase()}.`,
-                },
-                after: "navigate",
-                toast: { success: `${labels.label} deleted` },
-              }
-            : null,
-        ].filter((action): action is ActionDescriptor => Boolean(action))
+        {
+          const actions: ActionDescriptor[] = [
+            { type: "link", label: `View ${labels.label}`, href: viewHref(id), intent: intents.read },
+            { type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read },
+          ]
+          if (deleteEndpoint) {
+            actions.push({
+              type: "method",
+              label: `Delete ${labels.label}`,
+              endpoint: interpolateEndpoint(deleteEndpoint, { id }),
+              method: "DELETE",
+              intent: intents.delete,
+              confirm: {
+                title: `Delete ${labels.label}?`,
+                body: `This will permanently remove the ${labels.label.toLowerCase()}.`,
+              },
+              after: "navigate",
+              toast: { success: `${labels.label} deleted` },
+            })
+          }
+          return actions
+        }
       case "view":
         if (!id) {
           return [{ type: "link", label: `Back to ${labels.labelPlural}`, href: listHref, intent: intents.read }]
@@ -320,7 +323,7 @@ export const createResourcePanel = ({
       : requireId(resolveId(ctx.params, ctx.query) ?? normalizeId(new URL(ctx.url).searchParams.get("id")))
     const endpoint = isCreate
       ? requireEndpoint(resource.endpoints.create, "create")
-      : interpolateEndpoint(requireEndpoint(resource.endpoints.update, "update"), { id })
+      : interpolateEndpoint(requireEndpoint(resource.endpoints.update, "update"), { id: requireId(id) })
 
     return [
       Layouts.rows([
