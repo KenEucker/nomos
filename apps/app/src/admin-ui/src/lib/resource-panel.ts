@@ -1,6 +1,7 @@
 import type { ResourceDefinition, ColumnDef, FieldDef, RowAction } from "./types"
 import { Layouts } from "./layouts"
 import type { ActionDescriptor, PanelModule } from "./types"
+import { panelApiFetch } from "./panel-api"
 
 export type ResourcePanelMode = "list" | "create" | "edit" | "view"
 
@@ -198,7 +199,7 @@ export const createResourcePanel = ({
         search: serverSideList ? ctx.state.search : undefined,
         sort,
       })
-      const response = await fetch(new URL(url, ctx.url)).then((res) => res.json())
+      const response = await panelApiFetch(ctx, url)
       const { items, total } = unwrapListResponse(response, resource)
       return {
         [listKey]: items,
@@ -223,7 +224,7 @@ export const createResourcePanel = ({
       throw new Error("Missing resource id")
     }
     const endpoint = interpolateEndpoint(resource.endpoints.get, { id })
-    const response = await fetch(new URL(endpoint, ctx.url)).then((res) => res.json())
+    const response = await panelApiFetch(ctx, endpoint)
     const { record } = unwrapSingleResponse(response, resource)
     return {
       [singleKey]: record ?? {},

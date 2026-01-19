@@ -4,6 +4,7 @@
   import PanelHeader from "../components/PanelHeader.svelte"
   import PanelForm from "./PanelForm.svelte"
   import { can } from "../lib/authz/authorize.client"
+  import { apiFetch } from "../lib/api"
   import { notify, toastError } from "../lib/toast"
 
   export let nodes: LayoutNode[] = []
@@ -166,10 +167,7 @@
               const endpoint = action.endpoint.includes("{id}")
                 ? action.endpoint.replace("{id}", encodeURIComponent(String(id)))
                 : action.endpoint
-              const response = await fetch(endpoint, { method: action.method ?? "POST" })
-              if (!response.ok) {
-                throw new Error(`Request failed with status ${response.status}`)
-              }
+              await apiFetch(endpoint, { method: action.method ?? "POST" })
               if (action.toast?.success) {
                 notify(action.toast.success, "success")
               }
@@ -198,10 +196,7 @@
             const endpoint = node.props.rowActionDeleteEndpoint.includes("{id}")
               ? node.props.rowActionDeleteEndpoint.replace("{id}", String(id))
               : `${node.props.rowActionDeleteEndpoint}?id=${encodeURIComponent(String(id))}`
-            const response = await fetch(endpoint, { method: "DELETE" })
-            if (!response.ok) {
-              throw new Error(`Delete failed with status ${response.status}`)
-            }
+            await apiFetch(endpoint, { method: "DELETE" })
             onStateChange(state)
           }
         }}
@@ -211,14 +206,10 @@
                 const endpoint = node.props.saveEndpoint!.includes("{id}")
                   ? node.props.saveEndpoint!.replace("{id}", String(row.id))
                   : node.props.saveEndpoint!
-                const response = await fetch(endpoint, {
+                await apiFetch(endpoint, {
                   method: node.props.saveMethod ?? "PATCH",
-                  headers: { "content-type": "application/json" },
                   body: JSON.stringify({ id: row.id, patch }),
                 })
-                if (!response.ok) {
-                  throw new Error(`Save failed with status ${response.status}`)
-                }
                 onStateChange(state)
               }
             : undefined

@@ -11,7 +11,7 @@ const { panel, panelModuleKey } = Astro.props as {
   panelModuleKey: string
 }
 
-const ctx = buildPanelCtx(Astro.url, {})
+const ctx = buildPanelCtx(Astro.url, {}, Astro.request)
 const data = await panel.query(ctx)
 
 if (!data || typeof data !== "object" || Array.isArray(data)) {

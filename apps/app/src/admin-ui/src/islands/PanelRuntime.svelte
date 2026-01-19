@@ -3,6 +3,7 @@
   import type { ResourcePanelConfig } from "../lib/resource-panel"
   import { onMount } from "svelte"
   import { buildPanelCtx, parseStateFromUrl, updateUrlWithState } from "../lib/state"
+  import { apiFetch } from "../lib/api"
   import { notify, toastError } from "../lib/toast"
   import { uiState } from "../lib/state"
   import LayoutRenderer from "./LayoutRenderer.svelte"
@@ -86,17 +87,10 @@
     try {
       const ctx = buildClientCtx()
       const payload = payloadOverride ?? action.payload?.(ctx, data ?? {})
-      const response = await fetch(action.endpoint, {
+      await apiFetch(action.endpoint, {
         method: action.method ?? "POST",
-        headers: {
-          "content-type": "application/json",
-        },
         body: payload ? JSON.stringify(payload) : undefined,
       })
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`)
-      }
 
       if (action.toast?.success) {
         notify(action.toast.success, "success")

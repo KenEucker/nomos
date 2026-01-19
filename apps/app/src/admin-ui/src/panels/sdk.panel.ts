@@ -1,4 +1,6 @@
 import { Layouts } from "../lib/layouts"
+import { apiGet } from "../lib/api"
+import { panelApiFetch } from "../lib/panel-api"
 import type { PanelModule } from "../lib/types"
 import { sdkResource } from "../pages/sdk/sdk.resource"
 
@@ -41,11 +43,8 @@ const panel: PanelModule = {
 
     if (typeof window !== "undefined") {
       try {
-        const versionResponse = await fetch("/version", { credentials: "include" })
-        if (!versionResponse.ok) {
-          throw new Error(`Version request failed (${versionResponse.status})`)
-        }
-        const version = normalizeOkPayload(await versionResponse.json()) as VersionInfo
+        const versionResponse = await apiGet<VersionInfo>("/version")
+        const version = normalizeOkPayload(versionResponse) as VersionInfo
         const apiRevision = version?.apiRevision
         if (!apiRevision) {
           throw new Error("Missing apiRevision from /version response")
@@ -74,7 +73,7 @@ const panel: PanelModule = {
       }
     }
 
-    const statusResponse = await fetch(new URL("/sdk/status", ctx.url)).then((res) => res.json())
+    const statusResponse = await panelApiFetch(ctx, "/sdk/status")
     const sdkRows = ((statusResponse?.data ?? statusResponse) as { sdk?: SdkStatusRow[] }).sdk ?? []
 
     const cards = [

@@ -1,4 +1,5 @@
 import { Layouts } from "../lib/layouts"
+import { panelApiFetch } from "../lib/panel-api"
 import type { PanelModule } from "../lib/types"
 
 type DiagnosticsCoreModule = {
@@ -34,10 +35,10 @@ const panel: PanelModule = {
   subtitle: "Inspect runtime health and system status.",
   query: async (ctx) => {
     const [overviewResponse, routesResponse, jobsResponse, eventsResponse] = await Promise.all([
-      fetch(new URL("/_/diagnostics", ctx.url)).then((res) => res.json()),
-      fetch(new URL("/_/diagnostics/routes", ctx.url)).then((res) => res.json()),
-      fetch(new URL("/_/diagnostics/jobs", ctx.url)).then((res) => res.json()),
-      fetch(new URL("/_/diagnostics/events", ctx.url)).then((res) => res.json()),
+      panelApiFetch(ctx, "/_/diagnostics"),
+      panelApiFetch(ctx, "/_/diagnostics/routes"),
+      panelApiFetch(ctx, "/_/diagnostics/jobs"),
+      panelApiFetch(ctx, "/_/diagnostics/events"),
     ])
 
     const overview = (overviewResponse?.data ?? overviewResponse) as DiagnosticsOverview

@@ -1,4 +1,5 @@
 import { Layouts } from "../lib/layouts"
+import { panelApiFetch } from "../lib/panel-api"
 import type { PanelModule } from "../lib/types"
 
 const panel: PanelModule = {
@@ -7,18 +8,15 @@ const panel: PanelModule = {
   subtitle: "Browse the OpenAPI reference for Nomos.",
   query: async (ctx) => {
     try {
-      const response = await fetch(new URL("/docs", ctx.url), {
-        method: "HEAD",
-        credentials: "include",
-      })
-      const docsAccessible = response.ok
-      const error =
-        !docsAccessible && response.status === 403
+      await panelApiFetch(ctx, "/openapi.json")
+      return { docsAccessible: true, error: null }
+    } catch (error) {
+      const status = (error as { status?: number }).status
+      const message =
+        status === 403
           ? "API documentation is not accessible. It may be restricted in production."
-          : null
-      return { docsAccessible, error }
-    } catch {
-      return { docsAccessible: false, error: "Failed to check documentation access." }
+          : "Failed to check documentation access."
+      return { docsAccessible: false, error: message }
     }
   },
   layout: (data) => {

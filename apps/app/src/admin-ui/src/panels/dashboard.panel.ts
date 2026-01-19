@@ -1,4 +1,5 @@
 import { Layouts } from "../lib/layouts"
+import { panelApiFetch } from "../lib/panel-api"
 import type { PanelModule } from "../lib/types"
 import { dashboardResource } from "../pages/dashboard.resource"
 
@@ -22,7 +23,7 @@ const panel: PanelModule = {
   query: async (ctx) => {
     const endpoint = dashboardResource.endpoints.list
     if (!endpoint) return { cards: [] }
-    const response = await fetch(new URL(endpoint, ctx.url)).then((res) => res.json())
+    const response = await panelApiFetch(ctx, endpoint)
     return { cards: extractCards(response) }
   },
   layout: (data) => {

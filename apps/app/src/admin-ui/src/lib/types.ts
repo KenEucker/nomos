@@ -12,6 +12,7 @@ export type PanelCtx = {
   params: Record<string, string>
   query: Record<string, string | string[]>
   state: QueryState
+  request?: Request
 }
 
 export type LinkAction = {

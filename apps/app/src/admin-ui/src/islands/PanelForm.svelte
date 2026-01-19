@@ -8,6 +8,7 @@
   import MultiSelect from "../components/svelte-multiselect"
   import type { JSONSchema7 } from "json-schema"
   import { onMount } from "svelte"
+  import { apiFetch } from "../lib/api"
   import type { FieldDef } from "../lib/types"
 
   export let id: string
@@ -104,11 +105,7 @@
     await Promise.all(
       fieldsNeedingOptions.map(async (field) => {
         try {
-          const response = await fetch(field.optionsEndpoint!, { credentials: "include" })
-          if (!response.ok) {
-            throw new Error(`Failed to load options (${response.status})`)
-          }
-          const payload = await response.json()
+          const payload = await apiFetch<Record<string, unknown>>(field.optionsEndpoint!)
           const options = normalizeOptionsPayload(field, payload)
           remoteOptions = { ...remoteOptions, [field.name]: options }
         } catch {
@@ -163,15 +160,10 @@
         }
         payload[field.name] = value
       }
-      const response = await fetch(submitEndpoint, {
+      await apiFetch(submitEndpoint, {
         method: submitMethod ?? "POST",
-        headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       })
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`)
-      }
 
       if (after === "navigate" && redirectTo) {
         window.location.href = redirectTo

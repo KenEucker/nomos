@@ -13,7 +13,7 @@ const { panel, panelModuleKey = "/src/lib/resource.panel.ts", resourceConfig } =
   resourceConfig: ResourcePanelConfig
 }
 
-const ctx = buildPanelCtx(new URL(Astro.request.url), {})
+const ctx = buildPanelCtx(new URL(Astro.request.url), {}, Astro.request)
 const data = await panel.query(ctx)
 
 if (!data || typeof data !== "object" || Array.isArray(data)) {
