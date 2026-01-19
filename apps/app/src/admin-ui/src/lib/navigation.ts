@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { ResourceDefinition } from "./types";
 
-type NavItem = {
+export type NavItem = {
   label: string;
   path: string;
   icon: string;
