@@ -587,8 +587,8 @@ export async function createApp(config: ResolvedNomosConfig) {
 
             if (route.config.roles?.length && ctx.user) {
               const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
-              const hasPlatformAdmin = ctx.user.roles.includes("platform_admin");
-              if (!hasRole && !hasPlatformAdmin) {
+              const hasWildcard = ctx.auth.hasPermission("*");
+              if (!hasRole && !hasWildcard) {
                 throw new HttpError(403, "forbidden", "Missing role");
               }
             }
