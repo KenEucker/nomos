@@ -18,6 +18,7 @@
     "lucide-svelte": "^0.476.0",
     "shadcn-svelte": "^0.9.4",
     "svelte": "^5.46.1",
+    "svelte-sonner": "^1.0.7",
     "tailwind-merge": "^3.0.1"
   },
   "devDependencies": {

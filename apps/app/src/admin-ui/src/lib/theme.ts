@@ -1,60 +1,64 @@
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store"
 
-export type Theme = "light" | "dark";
+export type ThemePreference = "light" | "dark" | "system"
+export type EffectiveTheme = "light" | "dark"
 
-const STORAGE_KEY = "theme";
+export const THEME_STORAGE_KEY = "nomos.theme.v1"
 
-function getInitialTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
+export const themePreference = writable<ThemePreference>("system")
+export const effectiveTheme = writable<EffectiveTheme>("light")
 
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "light" || stored === "dark") {
-    return stored;
+const isBrowser = typeof window !== "undefined"
+const mediaQuery = "(prefers-color-scheme: dark)"
+
+const resolveEffectiveTheme = (preference: ThemePreference): EffectiveTheme => {
+  if (!isBrowser) return "light"
+  if (preference === "system") {
+    return window.matchMedia(mediaQuery).matches ? "dark" : "light"
   }
-
-  // Check system preference
-  if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-    return "light";
-  }
-
-  return "dark";
+  return preference
 }
 
-function createThemeStore() {
-  const { subscribe, set, update } = writable<Theme>("dark");
+const applyThemeClass = (effective: EffectiveTheme) => {
+  if (!isBrowser) return
+  document.documentElement.classList.toggle("dark", effective === "dark")
+}
 
-  return {
-    subscribe,
-    initialize() {
-      const theme = getInitialTheme();
-      set(theme);
-      applyTheme(theme);
-    },
-    toggle() {
-      update((current) => {
-        const next = current === "dark" ? "light" : "dark";
-        localStorage.setItem(STORAGE_KEY, next);
-        applyTheme(next);
-        return next;
-      });
-    },
-    setTheme(theme: Theme) {
-      set(theme);
-      localStorage.setItem(STORAGE_KEY, theme);
-      applyTheme(theme);
+export const applyThemePreference = (preference: ThemePreference) => {
+  const effective = resolveEffectiveTheme(preference)
+  themePreference.set(preference)
+  effectiveTheme.set(effective)
+  applyThemeClass(effective)
+}
+
+export const loadThemePreference = () => {
+  if (!isBrowser) return "system" as ThemePreference
+  const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as ThemePreference | null
+  const preference = stored ?? "system"
+  applyThemePreference(preference)
+  return preference
+}
+
+export const persistThemePreference = (preference: ThemePreference) => {
+  applyThemePreference(preference)
+  if (!isBrowser) return
+  window.localStorage.setItem(THEME_STORAGE_KEY, preference)
+}
+
+export const watchSystemTheme = () => {
+  if (!isBrowser) return () => {}
+  const media = window.matchMedia(mediaQuery)
+  const handler = () => {
+    if (get(themePreference) === "system") {
+      applyThemePreference("system")
     }
-  };
-}
-
-function applyTheme(theme: Theme) {
-  if (typeof document === "undefined") return;
-
-  const root = document.documentElement;
-  if (theme === "dark") {
-    root.classList.add("dark");
-  } else {
-    root.classList.remove("dark");
+  }
+  media.addEventListener("change", handler)
+  return () => {
+    media.removeEventListener("change", handler)
   }
 }
 
-export const theme = createThemeStore();
+export const getEffectiveTheme = (preference: ThemePreference): EffectiveTheme => {
+  return resolveEffectiveTheme(preference)
+}
