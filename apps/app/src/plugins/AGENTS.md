@@ -132,26 +132,14 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 ---
 
-### `panels/`
-**Purpose**
-- Optional custom PanelModules for admin UI pages owned by the plugin.
-
-**Expected exports / entry points**
-- TypeScript modules at `panels/**/*.panel.ts` with a default PanelModule export.
-
-**How the platform discovers/uses it**
-- Plugin pages import PanelModules directly and pass `panelModuleKey` for CSR hydration.
-
-**Common pitfalls**
-- Mixing routing logic into panel modules.
-- Exporting panel modules that rely on non-serializable resource definitions.
-
----
-
 ### `pages/` (Admin UI plugin pages)
 **Purpose**
 - Provide Astro routes for the admin UI from within a plugin.
 - Pages inside a plugin are injected into the admin UI router at build/dev time.
+
+**Panel modules**
+- Optional custom PanelModules live next to the Astro page (for example, `pages/reports/index.panel.ts`).
+- Plugin pages import PanelModules directly and pass `panelModuleKey` for CSR hydration.
 
 **How it works**
 - Any `pages/` directory under a plugin root is treated like an additional `src/pages/` folder.

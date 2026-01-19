@@ -204,7 +204,7 @@ Panel modules are imported directly by `PanelRuntime` for SSR + CSR. For interna
 Diagnostics demonstrates the full Panel Module contract with custom queries and layout composition. The Astro page imports the panel module and passes its module key for CSR hydration.
 
 ```ts
-// apps/app/src/admin-ui/src/panels/diagnostics.panel.ts
+// apps/app/src/admin-ui/src/pages/diagnostics/index.panel.ts
 import type { PanelModule } from "../../lib/types";
 
 const diagnosticsModule: PanelModule = {
@@ -315,7 +315,7 @@ Panels can be stacked or nested by a page when you need multi-surface layouts. U
 |---------|------|
 | Resource definitions | `pages/<resource>/<resource>.resource.ts` |
 | Panel module types | `lib/types.ts` |
-| Panel modules | `panels/*.panel.ts` |
+| Panel modules | `pages/**/<route>.panel.ts` |
 | Panel runtime | `islands/PanelRuntime.svelte` |
 | CRUD panel generator | `lib/resource-panel.ts` |
 | Layout helpers | `lib/layouts.ts` |
@@ -345,7 +345,7 @@ For pages like diagnostics, routes, or audit logs:
 ### Complex Workflow (Handwritten Panel Module)
 
 1. Create resource definition (for base schema)
-2. Create `panels/<resource>.panel.ts` for custom logic
+2. Create `pages/<resource>/<route>.panel.ts` for custom logic
 3. Compose the panel with `PanelPage`
 
 ---

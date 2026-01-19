@@ -1,8 +1,7 @@
-import { apiGet } from "$lib/api"
 import { Layouts } from "../lib/layouts"
 import { panelApiFetch } from "../lib/panel-api"
 import type { PanelModule } from "../lib/types"
-import { dashboardResource } from "../pages/dashboard.resource"
+import { dashboardResource } from "./dashboard.resource"
 
 type DashboardCard = {
   label: string

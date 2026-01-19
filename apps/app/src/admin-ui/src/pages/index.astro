@@ -1,7 +1,7 @@
 ---
 import PanelPage from "../components/PanelPage.astro";
-import dashboardPanel from "../panels/dashboard.panel";
+import dashboardPanel from "./index.panel";
 
-const panelModuleKey = "/src/panels/dashboard.panel.ts";
+const panelModuleKey = "/src/pages/index.panel.ts";
 ---
 <PanelPage panel={dashboardPanel} panelModuleKey={panelModuleKey} />

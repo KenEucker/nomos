@@ -1,6 +1,6 @@
-import { createResourcePanel } from "../lib/resource-panel"
-import type { PanelModule } from "../lib/types"
-import { auditResource } from "../pages/audit/audit.resource"
+import { createResourcePanel } from "../../lib/resource-panel"
+import type { PanelModule } from "../../lib/types"
+import { auditResource } from "./audit.resource"
 
 const basePanel = createResourcePanel({
   resource: auditResource,

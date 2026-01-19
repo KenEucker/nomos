@@ -1,8 +1,8 @@
-import { Layouts } from "../lib/layouts"
-import { apiGet } from "../lib/api"
-import { panelApiFetch } from "../lib/panel-api"
-import type { PanelModule } from "../lib/types"
-import { sdkResource } from "../pages/sdk/sdk.resource"
+import { Layouts } from "../../lib/layouts"
+import { apiGet } from "../../lib/api"
+import { panelApiFetch } from "../../lib/panel-api"
+import type { PanelModule } from "../../lib/types"
+import { sdkResource } from "./sdk.resource"
 
 type SdkStatusRow = {
   id: string

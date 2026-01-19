@@ -129,7 +129,7 @@ For simple cases, this is preferred.
 
 **Resolution order:**
 
-1. Route‑aligned handwritten panel module (`src/panels/*.panel.ts`)
+1. Route‑aligned handwritten panel module (`src/pages/**/<route>.panel.ts`, next to the `.astro` page)
 2. Auto-derived panel behavior from the resource definition (when no handwritten panel module exists)
 
 **When to write a handwritten panel module:**
