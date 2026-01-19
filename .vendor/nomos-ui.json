@@ -1,0 +1,18 @@
+{
+  "source": "github-tarball",
+  "repo": "keneucker/nomos-ui",
+  "branch": "production",
+  "sha": "production",
+  "importedAt": "2026-01-19T00:13:45.348Z",
+  "include": [
+    "src/components",
+    "src/islands",
+    "src/lib",
+    "src/styles"
+  ],
+  "exclude": [
+    "src/pages",
+    "src/shadcn-svelte",
+    "astro.config.*"
+  ]
+}

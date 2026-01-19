@@ -7,8 +7,8 @@ import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import { spawn } from "node:child_process";
 
-const NOMOS_UI_REPO = "nomos-labs/nomos-ui";
-const NOMOS_UI_BRANCH = "main";
+const NOMOS_UI_REPO = "keneucker/nomos-ui";
+const NOMOS_UI_BRANCH = "production";
 const TARBALL_URL = `https://codeload.github.com/${NOMOS_UI_REPO}/tar.gz/refs/heads/${NOMOS_UI_BRANCH}`;
 const DEST_RELATIVE_ROOT = "apps/app/src/admin-ui/src";
 const ALLOWLIST = ["src/components", "src/islands", "src/lib", "src/styles"];
