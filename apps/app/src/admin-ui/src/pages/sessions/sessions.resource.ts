@@ -62,9 +62,6 @@ export const sessionsResource = createResourceDefinition({
     searchable: true,
     searchPlaceholder: "Search by user...",
     pageSize: 20,
-    rowActions: {
-      edit: false,
-    },
     customRowActions: [
       {
         id: "revoke",

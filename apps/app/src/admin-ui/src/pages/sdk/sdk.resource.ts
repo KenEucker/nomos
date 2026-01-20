@@ -23,11 +23,6 @@ export const sdkResource = createResourceDefinition({
     ],
     searchable: false,
     pageSize: 1,
-    rowActions: {
-      view: false,
-      edit: false,
-      delete: false,
-    },
   },
   intents: {
     read: "admin.access",

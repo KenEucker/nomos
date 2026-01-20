@@ -27,11 +27,6 @@ export const auditResource = createResourceDefinition({
       { key: "ip", label: "IP", hideOnMobile: true },
       { key: "details", label: "Details", render: "json", hideOnMobile: true },
     ],
-    rowActions: {
-      view: false,
-      edit: false,
-      delete: false,
-    },
   },
   intents: {
     read: "admin.access",

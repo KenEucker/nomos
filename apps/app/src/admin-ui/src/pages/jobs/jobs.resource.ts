@@ -23,11 +23,6 @@ export const jobsResource = createResourceDefinition({
       { key: "retries", label: "Retries", hideOnMobile: true },
       { key: "schedule", label: "Schedule", hideOnMobile: true },
     ],
-    rowActions: {
-      view: false,
-      edit: false,
-      delete: false,
-    },
   },
   intents: {
     read: "admin.access",

@@ -42,11 +42,6 @@ export const pluginsResource = createResourceDefinition({
       { key: "lastError", label: "Last Error" },
     ],
     defaultSort: { key: "name", direction: "asc" },
-    rowActions: {
-      view: false,
-      edit: false,
-      delete: false,
-    },
     customRowActions: [
       {
         id: "viewPreview",
