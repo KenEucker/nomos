@@ -7,7 +7,7 @@
     "build": "npm --prefix apps/app run build",
     "migrate": "npm --prefix apps/app run prisma:migrate",
     "seed": "npm --prefix apps/app run prisma:seed",
-    "create:nomos": "node packages/create-nomos/dist/index.js"
+    "create:nomos": "node packages/create-nomos/dist/index.js",
     "nomos": "node scripts/nomos.mjs"
   },
   "dependencies": {

@@ -29,17 +29,17 @@
       type="checkbox"
       bind:checked={value}
       disabled={readonly}
-      class="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:focus:ring-slate-600"
+      class="w-4 h-4 rounded border-input text-foreground focus:ring-ring"
     />
-    <span class="text-sm font-medium text-slate-700 dark:text-slate-300">
+    <span class="text-sm font-medium text-foreground">
       {label}
-      {#if required}<span class="text-red-500">*</span>{/if}
+      {#if required}<span class="text-destructive">*</span>{/if}
     </span>
   </label>
   {#if help && !error}
-    <p class="text-xs text-slate-500 dark:text-slate-400">{help}</p>
+    <p class="text-xs text-muted-foreground">{help}</p>
   {/if}
   {#if error}
-    <p class="text-xs text-red-500">{error}</p>
+    <p class="text-xs text-destructive">{error}</p>
   {/if}
 </div>

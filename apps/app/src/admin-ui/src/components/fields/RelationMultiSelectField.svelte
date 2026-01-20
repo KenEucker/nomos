@@ -105,19 +105,19 @@
 </script>
 
 <div class="space-y-1.5">
-  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+  <label class="block text-sm font-medium text-foreground">
     {label}
-    {#if required}<span class="text-red-500">*</span>{/if}
+    {#if required}<span class="text-destructive">*</span>{/if}
   </label>
 
   <!-- Selected items -->
   <div class={cn(
-    "min-h-[2.5rem] p-2 rounded-md border border-slate-300 bg-white dark:border-slate-800 dark:bg-slate-900",
+    "min-h-[2.5rem] p-2 rounded-md border border-input bg-background",
     readonly && "opacity-60",
-    displayError && "border-red-500"
+    displayError && "border-destructive"
   )}>
     {#if value.length === 0}
-      <span class="text-sm text-slate-400 dark:text-slate-500">{placeholder}</span>
+      <span class="text-sm text-muted-foreground">{placeholder}</span>
     {:else}
       <div class="flex flex-wrap gap-1">
         {#each value as v}
@@ -126,7 +126,7 @@
             {#if !readonly}
               <button
                 type="button"
-                class="ml-1 hover:text-red-500"
+                class="ml-1 hover:text-destructive"
                 onclick={() => removeItem(v)}
               >
                 ×
@@ -153,13 +153,13 @@
 
       {#if showDropdown && availableOptions.length > 0}
         <div
-          class="absolute z-10 w-full mt-1 overflow-auto bg-white border rounded-md shadow-lg max-h-48 border-slate-200 dark:border-slate-800 dark:bg-slate-900"
+          class="absolute z-10 w-full mt-1 overflow-auto bg-background border rounded-md shadow-lg max-h-48 border-input"
           role="listbox"
         >
           {#each availableOptions as option}
             <button
               type="button"
-              class="w-full px-3 py-2 text-sm text-left hover:bg-slate-100 dark:hover:bg-slate-800"
+              class="w-full px-3 py-2 text-sm text-left hover:bg-accent"
               onclick={() => { toggleOption(option.value); showDropdown = false; }}
             >
               {option.label}
@@ -171,13 +171,13 @@
   {/if}
 
   {#if loading}
-    <p class="text-xs text-slate-500 dark:text-slate-400">Loading options...</p>
+    <p class="text-xs text-muted-foreground">Loading options...</p>
   {/if}
 
   {#if help && !displayError}
-    <p class="text-xs text-slate-500 dark:text-slate-400">{help}</p>
+    <p class="text-xs text-muted-foreground">{help}</p>
   {/if}
   {#if displayError}
-    <p class="text-xs text-red-500">{displayError}</p>
+    <p class="text-xs text-destructive">{displayError}</p>
   {/if}
 </div>

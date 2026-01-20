@@ -7,7 +7,7 @@ const { subject } = Astro.props as {
 ---
 
 <div class="admin-layout min-h-screen bg-background text-foreground flex flex-col" style="--nomos-header-height: 72px;">
-  <header class="border-b border-border bg-card">
+  <header class="border-b border-border bg-card text-card-foreground">
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
       <div>
         <div class="text-lg font-semibold">Nomos Admin</div>
@@ -20,7 +20,7 @@ const { subject } = Astro.props as {
         }
       </div>
       <a
-        class="rounded-md border px-3 py-2 text-sm font-medium"
+        class="rounded-md border border-border bg-secondary text-secondary-foreground px-3 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors"
         href="/admin/logout"
       >
         Log out

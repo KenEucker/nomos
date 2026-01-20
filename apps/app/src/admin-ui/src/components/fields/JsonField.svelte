@@ -55,9 +55,9 @@
 </script>
 
 <div class="space-y-1.5">
-  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+  <label class="block text-sm font-medium text-foreground">
     {label}
-    {#if required}<span class="text-red-500">*</span>{/if}
+    {#if required}<span class="text-destructive">*</span>{/if}
   </label>
   <textarea
     value={stringValue}
@@ -66,15 +66,15 @@
     {rows}
     oninput={handleInput}
     class={cn(
-      "flex w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-mono text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 ring-offset-white dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:ring-offset-slate-950",
+      "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background",
       readonly && "opacity-60 cursor-not-allowed",
-      displayError && "border-red-500"
+      displayError && "border-destructive"
     )}
   ></textarea>
   {#if help && !displayError}
-    <p class="text-xs text-slate-500 dark:text-slate-400">{help}</p>
+    <p class="text-xs text-muted-foreground">{help}</p>
   {/if}
   {#if displayError}
-    <p class="text-xs text-red-500">{displayError}</p>
+    <p class="text-xs text-destructive">{displayError}</p>
   {/if}
 </div>
