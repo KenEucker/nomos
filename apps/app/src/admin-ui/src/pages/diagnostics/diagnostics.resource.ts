@@ -12,6 +12,13 @@ export const diagnosticsResource = createResourceDefinition({
   endpoints: {
     list: "/_/diagnostics",
   },
+  list: {
+    rowActions: {
+      view: false,
+      edit: false,
+      delete: false,
+    },
+  },
   intents: {
     read: "admin.access",
   },
