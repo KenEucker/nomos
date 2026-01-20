@@ -14,23 +14,23 @@ if (Astro.request.method === "POST") {
 }
 ---
 <BaseLayout title="Clear Audit Log">
-  <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+  <div class="min-h-screen bg-background text-foreground">
     <div class="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-8 sm:px-6">
-      <div class="rounded-xl border border-slate-200 bg-white/40 p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900/40 sm:p-8">
+      <div class="rounded-xl border border-border bg-card/40 p-6 shadow-xl sm:p-8">
         <h1 class="text-xl font-semibold sm:text-2xl">Clear audit log?</h1>
-        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p class="mt-2 text-sm text-muted-foreground">
           This will permanently delete all audit log entries.
         </p>
         <form method="post" class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <a
             href="/admin/audit"
-            class="inline-flex items-center justify-center rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-900"
+            class="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm text-foreground hover:bg-accent"
           >
             Cancel
           </a>
           <button
             type="submit"
-            class="inline-flex items-center justify-center rounded-md bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
+            class="inline-flex items-center justify-center rounded-md bg-destructive px-4 py-2 text-sm text-white hover:bg-destructive/90"
           >
             Clear log
           </button>

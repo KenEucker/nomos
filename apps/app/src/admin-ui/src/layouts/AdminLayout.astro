@@ -43,24 +43,24 @@ const navItems = buildAdminNav({ basePath: import.meta.env.BASE_URL });
 const actionClass = (variant?: string) => {
   switch (variant) {
     case "secondary":
-      return "bg-slate-200 text-slate-900 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700";
+      return "bg-secondary text-secondary-foreground hover:bg-secondary/80";
     case "outline":
-      return "border border-slate-300 text-slate-900 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-900";
+      return "border border-border text-foreground hover:bg-accent hover:text-accent-foreground";
     case "ghost":
-      return "text-slate-900 hover:bg-slate-200 dark:text-slate-100 dark:hover:bg-slate-800";
+      return "text-foreground hover:bg-accent hover:text-accent-foreground";
     case "destructive":
-      return "bg-red-500 text-white hover:bg-red-600";
+      return "bg-destructive text-white hover:bg-destructive/90";
     default:
-      return "bg-slate-900 text-slate-100 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200";
+      return "bg-primary text-primary-foreground hover:bg-primary/90";
   }
 };
 ---
 <BaseLayout title={title}>
   <ShellState client:load />
   <SessionLoader client:load />
-  <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+  <div class="min-h-screen bg-background text-foreground">
     <div class="flex min-h-screen">
-      <aside class="w-full border-b border-slate-200 bg-slate-50/40 dark:border-slate-800 dark:bg-slate-900/40 md:w-72 md:border-b-0 md:border-r">
+      <aside class="w-full border-b border-border bg-card/40 md:w-72 md:border-b-0 md:border-r">
         <div class="sticky top-0 h-full">
           <NomosNav client:load {navItems} />
         </div>
@@ -70,18 +70,18 @@ const actionClass = (variant?: string) => {
         <div class="p-4 sm:p-6 md:p-8">
           <div class="mb-6 space-y-2">
             {breadcrumbs.length > 0 ? (
-              <nav class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <nav class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 {breadcrumbs.map((crumb, index) => (
                   <>
                     {crumb.href ? (
-                      <a class="hover:text-slate-900 dark:hover:text-slate-100" href={crumb.href}>
+                      <a class="hover:text-foreground" href={crumb.href}>
                         {crumb.label}
                       </a>
                     ) : (
                       <span>{crumb.label}</span>
                     )}
                     {index < breadcrumbs.length - 1 ? (
-                      <span class="text-slate-300 dark:text-slate-700">/</span>
+                      <span class="text-border">/</span>
                     ) : null}
                   </>
                 ))}
@@ -91,9 +91,9 @@ const actionClass = (variant?: string) => {
               <div>
                 <h1 class="text-xl font-semibold sm:text-2xl">{title}</h1>
                 {subtitle ? (
-                  <p class="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
+                  <p class="text-sm text-muted-foreground">{subtitle}</p>
                 ) : (
-                  <p class="text-sm text-slate-500 dark:text-slate-400">
+                  <p class="text-sm text-muted-foreground">
                     Signed in as {user?.name}
                   </p>
                 )}
@@ -103,7 +103,7 @@ const actionClass = (variant?: string) => {
                   {actions.map((action) => (
                     <a
                       href={action.href}
-                      class={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-white dark:ring-offset-slate-950 h-9 px-4 py-2 ${actionClass(
+                      class={`inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background h-9 px-4 py-2 ${actionClass(
                         action.variant
                       )}`}
                     >

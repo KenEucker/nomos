@@ -7,12 +7,12 @@
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,
-    "types": ["svelte"],
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "allowArbitraryExtensions": true
+    "allowArbitraryExtensions": true,
+    "types": ["node"]
   },
   "include": ["src/**/*"],
-  "exclude": ["src/platform/sdk/dist/**"]
+  "exclude": ["src/platform/sdk/dist/**", "src/admin-ui/**"]
 }

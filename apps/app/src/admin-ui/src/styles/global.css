@@ -2,27 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Theme-backed matte color for the whole document + transitions */
-:root { --app-bg: #f1f5f9; }     /* slate-100 */
-html.dark { --app-bg: #020617; } /* slate-950 */
-
-:root { color-scheme: light dark; }
-html { color-scheme: light; }
-html.dark { color-scheme: dark; }
-
-html {
-  background-color: var(--app-bg);
-  min-height: 100%;
+/* ============================================================
+   shadcn-svelte Theme Variables
+   ============================================================ */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.129 0.042 264.695);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.129 0.042 264.695);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.129 0.042 264.695);
+  --primary: oklch(0.208 0.042 265.755);
+  --primary-foreground: oklch(0.984 0.003 247.858);
+  --secondary: oklch(0.968 0.007 247.896);
+  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --muted: oklch(0.968 0.007 247.896);
+  --muted-foreground: oklch(0.554 0.046 257.417);
+  --accent: oklch(0.968 0.007 247.896);
+  --accent-foreground: oklch(0.208 0.042 265.755);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.929 0.013 255.508);
+  --input: oklch(0.929 0.013 255.508);
+  --ring: oklch(0.704 0.04 256.788);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.984 0.003 247.858);
+  --sidebar-foreground: oklch(0.129 0.042 264.695);
+  --sidebar-primary: oklch(0.208 0.042 265.755);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.968 0.007 247.896);
+  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
+  --sidebar-border: oklch(0.929 0.013 255.508);
+  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --nomos-nav-width: 240px;
+  --nomos-nav-width-collapsed: 72px;
+  color-scheme: light;
 }
 
-body {
-  min-height: 100%;
-  background-color: transparent; /* html is the matte */
-  @apply transition-colors duration-200 text-slate-900;
+.dark {
+  --background: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.984 0.003 247.858);
+  --card: oklch(0.208 0.042 265.755);
+  --card-foreground: oklch(0.984 0.003 247.858);
+  --popover: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.929 0.013 255.508);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: oklch(0.279 0.041 260.031);
+  --secondary-foreground: oklch(0.984 0.003 247.858);
+  --muted: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.04 256.788);
+  --accent: oklch(0.279 0.041 260.031);
+  --accent-foreground: oklch(0.984 0.003 247.858);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.551 0.027 264.364);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.551 0.027 264.364);
+  color-scheme: dark;
 }
 
-html.dark body {
-  @apply text-slate-100;
+/* ============================================================
+   Base Layer Styles
+   ============================================================ */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    min-height: 100%;
+    background-color: var(--background);
+  }
+  body {
+    min-height: 100%;
+    @apply bg-background text-foreground transition-colors duration-200;
+  }
 }
 
 #swup {
@@ -36,6 +106,9 @@ body.is-changing #swup {
   opacity: 0;
 }
 
+/* ============================================================
+   Legacy Admin Sidebar Styles (for backwards compatibility)
+   ============================================================ */
 body:not(.sidebar-collapsed) .admin-sidebar {
   width: 16rem;
 }
@@ -87,27 +160,15 @@ body.sidebar-collapsed .admin-sidebar-toggle-icon {
 }
 
 .admin-nav-item[data-active="true"] {
-  @apply bg-slate-200 text-slate-900;
-}
-
-html.dark .admin-nav-item[data-active="true"] {
-  @apply text-white bg-slate-800;
+  @apply bg-accent text-accent-foreground;
 }
 
 .admin-nav-item[data-active="false"] {
-  @apply text-slate-600;
-}
-
-html.dark .admin-nav-item[data-active="false"] {
-  @apply text-slate-300;
+  @apply text-muted-foreground;
 }
 
 .admin-nav-item[data-active="false"]:hover {
-  @apply bg-slate-200 text-slate-900;
-}
-
-html.dark .admin-nav-item[data-active="false"]:hover {
-  @apply text-white bg-slate-800;
+  @apply bg-accent text-accent-foreground;
 }
 
 body.mobile-menu-collapsed .mobile-nav-label {
@@ -127,29 +188,20 @@ body:not(.mobile-menu-collapsed) .admin-mobile-nav-items {
 }
 
 .admin-mobile-nav-link[data-active="true"] {
-  @apply bg-slate-200 text-slate-900;
-}
-
-html.dark .admin-mobile-nav-link[data-active="true"] {
-  @apply text-white bg-slate-800;
+  @apply bg-accent text-accent-foreground;
 }
 
 .admin-mobile-nav-link[data-active="false"] {
-  @apply text-slate-600;
-}
-
-html.dark .admin-mobile-nav-link[data-active="false"] {
-  @apply text-slate-400;
+  @apply text-muted-foreground;
 }
 
 .admin-mobile-nav-link[data-active="false"]:hover {
-  @apply bg-slate-200 text-slate-900;
+  @apply bg-accent text-accent-foreground;
 }
 
-html.dark .admin-mobile-nav-link[data-active="false"]:hover {
-  @apply text-white bg-slate-800;
-}
-
+/* ============================================================
+   Utility Classes
+   ============================================================ */
 /* Hide scrollbar while allowing scroll */
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE and Edge */

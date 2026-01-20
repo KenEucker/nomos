@@ -2,7 +2,7 @@
 import "../styles/global.css";
 const { title = "Nomos Admin" } = Astro.props;
 ---
-<html lang="en" class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,19 +10,14 @@ const { title = "Nomos Admin" } = Astro.props;
 
     <script is:inline>
       (function() {
-        const stored = localStorage.getItem("theme");
+        const stored = localStorage.getItem("nomos.theme.v1");
         if (stored === "dark" || (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
           document.documentElement.classList.add("dark");
         }
       })();
     </script>
-    <style is:inline>
-      html { background: #f1f5f9; }
-      html.dark { background: #020617; }
-      :root { color-scheme: light dark; }
-    </style>
   </head>
-  <body class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 mobile-menu-collapsed">
+  <body class="min-h-screen bg-background text-foreground mobile-menu-collapsed">
     <slot />
   </body>
 </html>

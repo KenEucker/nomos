@@ -23,21 +23,21 @@
 </script>
 
 <div class="space-y-1.5">
-  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+  <label class="block text-sm font-medium text-foreground">
     {label}
-    {#if required}<span class="text-red-500">*</span>{/if}
+    {#if required}<span class="text-destructive">*</span>{/if}
   </label>
   <Input
     type="text"
     bind:value
     {placeholder}
     {readonly}
-    className={error ? "border-red-500" : ""}
+    className={error ? "border-destructive" : ""}
   />
   {#if help && !error}
-    <p class="text-xs text-slate-500 dark:text-slate-400">{help}</p>
+    <p class="text-xs text-muted-foreground">{help}</p>
   {/if}
   {#if error}
-    <p class="text-xs text-red-500">{error}</p>
+    <p class="text-xs text-destructive">{error}</p>
   {/if}
 </div>
