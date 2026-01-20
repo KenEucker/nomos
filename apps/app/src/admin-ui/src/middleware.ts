@@ -4,6 +4,7 @@ import { requireAdminSession } from "./lib/server/session";
 import { serverApiGet, ServerApiError } from "./lib/server/api";
 import { computeCapabilities } from "./lib/authz/capabilities.server";
 import type { SessionUser } from "./lib/session";
+import type { Subject, SubjectLevel } from "./lib/auth/subject";
 
 const resolveBasePath = () => {
   const baseUrl = import.meta.env.BASE_URL ?? "/";
@@ -51,7 +52,7 @@ const resolvePluginSlug = (pathname: string, basePath: string) => {
   return pluginRouteMap.get(normalized);
 };
 
-const resolveSubjectLevel = (roles: string[]) => {
+const resolveSubjectLevel = (roles: string[]): SubjectLevel => {
   if (roles.includes("platform_admin") || roles.includes("admin")) return "admin";
   if (roles.includes("editor")) return "manager";
   return "viewer";
@@ -59,7 +60,7 @@ const resolveSubjectLevel = (roles: string[]) => {
 
 const buildAuthPayload = (user: SessionUser) => {
   const level = resolveSubjectLevel(user.roles);
-  const subject = {
+  const subject: Subject = {
     id: user.id,
     name: user.name,
     email: user.email,
