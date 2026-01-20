@@ -1,0 +1,41 @@
+---
+import { login } from "../../nomos/api";
+
+const error = Astro.request.method === "POST" ? await handleLogin() : null;
+
+async function handleLogin() {
+  const formData = await Astro.request.formData();
+  const email = String(formData.get("email") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const response = await login(Astro.request, email, password);
+  if (!response.ok) {
+    return response.error?.message ?? "Login failed";
+  }
+  return null;
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Nomos Login</title>
+  </head>
+  <body>
+    <main>
+      <h1>Nomos Login</h1>
+      <form method="post">
+        <label>
+          Email
+          <input type="email" name="email" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" required />
+        </label>
+        <button type="submit">Sign in</button>
+      </form>
+      {error ? <p role="alert">{error}</p> : null}
+    </main>
+  </body>
+</html>
