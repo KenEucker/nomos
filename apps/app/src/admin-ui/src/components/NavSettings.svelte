@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte"
-  import { buttonVariants } from "$ui/button"
+  import { Button } from "$ui/button"
   import { Switch } from "$ui/switch"
   import type { NavPreferences } from "$lib/navPreferences"
   import { getEffectiveTheme, type ThemePreference } from "$lib/theme"
@@ -38,6 +38,7 @@
     | "enableTooltips"
     | "reduceMotion"
 
+  const buttonVariants = Button.variants
   const toggles: Array<{
     key: BooleanKey
     label: string

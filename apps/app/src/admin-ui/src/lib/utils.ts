@@ -1,6 +1,11 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { ResourceDefinitionPartial, ResourceDefinition, ResourceMenu } from "./types";
+import type {
+  ResourceDefinitionPartial,
+  ResourceDefinition,
+  ResourceMenu,
+  ResourceEndpointValue,
+} from "./types";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -25,6 +30,12 @@ const pluralize = (value: string) => (value.endsWith("s") ? value : `${value}s`)
 export const createResourceDefinition = (input: ResourceDefinitionPartial): ResourceDefinition => {
   const derivedLabel = titleCase(input.name)
   const derivedLabelPlural = pluralize(derivedLabel)
+  const baseEndpoint = `/${input.name}`
+  const idEndpoint = `${baseEndpoint}/{id}`
+  const resolveEndpoint = (value: ResourceEndpointValue | undefined, fallback: string) => {
+    if (value === true) return fallback
+    return value
+  }
 
   // Resolve labels union:
   // - If input.labels exists, use it
@@ -42,11 +53,11 @@ export const createResourceDefinition = (input: ResourceDefinitionPartial): Reso
     name: input.name,
 
     endpoints: {
-      list: input.endpoints.list,
-      get: input.endpoints.get,
-      create: input.endpoints.create,
-      update: input.endpoints.update,
-      delete: input.endpoints.delete,
+      list: resolveEndpoint(input.endpoints?.list, baseEndpoint),
+      get: resolveEndpoint(input.endpoints?.get, idEndpoint),
+      create: resolveEndpoint(input.endpoints?.create, baseEndpoint),
+      update: resolveEndpoint(input.endpoints?.update, idEndpoint),
+      delete: resolveEndpoint(input.endpoints?.delete, idEndpoint),
     },
 
     ...resolved,
