@@ -40,3 +40,22 @@ model Session {
   createdAt DateTime @default(now())
   expiresAt DateTime
 }
+
+model PluginState {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  version         String
+  description     String?
+  source          String
+  status          String
+  enabled         Boolean  @default(false)
+  lastError       String?
+  discoveredAt    DateTime @default(now())
+  installedAt     DateTime?
+  enabledAt       DateTime?
+  updatedAt       DateTime @updatedAt
+  checksum        String?
+  lastPreview     Json?
+  lastPreviewedAt DateTime?
+}

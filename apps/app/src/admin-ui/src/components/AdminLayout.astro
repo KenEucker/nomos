@@ -1,0 +1,38 @@
+---
+import NomosNav from "./NomosNav.svelte"
+
+const { subject } = Astro.props as {
+  subject?: { name?: string; email?: string; level?: string } | null
+}
+---
+
+<div class="admin-layout min-h-screen bg-background text-foreground flex flex-col" style="--nomos-header-height: 72px;">
+  <header class="border-b border-border bg-card">
+    <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+      <div>
+        <div class="text-lg font-semibold">Nomos Admin</div>
+        {
+          subject ? (
+            <div class="text-xs text-muted-foreground">
+              {subject.name ?? "Unknown"} · {subject.email ?? "No email"} · {subject.level ?? "user"}
+            </div>
+          ) : null
+        }
+      </div>
+      <a
+        class="rounded-md border px-3 py-2 text-sm font-medium"
+        href="/admin/logout"
+      >
+        Log out
+      </a>
+    </div>
+  </header>
+  <div class="admin-shell flex-1">
+    <div class="admin-shell-nav">
+      <NomosNav client:load />
+    </div>
+    <main class="admin-shell-main mx-auto w-full max-w-6xl px-6 py-10">
+      <slot />
+    </main>
+  </div>
+</div>

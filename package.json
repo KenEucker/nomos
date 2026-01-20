@@ -8,5 +8,9 @@
     "migrate": "npm --prefix apps/app run prisma:migrate",
     "seed": "npm --prefix apps/app run prisma:seed",
     "create:nomos": "node packages/create-nomos/dist/index.js"
+    "nomos": "node scripts/nomos.mjs"
+  },
+  "dependencies": {
+    "mode-watcher": "^1.1.0"
   }
 }

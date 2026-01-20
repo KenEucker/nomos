@@ -1,15 +1,7 @@
 ---
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
-import { createStaticListModule } from "../../lib/pages";
-import { auditResource } from "./audit.resource";
+import PanelPage from "../../components/PanelPage.astro";
+import auditPanel from "./index.panel";
 
-export const pageModule = createStaticListModule({
-  resourceId: "audit",
-  title: "Audit Log",
-  subtitle: "Review recent admin events and actions.",
-});
+const panelModuleKey = "/src/pages/audit/index.panel.ts";
 ---
-<AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <ResourceView client:load definition={auditResource} view="List" />
-</AdminLayout>
+<PanelPage panel={auditPanel} panelModuleKey={panelModuleKey} />

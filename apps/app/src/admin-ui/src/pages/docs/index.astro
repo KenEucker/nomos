@@ -1,15 +1,7 @@
 ---
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
-import { createStaticListModule } from "../../lib/pages";
-import { docsResource } from "./docs.resource";
+import PanelPage from "../../components/PanelPage.astro";
+import docsPanel from "./index.panel";
 
-export const pageModule = createStaticListModule({
-  resourceId: "docs",
-  title: "API Documentation",
-  subtitle: "Browse the OpenAPI reference for Nomos.",
-});
+const panelModuleKey = "/src/pages/docs/index.panel.ts";
 ---
-<AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <ResourceView client:load definition={docsResource} view="List" />
-</AdminLayout>
+<PanelPage panel={docsPanel} panelModuleKey={panelModuleKey} />

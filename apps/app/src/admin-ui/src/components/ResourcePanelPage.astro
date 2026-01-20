@@ -1,0 +1,46 @@
+---
+import "../styles/global.css"
+import { Toaster } from "$ui/sonner"
+import PanelRuntime from "../islands/PanelRuntime.svelte"
+import { buildPanelCtx } from "../lib/state"
+import type { PanelModule } from "../lib/types"
+import type { ResourcePanelConfig } from "../lib/resource-panel"
+// import AdminLayout from "./AdminLayout.astro"
+import AdminLayout from "../layouts/AdminLayout.astro"
+
+const { panel, panelModuleKey = "/src/lib/resource.panel.ts", resourceConfig } = Astro.props as {
+  panel: PanelModule
+  panelModuleKey: string
+  resourceConfig: ResourcePanelConfig
+}
+
+const ctx = buildPanelCtx(new URL(Astro.request.url), {}, Astro.request)
+const data = await panel.query(ctx)
+
+if (!data || typeof data !== "object" || Array.isArray(data)) {
+  throw new Error("Panel query must return a keyed data bag")
+}
+
+const nodes = panel.layout(data, ctx)
+const commands = panel.commandBar(ctx, data)
+const clientResource = { ...resourceConfig.resource, schema: undefined }
+const clientConfig = { ...resourceConfig, resource: clientResource }
+const authPayload = Astro.locals.auth ?? { subject: null, capabilities: {} }
+const authJson = JSON.stringify(authPayload)
+---
+
+<AdminLayout subject={authPayload.subject}>
+  <div class="space-y-6">
+    <PanelRuntime
+      panelModuleKey={panelModuleKey}
+      initialData={data}
+      initialNodes={nodes}
+      initialCommands={commands}
+      href={Astro.request.url}
+      resourceConfig={clientConfig}
+      client:load
+    />
+  </div>
+  <Toaster client:load />
+</AdminLayout>
+<script type="application/json" id="nomos-auth" set:html={authJson}></script>

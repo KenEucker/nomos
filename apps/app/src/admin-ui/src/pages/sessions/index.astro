@@ -1,8 +1,11 @@
 ---
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
+import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../lib/resource-panel";
 import { sessionsResource } from "./sessions.resource";
+const resourceConfig = {
+  resource: sessionsResource,
+  mode: "list",
+};
+const panel = createResourcePanel(resourceConfig);
 ---
-<AdminLayout title="Sessions">
-  <ResourceView client:load definition={sessionsResource} view="List" />
-</AdminLayout>
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

@@ -2,7 +2,7 @@
 
 > This document instructs **AI agents** (LLMs, copilots, and automated code assistants) on how to **develop, extend, and customize the Nomos platform**.
 >
-> It is intended to be **shipped with Nomos itself** and **copied into new Nomos applications**, where it serves as the canonical source of truth for how Nomos should be evolved—primarily through **plugins**, **resource definitions**, and **page modules**, not ad‑hoc changes.
+> It is intended to be **shipped with Nomos itself** and **copied into new Nomos applications**, where it serves as the canonical source of truth for how Nomos should be evolved—primarily through **plugins**, **resource definitions**, and **panel modules**, not ad‑hoc changes.
 
 ---
 
@@ -74,7 +74,7 @@ The platform is intentionally biased toward making the **80% trivial** and the *
 All admin UI behavior flows through **three distinct layers**.
 
 ```
-Resource Definitions  →  Page Modules  →  Templates
+Resource Definitions  →  Panel Modules  →  Templates
 (Layer 1)               (Layer 2)         (Layer 3)
 ```
 
@@ -108,7 +108,7 @@ You **must not collapse these layers**.
 
 ---
 
-### Layer 2 — Page Modules (Behavior Contracts)
+### Layer 2 — Panel Modules (Behavior Contracts)
 
 **What they are:**
 
@@ -123,16 +123,16 @@ You **must not collapse these layers**.
 
 **Important rule:**
 
-> **Astro route files are allowed to export page modules directly.**
+> **Astro route files are allowed to compose panel modules directly.**
 
 For simple cases, this is preferred.
 
 **Resolution order:**
 
-1. Route‑aligned handwritten page module (`*.page.ts`)
-2. Auto-derived page behavior from the resource definition (when no handwritten page module exists)
+1. Route‑aligned handwritten panel module (`src/pages/**/<route>.panel.ts`, next to the `.astro` page)
+2. Auto-derived panel behavior from the resource definition (when no handwritten panel module exists)
 
-**When to write a handwritten page module:**
+**When to write a handwritten panel module:**
 
 * Multi‑endpoint data composition
 * Conditional workflows
@@ -151,7 +151,7 @@ For simple cases, this is preferred.
 
 **What they do:**
 
-* Render a resolved page module
+* Render a resolved panel module
 * Compose islands and UI primitives
 
 **Override hierarchy (highest → lowest):**
@@ -269,7 +269,7 @@ Some admin screens are **intentionally not CRUD**:
 
 These should be implemented as:
 
-* Handwritten page modules
+* Handwritten panel modules
 * Custom templates
 * View‑only or action‑limited interfaces
 

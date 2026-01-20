@@ -1,15 +1,11 @@
 ---
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
-import { createStaticListModule } from "../../lib/pages";
+import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../lib/resource-panel";
 import { errorsResource } from "./errors.resource";
-
-export const pageModule = createStaticListModule({
-  resourceId: "errors",
-  title: "Errors",
-  subtitle: "Review recent error reports and stack traces.",
-});
+const resourceConfig = {
+  resource: errorsResource,
+  mode: "list",
+};
+const panel = createResourcePanel(resourceConfig);
 ---
-<AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <ResourceView client:load definition={errorsResource} view="List" />
-</AdminLayout>
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

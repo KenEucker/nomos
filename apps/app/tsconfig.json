@@ -13,5 +13,6 @@
     "skipLibCheck": true,
     "allowArbitraryExtensions": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["src/platform/sdk/dist/**"]
 }

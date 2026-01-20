@@ -3,7 +3,7 @@ import { serverApiGet, ServerApiError } from "./api";
 
 type AstroContext = {
   request: Request;
-  redirect: (path: string, status?: number) => Response;
+  redirect: (path: string, status?: 300 | 301 | 302 | 303 | 304 | 307 | 308) => Response;
 };
 
 export async function requireAdminSession(Astro: AstroContext) {

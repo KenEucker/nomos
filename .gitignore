@@ -144,3 +144,5 @@ vite.config.ts.timestamp-*
 # Local uploads and SQLite databases
 .local-uploads/
 apps/app/prisma/dev.db
+
+.DS_Store

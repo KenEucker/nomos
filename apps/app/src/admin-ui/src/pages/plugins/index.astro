@@ -1,0 +1,11 @@
+---
+import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../lib/resource-panel";
+import { pluginsResource } from "./plugins.resource";
+const resourceConfig = {
+  resource: pluginsResource,
+  mode: "list",
+};
+const panel = createResourcePanel(resourceConfig);
+---
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

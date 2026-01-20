@@ -1,8 +1,11 @@
 ---
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
+import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../lib/resource-panel";
 import { apiKeysResource } from "./api-keys.resource";
+const resourceConfig = {
+  resource: apiKeysResource,
+  mode: "list",
+};
+const panel = createResourcePanel(resourceConfig);
 ---
-<AdminLayout title="API Keys">
-  <ResourceView client:load definition={apiKeysResource} view="List" />
-</AdminLayout>
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

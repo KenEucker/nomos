@@ -6,9 +6,9 @@ This document provides a comprehensive inventory of the Nomos admin UI system, d
 
 The admin UI uses a **three-layer model**:
 
-1. **Resource Definitions** (shorthand input) - Declarative configuration for simple CRUD
-2. **Page Modules** (rendering contract) - The interface between data and templates
-3. **Templates** (Svelte renderers) - Overrideable UI components
+1. **Resource Definitions** (data-only) - Declarative configuration for simple CRUD
+2. **Panel Modules** (rendering contract) - The interface between data and UI
+3. **Panels** (runtime instances) - Rendered by the panel runtime with layout nodes
 
 For detailed implementation guidance, see `docs/admin-ui-llm-guide.md`.
 
@@ -32,25 +32,17 @@ For detailed implementation guidance, see `docs/admin-ui-llm-guide.md`.
 apps/app/src/admin-ui/src/
 ├── pages/                    # Astro page routes (wrappers)
 │   └── <resource>/           # Per-resource routes
-├── islands/                  # Svelte interactive components (surfaces)
-│   ├── AdminResourceList.svelte
-│   ├── AdminResourceForm.svelte
-│   ├── AdminResourceShow.svelte
-│   └── FieldRenderer.svelte
+│   └── *.panel.ts            # Route-aligned panel modules (next to pages)
+├── islands/                  # Panel runtime + layout renderers
+│   ├── PanelRuntime.svelte
+│   └── LayoutRenderer.svelte
 ├── components/
 │   ├── ui/                   # Shadcn UI components
 │   └── fields/               # Form field components
-├── templates/                # View templates (overrideable)
-│   └── _default/             # Generic fallback templates
 ├── lib/
-│   ├── resources/            # Resource definition system
-│   │   └── types.ts          # Type definitions + normalization
-│   ├── pages/                # Page module system
-│   │   ├── types.ts          # Page module interfaces
-│   │   ├── compileFromResource.ts
-│   │   └── resolvePageModule.ts
-│   ├── templates/            # Template resolution
-│   │   └── resolveTemplate.ts
+│   ├── types.ts              # Panel + resource definitions
+│   ├── resource-panel.ts     # CRUD panel generator
+│   ├── layouts.ts            # Layout node helpers
 │   └── api.ts, session.ts, toast.ts
 ├── layouts/                  # HTML layouts
 └── styles/                   # Global CSS
@@ -283,7 +275,6 @@ export const config = {
 - `input.svelte` - Text input
 - `table.svelte` - Data table
 - `tabs.svelte` - Tab navigation
-- `theme-toggle.svelte` - Dark mode toggle
 
 ### Form Field Components (`islands/fields/`)
 - `TextField.svelte` - Text input
@@ -373,24 +364,23 @@ export const config = {
 
 ## View-Only Resources (Not Admin-Managed)
 
-These resources use page modules + custom templates (not the generic CRUD renderer):
+These resources use handwritten panel modules (not the generic CRUD renderer):
 
 | Resource | Page | Notes |
 |----------|------|-------|
-| Jobs | JobsPage.svelte | System-managed, view + trigger only |
-| Webhooks | WebhooksPage.svelte | Platform-configured, view-only |
-| Audit Log | AuditPage.svelte | System-generated, view-only |
-| Error Log | ErrorsPage.svelte | System-generated, view-only |
-| Routes | RoutesPage.svelte | Runtime introspection, view-only |
-| Diagnostics | DiagnosticsPage.svelte | System health, view-only |
+| Jobs | jobs/index.astro | System-managed, view + trigger only |
+| Webhooks | webhooks/index.astro | Platform-configured, view-only |
+| Audit Log | audit/index.astro | System-generated, view-only |
+| Error Log | errors/index.astro | System-generated, view-only |
+| Routes | routes/index.astro | Runtime introspection, view-only |
+| Diagnostics | diagnostics/index.panel.ts | System health, view-only |
 
 ## Adding New Resources
 
 To add a new admin-managed resource:
 
 1. Create a resource definition in `pages/<resource>/<resource>.resource.ts`
-2. Create Astro pages in `pages/<resource>/` using `ResourceView`
-3. Optionally create route-aligned page modules in `pages/<resource>/*.page.ts` for complex behavior
-4. Optionally create template overrides in `templates/<resource>/` for custom rendering
+2. Create Astro pages in `pages/<resource>/` using `ResourcePanelPage` or `PanelPage`
+3. Optionally create route-aligned panel modules next to the Astro page (`pages/**/<route>.panel.ts`) for complex behavior
 
 See `docs/admin-ui-llm-guide.md` for complete examples and the three-layer architecture.

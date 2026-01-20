@@ -50,3 +50,21 @@ function createToastStore() {
 }
 
 export const toasts = createToastStore();
+
+export const notify = (message: string, type: ToastType = "info") => {
+  switch (type) {
+    case "success":
+      return toasts.success(message)
+    case "error":
+      return toasts.error(message)
+    case "warning":
+      return toasts.warning(message)
+    default:
+      return toasts.info(message)
+  }
+}
+
+export const toastError = (title: string, message: string) => {
+  const combined = title ? `${title}: ${message}` : message
+  toasts.error(combined)
+}

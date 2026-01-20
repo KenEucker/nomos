@@ -14,13 +14,13 @@ To add a new admin CRUD resource:
 ### Canonical Resource Definition (Short Example)
 
 ```typescript
-import type { AdminResourceInput } from "../../lib/resources/types";
+import { createResourceDefinition } from "../../lib/utils";
 
-export const widgetsResource: AdminResourceInput = {
-  id: "widgets",
+export const widgetsResource = createResourceDefinition({
+  name: "widgets",
   label: "Widget",
   labelPlural: "Widgets",
-  icon: "folder",
+  menu: { icon: "folder" },
   endpoints: {
     list: "/widgets",
     get: "/widgets/{id}",
@@ -28,46 +28,42 @@ export const widgetsResource: AdminResourceInput = {
     update: "/widgets/{id}",
     delete: "/widgets/{id}",
   },
-  list: { columns: [{ key: "name", label: "Name", sortable: true }] },
-  form: { fields: [{ name: "name", label: "Name", type: "text", required: true }] },
-  requiredRole: "admin",
-};
+  list: {
+    columns: [{ key: "name", label: "Name", sortable: true }],
+    defaultSort: { key: "createdAt", direction: "desc" },
+  },
+  form: {
+    fields: [{ name: "name", label: "Name", type: "text", required: true }],
+  },
+  intents: {
+    read: "admin.access",
+    create: "admin.access",
+    update: "admin.access",
+    delete: "admin.access",
+  },
+});
 ```
 
 ### Canonical Resource Screens (Short Example)
 
 ```astro
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
-import { createStaticListModule } from "../../lib/pages";
+import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../lib/resource-panel";
 import { widgetsResource } from "./widgets.resource";
 
-export const pageModule = createStaticListModule({
-  resourceId: "widgets",
-  title: "Widgets",
-  subtitle: "Manage widgets.",
-});
+const resourceConfig = { resource: widgetsResource, mode: "list" };
+const panel = createResourcePanel(resourceConfig);
 ---
 
-<!-- List -->
-<BaseLayout title={pageModule.title}>
-  <ResourceView client:load definition={widgetsResource} view="List" />
-</BaseLayout>
-
-<!-- Create -->
-<ResourceView client:load definition={widgetsResource} view="Form" params={{ mode: "create" }} />
-
-<!-- Show -->
-<ResourceView client:load definition={widgetsResource} view="Show" params={{ id: "123" }} />
-
-<!-- Edit -->
-<ResourceView client:load definition={widgetsResource} view="Form" params={{ id: "123", mode: "edit" }} />
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />
 ```
 
+Use `mode: "create"`, `"edit"`, or `"view"` in route-specific pages to render create/edit/show panels.
+
 **Anti-patterns:**
-* Do not create `templates/<resource>/<View>.svelte` files that only render a single island component.
-* Do not create adjacent `List.ts` / `Detail.ts` files for the same route; keep `pageModule` in the route’s `index.astro`.
+* Do not create wrapper panels that only render another panel unchanged.
+* Do not create adjacent `List.ts` / `Detail.ts` files for the same route; use the CRUD panel generator in `ResourcePanelPage`.
 
 ## Resource Definition
 
@@ -83,18 +79,18 @@ apps/app/src/admin-ui/src/pages/<resource>/<resource>.resource.ts
 Create a new file (e.g., `widgets.ts`):
 
 ```typescript
-import type { AdminResourceInput } from "../../lib/resources/types";
+import { createResourceDefinition } from "../../lib/utils";
 
-export const widgetsResource: AdminResourceInput = {
+export const widgetsResource = createResourceDefinition({
   // Unique identifier for the resource
-  id: "widgets",
+  name: "widgets",
 
   // Display names
   label: "Widget",           // Singular
   labelPlural: "Widgets",    // Plural
 
   // Icon for navigation (see AppShell.svelte for available icons)
-  icon: "folder",
+  menu: { icon: "folder" },
 
   // API endpoints
   endpoints: {
@@ -112,7 +108,7 @@ export const widgetsResource: AdminResourceInput = {
       { key: "status", label: "Status", render: "badge" },
       { key: "createdAt", label: "Created", sortable: true, render: "datetime" }
     ],
-    defaultSort: { key: "createdAt", dir: "desc" },
+    defaultSort: { key: "createdAt", direction: "desc" },
     searchable: true,
     searchPlaceholder: "Search widgets...",
     pageSize: 20
@@ -131,13 +127,12 @@ export const widgetsResource: AdminResourceInput = {
       {
         name: "description",
         label: "Description",
-        type: "textarea",
-        rows: 4
+        type: "textarea"
       },
       {
         name: "status",
         label: "Status",
-        type: "enum",
+        type: "select",
         options: [
           { value: "active", label: "Active" },
           { value: "inactive", label: "Inactive" }
@@ -146,31 +141,34 @@ export const widgetsResource: AdminResourceInput = {
     ]
   },
 
-  // Authorization
-  requiredRole: "admin",
+  // Intents for policy gating
+  intents: {
+    read: "admin.access",
+    create: "admin.access",
+    update: "admin.access",
+    delete: "admin.access",
+  },
 
   // Response data keys
   dataKey: "widgets",        // Key in list response
   singleDataKey: "widget"    // Key in single item response
-};
+});
 ```
 
 ### Field Types
 
 | Type | Description | Additional Properties |
 |------|-------------|----------------------|
-| `text` | Single-line text input | `placeholder`, `minLength`, `maxLength` |
+| `text` | Single-line text input | `placeholder`, `required` |
 | `email` | Email input with validation | `placeholder` |
 | `password` | Password input (hidden) | `placeholder` |
-| `number` | Numeric input | `min`, `max`, `step` |
-| `textarea` | Multi-line text | `rows` |
-| `boolean` | Checkbox toggle | - |
+| `number` | Numeric input | - |
+| `textarea` | Multi-line text | - |
+| `checkbox` | Checkbox toggle | - |
 | `datetime` | Date and time picker | - |
 | `date` | Date only picker | - |
-| `enum` | Dropdown select | `options: [{value, label}]` |
-| `json` | JSON editor with validation | `rows` |
-| `relation` | Single relation (foreign key) | `relationResource`, `valueKey`, `labelKey`, `optionsEndpoint` |
-| `relation_many` | Many-to-many relation | `relationResource`, `valueKey`, `labelKey`, `optionsEndpoint` |
+| `select` | Dropdown select | `options`, `optionsEndpoint`, `optionsKey` |
+| `multiselect` | Multi-select | `options`, `optionsEndpoint`, `optionsKey` |
 
 ### Field Properties
 
@@ -211,14 +209,18 @@ For list view columns:
 
 ## Wire the Resource in Astro Routes
 
-Import the resource definition directly from the route folder and pass it to `ResourceView`:
+Import the resource definition directly from the route folder and pass it to `ResourcePanelPage`:
 
 ```astro
 ---
-import ResourceView from "../../islands/ResourceView.svelte";
+import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../lib/resource-panel";
 import { widgetsResource } from "./widgets.resource";
 ---
-<ResourceView client:load definition={widgetsResource} view="List" />
+const resourceConfig = { resource: widgetsResource, mode: "list" };
+const panel = createResourcePanel(resourceConfig);
+---
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />
 ```
 
 ## Backend API Endpoints

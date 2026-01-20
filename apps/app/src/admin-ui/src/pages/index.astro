@@ -1,15 +1,7 @@
 ---
-import AdminLayout from "../layouts/AdminLayout.astro";
-import ResourceView from "../islands/ResourceView.svelte";
-import { createStaticListModule } from "../lib/pages";
-import { dashboardResource } from "./dashboard.resource";
+import PanelPage from "../components/PanelPage.astro";
+import dashboardPanel from "./index.panel";
 
-export const pageModule = createStaticListModule({
-  resourceId: "dashboard",
-  title: "Dashboard",
-  subtitle: "Overview of system activity.",
-});
+const panelModuleKey = "/src/pages/index.panel.ts";
 ---
-<AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <ResourceView client:load definition={dashboardResource} view="List" />
-</AdminLayout>
+<PanelPage panel={dashboardPanel} panelModuleKey={panelModuleKey} />

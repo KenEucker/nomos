@@ -1,15 +1,7 @@
 ---
-import AdminLayout from "../../layouts/AdminLayout.astro";
-import ResourceView from "../../islands/ResourceView.svelte";
-import { createStaticListModule } from "../../lib/pages";
-import { diagnosticsResource } from "./diagnostics.resource";
+import PanelPage from "../../components/PanelPage.astro";
+import diagnosticsPanel from "./index.panel";
 
-export const pageModule = createStaticListModule({
-  resourceId: "diagnostics",
-  title: "Diagnostics",
-  subtitle: "Inspect runtime health and system status.",
-});
+const panelModuleKey = "/src/pages/diagnostics/index.panel.ts";
 ---
-<AdminLayout title={pageModule.title} subtitle={pageModule.subtitle} breadcrumbs={pageModule.breadcrumbs} actions={pageModule.pageActions}>
-  <ResourceView client:load definition={diagnosticsResource} view="List" />
-</AdminLayout>
+<PanelPage panel={diagnosticsPanel} panelModuleKey={panelModuleKey} />

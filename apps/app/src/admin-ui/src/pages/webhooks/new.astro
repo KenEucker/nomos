@@ -1,0 +1,11 @@
+---
+import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
+import { createResourcePanel } from "../../lib/resource-panel";
+import { webhooksResource } from "./webhooks.resource";
+const resourceConfig = {
+  resource: webhooksResource,
+  mode: "create",
+};
+const panel = createResourcePanel(resourceConfig);
+---
+<ResourcePanelPage {panel} resourceConfig={resourceConfig} />

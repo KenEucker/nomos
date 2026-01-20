@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "postinstall": "prisma generate",
+    "prepare:sdk": "tsx scripts/generate-sdk.ts",
     "dev": "npm --prefix src/admin-ui install && ASTRO_DEV_PORT=${ASTRO_DEV_PORT:-4321} concurrently -k -n \"astro,server\" -c \"magenta,cyan\" \"npm run dev:admin-ui\" \"npm run dev:server\"",
     "dev:server": "tsx watch src/server.ts",
     "dev:admin-ui": "npm --prefix src/admin-ui run dev -- --port ${ASTRO_DEV_PORT:-4321}",
@@ -24,8 +25,11 @@
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.6.0",
     "dotenv": "^16.4.5",
+    "esbuild": "^0.25.0",
     "fastify": "^5.6.2",
     "nanoid": "^5.1.6",
+    "openapi-fetch": "0.5.0",
+    "openapi-typescript": "7.10.1",
     "pino": "^9.6.0",
     "pino-pretty": "^11.3.0",
     "zod": "^4.3.5"

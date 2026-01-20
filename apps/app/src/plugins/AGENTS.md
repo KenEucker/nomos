@@ -132,26 +132,14 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 ---
 
-### `templates/`
-**Purpose**
-- Admin UI template overrides for resource views.
-
-**Expected exports / entry points**
-- Svelte components at `templates/<resource>/<View>.svelte`.
-
-**How the platform discovers/uses it**
-- Admin UI resolves templates using `import.meta.glob` and the override order defined in `resolveTemplate`. (`apps/app/src/admin-ui/src/lib/templates/resolveTemplate.ts`)
-
-**Common pitfalls**
-- Wrapper templates that only render a single island component (anti-pattern).
-- Placing templates in the wrong path so the resolver cannot find them.
-
----
-
 ### `pages/` (Admin UI plugin pages)
 **Purpose**
 - Provide Astro routes for the admin UI from within a plugin.
 - Pages inside a plugin are injected into the admin UI router at build/dev time.
+
+**Panel modules**
+- Optional custom PanelModules live next to the Astro page (for example, `pages/reports/index.panel.ts`).
+- Plugin pages import PanelModules directly and pass `panelModuleKey` for CSR hydration.
 
 **How it works**
 - Any `pages/` directory under a plugin root is treated like an additional `src/pages/` folder.
@@ -178,7 +166,7 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 ## Admin UI layering (coordination)
 - Follow the Admin UI guide for the full layering model and renderer behavior. See [../admin-ui/src/pages/AGENTS.md](../admin-ui/src/pages/AGENTS.md).
-- Template override priority (highest → lowest): plugin → platform → resource-specific → default. (`apps/app/src/admin-ui/src/lib/templates/resolveTemplate.ts`)
+- Panel override priority is defined by page composition; prefer PanelModules over templates.
 - Do **not** create wrapper templates that only render a single island.
 
 ## Practical checklist: extend Nomos via a plugin

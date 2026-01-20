@@ -1,12 +1,14 @@
-import type { AdminResourceInput } from "../../lib/resources/types";
+import { createResourceDefinition } from "../../lib/utils";
 
-export const apiKeysResource: AdminResourceInput = {
-  id: "api-keys",
+export const apiKeysResource = createResourceDefinition({
+  name: "api-keys",
   label: "API Key",
   labelPlural: "API Keys",
-  menuGroup: "Access",
-  icon:
-    '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>',
+  menu: {
+    group: "Access",
+    icon:
+      '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>',
+  },
   endpoints: {
     list: "/_/api-keys",
     get: "/_/api-keys/{id}",
@@ -47,11 +49,26 @@ export const apiKeysResource: AdminResourceInput = {
     ],
     defaultSort: {
       key: "createdAt",
-      dir: "desc",
+      direction: "desc",
     },
     searchable: true,
     searchPlaceholder: "Search API keys...",
     pageSize: 20,
+    customRowActions: [
+      {
+        id: "rotate",
+        label: "Rotate",
+        variant: "secondary",
+        type: "method",
+        endpoint: "/_/api-keys/{id}/rotate",
+        method: "POST",
+        confirm: {
+          title: "Rotate API key?",
+          body: "The old key will stop working immediately.",
+        },
+        toast: { success: "API key rotated" },
+      },
+    ],
   },
   form: {
     fields: [
@@ -61,47 +78,32 @@ export const apiKeysResource: AdminResourceInput = {
         type: "text",
         required: true,
         placeholder: "e.g., Production API Key",
-        help: "A descriptive name for this API key",
+        helperText: "A descriptive name for this API key.",
       },
       {
         name: "permissions",
         label: "Permissions",
-        type: "relation_many",
-        relationResource: "permissions",
+        type: "multiselect",
         optionsEndpoint: "/_/permissions",
-        valueKey: "key",
-        labelKey: "name",
-        help: "Select which permissions this API key should have",
+        optionsKey: "permissions",
+        helperText: "Select which permissions this API key should have.",
       },
       {
         name: "allowedHosts",
         label: "Allowed Hosts",
         type: "textarea",
         placeholder: "One host per line, e.g.:\napi.example.com\n*.example.com",
-        help: "Leave blank to allow all hosts. Supports wildcards.",
-        submitTransform: (value) =>
-          typeof value === "string"
-            ? value
-                .split(/[\n,]+/)
-                .map((entry) => entry.trim())
-                .filter(Boolean)
-            : value,
+        helperText: "Leave blank to allow all hosts. Supports wildcards.",
+        transform: "lines",
       },
     ],
   },
-  actions: {
-    custom: [
-      {
-        id: "rotate",
-        label: "Rotate Key",
-        variant: "secondary",
-        confirm: "Are you sure you want to rotate this API key? The old key will stop working immediately.",
-        endpoint: "/_/api-keys/{id}/rotate",
-        method: "POST",
-      },
-    ],
+  intents: {
+    read: "admin.access",
+    create: "admin.access",
+    update: "admin.access",
+    delete: "admin.access",
   },
-  requiredRole: "admin",
   dataKey: "apiKeys",
   singleDataKey: "apiKey",
-};
+});
