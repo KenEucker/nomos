@@ -182,9 +182,19 @@
     update()
     const stopThemeWatch = watchSystemTheme()
     media.addEventListener("change", update)
+
+    // Listen for Swup navigation events to update current path
+    const handleSwupNavigation = () => {
+      currentPath = window.location.pathname
+    }
+    document.addEventListener("swup:contentReplaced", handleSwupNavigation)
+    document.addEventListener("swup:pageView", handleSwupNavigation)
+
     return () => {
       media.removeEventListener("change", update)
       stopThemeWatch()
+      document.removeEventListener("swup:contentReplaced", handleSwupNavigation)
+      document.removeEventListener("swup:pageView", handleSwupNavigation)
     }
   })
 
