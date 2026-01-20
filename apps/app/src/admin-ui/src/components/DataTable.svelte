@@ -34,7 +34,7 @@
   export let searchPlaceholder: string = "Search…"
   export let showSelection: boolean = true
   export let showActions: boolean = true
-  export let enableEdit: boolean = true
+  export let enableEdit: boolean = false
   export let disableControlsWhileLoading: boolean = false
   export let editIntent: string | undefined = undefined
 

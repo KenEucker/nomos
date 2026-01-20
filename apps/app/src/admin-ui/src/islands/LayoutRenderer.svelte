@@ -129,7 +129,7 @@
         rowIdKey={node.props.rowIdKey ?? "id"}
         showSelection={false}
         showActions={true}
-        enableEdit={node.props.enableEdit ?? true}
+        enableEdit={node.props.enableEdit ?? false}
         loading={false}
         showSearch={node.props.searchable ?? true}
         searchPlaceholder={node.props.searchPlaceholder}
