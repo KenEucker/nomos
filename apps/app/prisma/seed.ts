@@ -9,6 +9,7 @@ async function main() {
   // ---------------------------------------------------------------------------
   const roles = [
     { key: "admin", name: "Administrator" },
+    { key: "platform_admin", name: "Platform Admin" },
     { key: "editor", name: "Editor" },
     { key: "viewer", name: "Viewer" }
   ]
@@ -70,6 +71,7 @@ async function main() {
 
   const roleAssignments = [
     { user: admin, role: "admin" },
+    { user: admin, role: "platform_admin" },
     { user: editor, role: "editor" },
     { user: viewer, role: "viewer" }
   ]
@@ -85,6 +87,8 @@ async function main() {
       create: { userId: assignment.user.id, roleId }
     })
   }
+
+  console.log("Seeded admin login: admin@nomos.local / admin123 (roles: admin, platform_admin)")
 }
 
 main()
