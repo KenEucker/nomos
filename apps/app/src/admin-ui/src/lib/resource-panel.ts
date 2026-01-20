@@ -215,7 +215,7 @@ export const createResourcePanel = ({
         ? ctx.query.pageSize !== undefined
           ? ctx.state.pageSize
           : resource.list?.pageSize ?? ctx.state.pageSize
-        : Math.max(resource.list?.pageSize ?? 20, 250)
+        : Math.min(resource.list?.pageSize ?? 100, 100)
       const sort = serverSideList
         ? ctx.state.sort ??
           (resource.list?.defaultSort

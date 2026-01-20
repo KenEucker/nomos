@@ -52,13 +52,13 @@ export const pluginsResource = createResourceDefinition({
         id: "viewPreview",
         label: "Preview",
         type: "link",
-        href: "/admin/plugins/{id}/preview",
+        href: "/admin/plugins/{slug}/preview",
       },
       {
         id: "preview",
         label: "Generate Preview",
         type: "method",
-        endpoint: "/plugins/{id}/preview",
+        endpoint: "/plugins/{slug}/preview",
         method: "POST",
         toast: { success: "Preview requested" },
       },
@@ -66,7 +66,7 @@ export const pluginsResource = createResourceDefinition({
         id: "enable",
         label: "Enable",
         type: "method",
-        endpoint: "/plugins/{id}/enable",
+        endpoint: "/plugins/{slug}/enable",
         method: "POST",
         confirm: {
           title: "Enable this plugin?",
@@ -77,7 +77,7 @@ export const pluginsResource = createResourceDefinition({
         id: "disable",
         label: "Disable",
         type: "method",
-        endpoint: "/plugins/{id}/disable",
+        endpoint: "/plugins/{slug}/disable",
         method: "POST",
         confirm: {
           title: "Disable this plugin?",
@@ -88,7 +88,7 @@ export const pluginsResource = createResourceDefinition({
         id: "uninstall",
         label: "Uninstall",
         type: "method",
-        endpoint: "/plugins/{id}/uninstall",
+        endpoint: "/plugins/{slug}/uninstall",
         method: "POST",
         confirm: {
           title: "Uninstall this plugin?",

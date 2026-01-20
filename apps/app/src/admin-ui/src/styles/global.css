@@ -246,7 +246,7 @@ body:not(.mobile-menu-collapsed) .admin-mobile-nav-items {
   border-inline-start: 1px solid var(--border);
 }
 
-[data-nav-collapsed="true"] {
+[data-nav-collapsed="true"]:not([data-nav-mode="settings"]) {
   --nomos-nav-width: var(--nomos-nav-width-collapsed);
 }
 
@@ -316,5 +316,10 @@ body:not(.mobile-menu-collapsed) .admin-mobile-nav-items {
   [data-nav-mobile-dock="bottom"][data-nav-mode="settings"] .nomos-nav {
     height: auto;
     max-height: calc(100svh - var(--nomos-header-height, 72px));
+  }
+
+  [data-nav-mobile-dock="top"][data-nav-mode="settings"] .nomos-nav {
+    max-height: calc(100svh - var(--nomos-header-height, 72px));
+    overflow-y: auto;
   }
 }

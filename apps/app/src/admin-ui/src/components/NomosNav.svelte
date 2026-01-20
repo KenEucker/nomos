@@ -205,7 +205,7 @@
 
   <nav
     class={cn(
-      "nomos-nav bg-card text-card-foreground flex h-full min-h-0 flex-col",
+      "nomos-nav bg-card text-card-foreground flex min-h-0 flex-col md:h-full",
       $navPreferences.sidebarCollapsed && mode === "nav" ? "items-center" : "items-stretch"
     )}
     aria-label="Nomos admin navigation"
