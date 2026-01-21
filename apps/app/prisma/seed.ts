@@ -5,28 +5,20 @@ const prisma = getPrismaClient()
 
 async function main() {
   // ---------------------------------------------------------------------------
-  // Roles
+  // Roles (schema-agnostic: works with both old and new schema)
   // ---------------------------------------------------------------------------
   const roles = [
-    { key: "admin", name: "Administrator", description: "Full administrative access" },
-    { key: "platform_admin", name: "Platform Admin", description: "Platform administration access" },
-    { key: "editor", name: "Editor", description: "Content editing access" },
-    { key: "viewer", name: "Viewer", description: "Read-only access" }
+    { key: "admin", name: "Administrator" },
+    { key: "platform_admin", name: "Platform Admin" },
+    { key: "editor", name: "Editor" },
+    { key: "viewer", name: "Viewer" }
   ]
 
   for (const role of roles) {
     await prisma.role.upsert({
       where: { key: role.key },
-      update: {
-        name: role.name,
-        description: role.description,
-        updatedAt: new Date()
-      },
-      create: {
-        key: role.key,
-        name: role.name,
-        description: role.description
-      }
+      update: { name: role.name },
+      create: { key: role.key, name: role.name }
     })
   }
 
@@ -88,29 +80,35 @@ async function main() {
     const roleId = roleByKey.get(assignment.role)
     if (!roleId) continue
 
-    // Legacy UserRole (for backward compatibility)
+    // UserRole assignment
     await prisma.userRole.upsert({
       where: { userId_roleId: { userId: assignment.user.id, roleId } },
       update: {},
       create: { userId: assignment.user.id, roleId }
     })
 
-    // New SubjectRole (for authz system)
-    await prisma.subjectRole.upsert({
-      where: {
-        subjectType_subjectId_roleId: {
-          subjectType: "user",
-          subjectId: assignment.user.id,
-          roleId
-        }
-      },
-      update: {},
-      create: {
-        subjectType: "user",
-        subjectId: assignment.user.id,
-        roleId
+    // SubjectRole for authz system (if table exists after migration)
+    try {
+      if ((prisma as any).subjectRole) {
+        await (prisma as any).subjectRole.upsert({
+          where: {
+            subjectType_subjectId_roleId: {
+              subjectType: "user",
+              subjectId: assignment.user.id,
+              roleId
+            }
+          },
+          update: {},
+          create: {
+            subjectType: "user",
+            subjectId: assignment.user.id,
+            roleId
+          }
+        })
       }
-    })
+    } catch {
+      // SubjectRole table may not exist yet if migration hasn't run
+    }
   }
 
   console.log("Seeded admin login: admin@nomos.local / admin123 (roles: admin, platform_admin)")
