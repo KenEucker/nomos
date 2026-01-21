@@ -1,508 +1,686 @@
 # Nomos Observability Specification
 
-**Status:** Active Draft
+**Status:** Draft
 
-**Version:** 0.1.0
+**Version:** 0.1.1
 
 **Audience:** Platform contributors, plugin authors, operators, compliance reviewers
 
 **Scope:** Defines logging, tracing, metrics, and decision artifacts across the Nomos platform
 
----
-
-## 1. Overview
-
-Observability is a **core platform capability** in Nomos.
-
-Every meaningful system action is:
-
-* observable
-* attributable
-* queryable
-* correlated
-
-Nomos does not treat observability as optional instrumentation. It is part of the execution model.
+**Applies to:** nomos-core, nomos-ui, all Nomos plugins
 
 ---
 
-## 2. Observability Goals
+## 1. Purpose
 
-### 2.1 Complete Traceability
+This document defines the observability model for the Nomos platform. Observability in Nomos is a **first-class, platform-level concern**, designed to provide deep insight into system behavior, decisions, and performance **without compromising correctness, security, or runtime efficiency**.
 
-It must be possible to reconstruct:
+This specification supersedes v1.0 and introduces a **performance-first, event-driven observability architecture** with explicit support for:
 
-* what happened
-* why it happened
-* who or what initiated it
-* what policies were evaluated
-* what data was accessed or mutated
-
----
-
-### 2.2 Decision Transparency
-
-Authorization, validation, and routing decisions must produce **decision artifacts** containing:
-
-* inputs
-* applied rules or policies
-* outcome
-* rationale
-
-These artifacts are first-class telemetry.
+* Event-first instrumentation
+* Explainable decisions and actions
+* Lazy evaluation of explanations and telemetry
+* In-memory batching and background flushing
+* Optional local durable spooling for development and degraded modes
+* Deterministic backpressure and loss behavior
 
 ---
 
-### 2.3 Correlation by Default
+## 2. Observability Philosophy
 
-All telemetry emitted during a single logical operation must be correlatable.
+Nomos observability is built on the following principles:
 
-Correlation is automatic and does not rely on ad hoc logging.
+1. **Events over logs**
+   Observability signals are emitted as structured, semantic events—not ad hoc log strings.
 
----
+2. **Explanation over narration**
+   Important events (especially decisions) include structured explanations that describe *why* something happened, not just *that* it happened.
 
-## 3. Telemetry Types
+3. **Performance is non-negotiable**
+   Emitting observability signals must not meaningfully impact request latency or throughput.
 
-Nomos defines four primary telemetry categories.
+4. **Context by default**
+   All events are automatically correlated to execution context (request, actor, trace, etc.).
 
-### 3.1 Logs
+5. **Routing is configurable**
+   Where events are stored, displayed, or forwarded is determined by configuration, not by callers.
 
-Logs represent discrete events.
-
-Examples:
-
-* plugin load events
-* lifecycle hook execution
-* warnings and errors
-
-Logs must be:
-
-* structured
-* timestamped
-* attributed to a plugin or platform subsystem
+6. **Plugins are first-class participants**
+   Plugins must use Nomos observability APIs and inherit the same guarantees and constraints as core modules.
 
 ---
 
-### 3.2 Traces
+## 3. Event-First Model
 
-Traces represent **end-to-end execution paths**.
+### 3.1 Canonical Event Envelope
 
-A trace may span:
+All observability signals in Nomos are represented as **events** with a shared envelope:
 
-* HTTP request handling
-* service calls
-* policy evaluations
-* database queries
-* UI actions
+* `name` – Stable, semantic identifier (e.g. `authz.decision.made`)
+* `kind` – Classification (`log`, `decision`, `audit`, `security`, `metric`, `trace`)
+* `level` – Severity (`debug`, `info`, `warn`, `error`) where applicable
+* `outcome` – Result (`success`, `deny`, `fail`, etc.) where applicable
+* `source` – Module or plugin origin
+* `timestamp`
+* `context` – Automatically attached execution context
+* `data` – Small, structured headline data
 
-Each trace is composed of spans with explicit parent/child relationships.
-
----
-
-### 3.3 Metrics
-
-Metrics represent quantitative system behavior.
-
-Examples:
-
-* request latency
-* error rates
-* policy denial frequency
-* database query duration
-
-Metrics must be:
-
-* aggregatable
-* labeled with stable dimensions
+The base event **must be meaningful on its own**, even when explanations and telemetry are disabled.
 
 ---
 
-### 3.4 Decision Artifacts
+## 4. Explanations
 
-Decision artifacts capture **why** the system behaved as it did.
+### 4.1 Purpose of Explanations
 
-They are emitted for:
+An explanation answers **why** an event occurred and **how the system knows this to be true**. Explanations are especially important for:
 
-* authorization decisions
-* policy evaluations
-* validation outcomes
+* Authorization and policy decisions
+* Audit and security events
+* Errors and failed operations
 
-Decision artifacts include:
+### 4.2 Explanation Contract
 
-* decision type
-* evaluated inputs
-* applied rules or policies
-* result
-* rationale
+An explanation MAY include:
 
----
+* `summary` – Human-readable explanation
+* `code` – Stable, machine-readable reason code
+* `criteria` – Conditions evaluated
+* `evidence` – References to rules, policies, or inputs
+* `alternatives` – Options considered but rejected
+* `constraints` – Limiting factors
 
-## 4. Correlation Model
+### 4.3 Lazy Evaluation
 
-### 4.1 Correlation Identifiers
+Explanations are **lazy by default**:
 
-Every request or action is assigned:
-
-* a correlation ID
-* a trace ID
-
-These identifiers propagate automatically across:
-
-* API boundaries
-* service calls
-* background jobs
-* UI actions
+* Callers provide explanations as deferred builders
+* Explanations are only materialized if enabled by configuration
+* Disabled explanations incur near-zero runtime cost
 
 ---
 
-### 4.2 Span Attribution
+## 5. Telemetry
 
-Each span must identify:
+Telemetry describes **cost and behavior**, not intent. Examples include:
 
-* originating plugin or platform subsystem
-* operation name
-* start and end time
-* outcome
+* Timing of evaluation steps
+* Counts of rules or resources processed
+* Dependency interactions
 
----
+Telemetry collection may be:
 
-## 5. Platform Integration
+* Explicit (via instrumentation APIs)
+* Implicit (via scoped steps or spans)
 
-### 5.1 Automatic Instrumentation
-
-The platform automatically instruments:
-
-* API request lifecycle
-* service invocation
-* policy evaluation
-* database access
-* panel actions
-
-Plugins must not disable or bypass instrumentation.
+Like explanations, telemetry is **lazy and configurable**.
 
 ---
 
-### 5.2 Plugin Responsibilities
+## 6. Execution Context and Correlation
 
-Plugins must:
+Nomos establishes an execution context at request entry and propagates it automatically using in-process context propagation mechanisms.
 
-* use platform logging APIs
-* avoid ad hoc console logging
-* emit structured context
+Context includes:
 
-Plugins may add custom spans or logs but must attach them to the active trace.
+* Request ID
+* Trace ID / Span ID
+* Actor / Subject
+* Tenant (if applicable)
+* Environment and build identifiers
 
----
-
-## 6. UI Observability
-
-Nomos-UI participates in observability.
-
-UI actions may emit:
-
-* action start and completion events
-* validation failures
-* navigation events
-
-UI telemetry must correlate with backend traces where applicable.
+All emitted events inherit this context implicitly.
 
 ---
 
-## 7. Storage and Queryability
+## 7. Emission Semantics
 
-### 7.1 Default Storage Backend (v1)
+### 7.1 Emit Is Enqueue
 
-**For v1, observability data is stored in the application database.**
+Event emission **must not block the request path**. Emitting an event consists only of:
 
-Telemetry tables:
+1. Creating a minimal event envelope
+2. Enqueuing it into an in-memory buffer
 
-* `logs` - structured log events
-* `traces` - execution traces
-* `spans` - individual trace spans
-* `metrics` - aggregated metrics
-* `decisions` - authorization/policy decisions
+All heavy work (serialization, formatting, IO) happens asynchronously.
 
-This approach:
+### 7.2 Request-Local Batching
 
-* Uses the same database as application data
-* Requires no additional infrastructure
-* Enables simple querying via standard API
-* Participates in the same backup/restore workflows
+During request execution:
 
----
+* Events are accumulated in a request-local buffer
+* At request completion, buffers are bulk-appended to global queues
 
-### 7.2 Future Storage Options
-
-Future versions may support:
-
-* External telemetry stores (e.g., Elasticsearch, ClickHouse)
-* Time-series databases for metrics
-* Streaming to external observability platforms
-
-For v1, database storage is the default and only option.
+This minimizes contention and repeated context attachment.
 
 ---
 
-### 7.3 Queryability
+## 8. In-Memory Event Bus
 
-Telemetry data must be:
+Nomos uses an in-memory event bus to batch and flush events outside of request chains.
 
-* queryable by time range
-* queryable by correlation ID
-* queryable by plugin/subsystem
-* queryable by decision type
-* queryable by user/subject
+### 8.1 Bus Classes
 
-Query interface:
+Two logical buses are defined:
 
-```typescript
-// Telemetry queries use the same API as other resources
-const logs = await sdk.api.telemetry.logs.list({
-  startTime: "2026-01-18T00:00:00Z",
-  endTime: "2026-01-18T23:59:59Z",
-  level: "error"
-})
+* **Best-Effort Bus**
+  For high-volume, low-criticality events. Bounded, lossy under pressure.
 
-const decisions = await sdk.api.telemetry.decisions.list({
-  subject: { type: "user", id: "123" },
-  outcome: "deny"
-})
+* **Durable Bus**
+  For low-volume, high-criticality events (audit, decision, security). Loss-averse.
+
+### 8.2 Flushing
+
+Events are flushed based on:
+
+* Batch size thresholds
+* Time intervals
+* Memory pressure
+* Application shutdown
+
+Flushing is performed by background workers.
+
+---
+
+## 9. Local Durable Spool (Optional)
+
+Nomos MAY be configured with a **local durable spool**:
+
+* Intended for local development or offline operation
+* Used when no database connection is available
+* May act as a fallback for durable events if primary sinks are unavailable
+
+The spool MUST support replay/drain into primary storage when available.
+
+---
+
+## 10. Sinks and Routing
+
+Events are routed to sinks based on configuration. Example sinks include:
+
+* Console (pretty or JSON)
+* Database (queryable storage)
+* Local spool
+* External telemetry systems
+
+Callers MUST NOT directly invoke sinks.
+
+---
+
+## 11. Backpressure, Sampling, and Loss Policy
+
+Nomos defines explicit behavior under pressure:
+
+1. Suppress or drop best-effort debug/info events
+2. Sample telemetry and traces
+3. Preserve decision/audit/security events whenever possible
+4. Emit internal health metrics when drops occur
+
+All drops and suppressions MUST be observable.
+
+---
+
+## 12. Observing Observability
+
+The observability system emits its own health signals, including:
+
+* Queue depth
+* Dropped event counts
+* Flush durations
+* Sink failure counts
+
+This allows operators to detect degradation of observability itself.
+
+---
+
+## 13. Plugin Requirements
+
+Plugins:
+
+* MUST use Nomos observability APIs
+* MUST NOT perform direct console logging for runtime behavior
+* MAY define their own event namespaces
+* MUST respect platform configuration for explanations and telemetry
+
+---
+
+## 14. Non-Goals
+
+This specification does not mandate:
+
+* A specific external telemetry vendor
+* Real-time guarantees for best-effort events
+* Infinite retention of observability data
+
+---
+
+## 15. Reference APIs and Type Definitions
+
+This section defines the reference TypeScript-level contracts that implement this specification. These are **normative** for Nomos core modules and plugins.
+
+> Notes
+>
+> * Types below are intentionally platform-owned (Nomos), not vendor-owned.
+> * Implementations MAY adapt these shapes for transport, but MUST preserve semantics.
+> * Explanations and telemetry are **lazy by default** (builders are not evaluated unless configured).
+
+### 15.1 Core Types
+
+```ts
+export type NomosLevel = 'debug' | 'info' | 'warn' | 'error'
+
+export type NomosEventKind =
+  | 'log'
+  | 'decision'
+  | 'audit'
+  | 'security'
+  | 'metric'
+  | 'trace'
+
+export type NomosOutcome =
+  | 'success'
+  | 'deny'
+  | 'fail'
+  | 'noop'
+  | 'partial'
+
+export type NomosTimestamp = number // epoch millis
+
+export type NomosEventName = string
+
+export type NomosSource = string // e.g. "nomos-core", "nomos-authz", "plugin:nomos-foo"
+
+export type NomosId = string
+
+export type NomosEnv = 'dev' | 'test' | 'prod'
+
+export interface NomosContext {
+  requestId?: NomosId
+  traceId?: NomosId
+  spanId?: NomosId
+
+  // Actor/subject attribution
+  actorId?: NomosId
+  actorType?: string // e.g. "user", "apiKey", "service"
+
+  tenantId?: NomosId
+
+  env: NomosEnv
+  buildId?: string
+  version?: string
+
+  // Optional routing hints; sinks SHOULD NOT rely on these exclusively
+  tags?: Record<string, string>
+}
+
+export interface NomosEvidenceRef {
+  type: 'policy' | 'rule' | 'input' | 'resource' | 'capability' | 'system'
+  id: string
+  hash?: string
+  note?: string
+}
+
+export interface NomosExplanation {
+  summary: string
+  code?: string
+  criteria?: Array<{ key: string; op: string; value?: unknown }>
+  evidence?: NomosEvidenceRef[]
+  alternatives?: Array<{ option: string; rejectedBecause: string }>
+  constraints?: Array<{ key: string; value: string }>
+}
+
+export interface NomosTelemetry {
+  // Step timings, counters, and structured measurements.
+  steps?: Array<{ name: string; durationMs: number; ok: boolean; meta?: Record<string, unknown> }>
+  counters?: Record<string, number>
+  timingsMs?: Record<string, number>
+  meta?: Record<string, unknown>
+}
+
+export type Lazy<T> = T | (() => T)
+
+export interface NomosEvent<Data extends Record<string, unknown> = Record<string, unknown>> {
+  name: NomosEventName
+  kind: NomosEventKind
+  timestamp: NomosTimestamp
+
+  source: NomosSource
+  level?: NomosLevel
+  outcome?: NomosOutcome
+
+  context: NomosContext
+  data: Data
+
+  // Lazy attachments
+  explain?: (() => NomosExplanation)
+  telemetry?: (() => NomosTelemetry)
+}
 ```
 
----
+### 15.2 DECIDE Artifact
 
-### 7.4 Access Control
+Nomos decisions MUST support the DECIDE mantra:
 
-Telemetry data access is controlled by intents:
+* **D**efine the problem or need
+* **E**xplore alternatives
+* **C**onsider criteria and constraints
+* **I**dentify the best option
+* **D**ocument the decision and rationale
+* **E**valuate the outcome after implementation
 
-* `telemetry.logs.read` - view logs
-* `telemetry.traces.read` - view traces
-* `telemetry.metrics.read` - view metrics
-* `telemetry.decisions.read` - view authorization decisions
-
-**For v1**: Helper functions for accessing telemetry are nice-to-have but not required. Plugins access telemetry via the standard API with appropriate intent checks.
-
----
-
-### 7.5 Retention
-
-Telemetry retention is configurable:
-
-```typescript
-// nomos.config.ts
-export default {
-  observability: {
-    retention: {
-      logs: 30,        // days
-      traces: 7,       // days
-      metrics: 90,     // days
-      decisions: 365   // days (for compliance)
-    }
+```ts
+export interface NomosDecideArtifact {
+  define: {
+    problem: string
+    need?: string
+    scope?: string
   }
-}
-```
-
-Retention is enforced via:
-
-* Scheduled cleanup jobs
-* Database triggers (for immediate deletion)
-* Archive-before-delete (optional)
-
----
-
-## 8. Compliance and Auditing
-
-Observability data supports:
-
-* compliance audits
-* forensic analysis
-* debugging
-
-Audit-relevant telemetry must:
-
-* be immutable
-* include full decision context
-* be retained according to policy
-
----
-
-## 9. Failure Modes
-
-Observability failures must:
-
-* not crash the system
-* be logged as high-severity events
-* preserve partial telemetry where possible
-
-Loss of observability is itself observable (logged to stderr/stdout as fallback).
-
----
-
-## 10. Database Schema (Indicative)
-
-Example telemetry tables:
-
-```sql
--- Logs
-CREATE TABLE logs (
-  id UUID PRIMARY KEY,
-  timestamp TIMESTAMP NOT NULL,
-  level VARCHAR(10) NOT NULL,
-  message TEXT NOT NULL,
-  context JSONB,
-  plugin VARCHAR(255),
-  trace_id UUID,
-  correlation_id UUID
-);
-
--- Traces
-CREATE TABLE traces (
-  id UUID PRIMARY KEY,
-  trace_id UUID NOT NULL UNIQUE,
-  start_time TIMESTAMP NOT NULL,
-  end_time TIMESTAMP,
-  duration_ms INTEGER,
-  status VARCHAR(20),
-  metadata JSONB
-);
-
--- Spans
-CREATE TABLE spans (
-  id UUID PRIMARY KEY,
-  trace_id UUID NOT NULL REFERENCES traces(trace_id),
-  parent_span_id UUID,
-  name VARCHAR(255) NOT NULL,
-  start_time TIMESTAMP NOT NULL,
-  end_time TIMESTAMP,
-  duration_ms INTEGER,
-  attributes JSONB
-);
-
--- Decisions
-CREATE TABLE decisions (
-  id UUID PRIMARY KEY,
-  timestamp TIMESTAMP NOT NULL,
-  intent VARCHAR(255) NOT NULL,
-  subject_type VARCHAR(50),
-  subject_id VARCHAR(255),
-  outcome VARCHAR(20) NOT NULL,
-  allowed BOOLEAN NOT NULL,
-  evidence JSONB,
-  rationale JSONB,
-  trace_id UUID,
-  correlation_id UUID
-);
-
--- Metrics (aggregated)
-CREATE TABLE metrics (
-  id UUID PRIMARY KEY,
-  timestamp TIMESTAMP NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  value NUMERIC NOT NULL,
-  labels JSONB,
-  aggregation_window INTERVAL
-);
-```
-
----
-
-## 11. Observability API
-
-The platform provides an observability service:
-
-```typescript
-interface ObservabilityService {
-  // Logging
-  log(level: LogLevel, message: string, context?: Record<string, unknown>): void
-  
-  // Tracing
-  startTrace(name: string): Trace
-  startSpan(name: string, parent?: Span): Span
-  endSpan(span: Span): void
-  
-  // Metrics
-  recordMetric(name: string, value: number, labels?: Record<string, string>): void
-  incrementCounter(name: string, labels?: Record<string, string>): void
-  recordDuration(name: string, durationMs: number, labels?: Record<string, string>): void
-  
-  // Decisions
-  recordDecision(decision: Decision): void
-  
-  // Querying
-  queryLogs(filter: LogFilter): Promise<Log[]>
-  queryTraces(filter: TraceFilter): Promise<Trace[]>
-  queryDecisions(filter: DecisionFilter): Promise<Decision[]>
-}
-```
-
----
-
-## 12. Configuration
-
-Observability is configured in `nomos.config.ts`:
-
-```typescript
-export default {
-  observability: {
-    // Logging
-    logging: {
-      level: 'info',  // 'debug' | 'info' | 'warn' | 'error'
-      pretty: false,   // Pretty-print in development
-      includeCaller: true
-    },
-    
-    // Tracing
-    tracing: {
-      enabled: true,
-      sampleRate: 1.0  // 0.0 to 1.0
-    },
-    
-    // Metrics
-    metrics: {
-      enabled: true,
-      flushInterval: 60  // seconds
-    },
-    
-    // Decisions
-    decisions: {
-      enabled: true,
-      includeRationale: true  // Include DECIDE rationale
-    },
-    
-    // Retention
-    retention: {
-      logs: 30,
-      traces: 7,
-      metrics: 90,
-      decisions: 365
-    }
+  explore: {
+    alternatives: Array<{ option: string; pros?: string[]; cons?: string[] }>
+  }
+  consider: {
+    criteria: Array<{ key: string; description?: string }>
+    constraints?: Array<{ key: string; description?: string }>
+  }
+  identify: {
+    decision: string
+    selectedOption: string
+  }
+  document: {
+    rationale: string
+    evidence?: NomosEvidenceRef[]
+  }
+  evaluate: {
+    expectedOutcome?: string
+    followUp?: string
+    reviewAt?: string // ISO date/time string
   }
 }
 ```
 
 ---
 
-## 13. Non-Goals
+## 16. Event Builder API
 
-Observability is not:
+Nomos provides a single, cheap instrumentation surface. Core modules and plugins MUST use this API.
 
-* best-effort logging
-* developer-only debugging output
-* an optional plugin
+### 16.1 `Observer` and `EventBuilder`
 
-It is a required platform capability.
+```ts
+export interface NomosObserver {
+  // Emit a pre-built event (rare; mostly for internal glue)
+  emit(event: NomosEvent): void
+
+  // Build a structured event
+  event<Name extends NomosEventName, Data extends Record<string, unknown>>(
+    name: Name,
+    init: {
+      kind: NomosEventKind
+      level?: NomosLevel
+      outcome?: NomosOutcome
+      source?: NomosSource
+      data: Data
+    }
+  ): NomosEventBuilder<Name, Data>
+
+  // Measure a named step and record timing/ok state.
+  // Implementation SHOULD avoid heavy work and MUST not block.
+  step<T>(name: string, fn: () => T, meta?: Record<string, unknown>): T
+
+  // Async variant for convenience
+  stepAsync<T>(name: string, fn: () => Promise<T>, meta?: Record<string, unknown>): Promise<T>
+
+  // Accessor for current context (derived from request context propagation)
+  ctx(): NomosContext
+}
+
+export interface NomosEventBuilder<Name extends NomosEventName, Data extends Record<string, unknown>> {
+  // Refine base headline fields
+  level(level: NomosLevel): this
+  outcome(outcome: NomosOutcome): this
+  data(patch: Partial<Data>): this
+
+  // Attach a lazy explanation (NOT evaluated unless configured)
+  because(explain: () => NomosExplanation): this
+
+  // Attach a DECIDE artifact lazily (decision/audit/security primary use)
+  decide(decide: () => NomosDecideArtifact): this
+
+  // Attach telemetry lazily (NOT evaluated unless configured)
+  measure(telemetry: () => NomosTelemetry): this
+
+  // Emit headline + optional attachments (as configured)
+  emit(): void
+}
+```
+
+### 16.2 Lazy Attachment Semantics (Normative)
+
+* `because()` MUST accept a thunk and MUST NOT evaluate it at call time.
+* `decide()` MUST accept a thunk and MUST NOT evaluate it at call time.
+* `measure()` MUST accept a thunk and MUST NOT evaluate it at call time.
+* The runtime MAY evaluate these thunks during background flushing depending on configuration.
+* If a thunk throws, the system MUST:
+
+  * record an internal observability error counter
+  * emit a minimal `obs.attachment.error` event (best-effort)
+  * continue flushing other events
 
 ---
 
-## 14. Summary
+## 17. Bus Interface and Flushing
 
-Nomos treats observability as a foundational concern.
+### 17.1 Bus Priorities
 
-Logs, traces, metrics, and decision artifacts work together to provide a complete, explainable record of system behavior from request initiation through UI interaction and data mutation.
+Nomos defines two primary event classes:
 
-**Key Points for v1**:
+* **Best-Effort**: bounded; may drop under pressure
+* **Durable**: loss-averse; may spill to spool
 
-* Storage: Application database (same as app data)
-* Access: Via standard API with intent-based access control
-* Retention: Configurable with automatic cleanup
-* Helpers: Nice-to-have, not required for v1
-* Future: May support external telemetry stores and platforms
+Classification SHOULD be derived from `kind`:
+
+* Durable by default: `decision`, `audit`, `security`
+* Best-Effort by default: `log`, `metric`, `trace`
+
+Configuration MAY override classification by `name`, `source`, `level`, or `outcome`.
+
+### 17.2 Bus Contracts
+
+```ts
+export type NomosBusClass = 'bestEffort' | 'durable'
+
+export interface NomosBusStats {
+  depth: number
+  droppedTotal: number
+  lastFlushMs?: number
+  lastError?: string
+}
+
+export interface NomosBus {
+  readonly busClass: NomosBusClass
+
+  // Enqueue MUST be O(1) and MUST NOT block on IO.
+  enqueue(event: NomosEvent): void
+
+  // Drain up to max events; MUST be safe to call repeatedly.
+  drain(max: number): NomosEvent[]
+
+  // Observe health
+  stats(): NomosBusStats
+}
+```
+
+### 17.3 Background Flusher
+
+A background flusher MUST:
+
+* drain from both buses on an interval and/or size threshold
+* route to sinks
+* bulk-write where possible
+* apply drop/sampling policy
+* record health metrics (`queue_depth`, `dropped_events_total`, `flush_duration_ms`, `sink_failures_total`)
+
+---
+
+## 18. Local Durable Spool (SQLite)
+
+Nomos supports an optional **local durable spool** implemented as a **SQLite file**.
+
+### 18.1 Goals
+
+* Support local development without requiring a DB server
+* Provide a durability bridge for durable events when primary sinks are unavailable
+* Allow replay/drain into primary sinks once available
+
+### 18.2 Spool Interface
+
+```ts
+export interface NomosSpool {
+  // Persist events durably (SQLite file)
+  append(events: NomosEvent[]): void
+
+  // Read oldest events without deleting (for at-least-once drain)
+  peek(limit: number): NomosEvent[]
+
+  // Delete events up to a checkpoint (after successful sink write)
+  commit(checkpointId: string): void
+
+  stats(): {
+    queued: number
+    filePath: string
+    lastError?: string
+  }
+}
+```
+
+### 18.3 Spool Behavior
+
+* Spool MUST be used only for `durable` class events.
+* If primary durable sinks are unavailable, flusher MAY:
+
+  * write durable events to spool, then return success to the bus drain
+* On recovery, flusher MUST:
+
+  * drain from spool in order
+  * write to primary sinks
+  * commit checkpoints only after sink success
+
+---
+
+## 19. Example: AuthZ DECIDE Event
+
+This example illustrates a single headline event with lazy explanation, lazy DECIDE artifact, and step telemetry.
+
+```ts
+// Inside an authz evaluator in nomos-core (or a plugin), within a request context
+
+const result = observer.step('authz.evaluate', () => {
+  // ... evaluation logic
+  return { allowed: false, policyId: 'core.posts', ruleId: 'update_requires_role' }
+})
+
+observer
+  .event('authz.decision.made', {
+    kind: 'decision',
+    level: result.allowed ? 'info' : 'warn',
+    outcome: result.allowed ? 'success' : 'deny',
+    source: 'nomos-authz',
+    data: {
+      action: 'posts:update',
+      resourceType: 'post',
+      resourceId: 'post_123',
+      policyId: result.policyId,
+      ruleId: result.ruleId,
+    },
+  })
+  .because(() => ({
+    summary: result.allowed
+      ? 'Allowed: actor has required permission posts:update'
+      : 'Denied: actor lacks permission posts:update',
+    code: result.allowed ? 'ALLOWED' : 'MISSING_PERMISSION',
+    criteria: [
+      { key: 'permission', op: 'requires', value: 'posts:update' },
+    ],
+    evidence: [
+      { type: 'policy', id: result.policyId },
+      { type: 'rule', id: result.ruleId },
+      // Inputs SHOULD be referenced by id/hash, not raw PII
+      { type: 'input', id: 'actor.roles', hash: 'sha256:…' },
+    ],
+  }))
+  .decide(() => ({
+    define: {
+      problem: 'Authorize actor to update a post',
+      need: 'Prevent unauthorized modification of content',
+      scope: 'posts:update on post_123',
+    },
+    explore: {
+      alternatives: [
+        { option: 'Allow by default', cons: ['Violates least privilege'] },
+        { option: 'Require explicit permission', pros: ['Least privilege', 'Auditable'] },
+      ],
+    },
+    consider: {
+      criteria: [
+        { key: 'least_privilege', description: 'Only authorized roles may update posts' },
+        { key: 'auditability', description: 'Decision must be explainable and traceable' },
+      ],
+      constraints: [
+        { key: 'latency_budget', description: 'Decision must complete within request SLA' },
+      ],
+    },
+    identify: {
+      decision: result.allowed ? 'ALLOW' : 'DENY',
+      selectedOption: 'Require explicit permission',
+    },
+    document: {
+      rationale: result.allowed
+        ? 'Actor’s roles include a grant for posts:update'
+        : 'No role grants posts:update; deny to preserve least privilege',
+      evidence: [
+        { type: 'policy', id: result.policyId },
+        { type: 'rule', id: result.ruleId },
+      ],
+    },
+    evaluate: {
+      expectedOutcome: result.allowed
+        ? 'Update proceeds and will be audited'
+        : 'Update blocked and denial is auditable',
+      followUp: 'If repeated denials occur, review role assignment UX',
+      reviewAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  }))
+  .measure(() => ({
+    steps: [
+      // Implementations MAY auto-fill these from observer.step/stepAsync
+      { name: 'authz.evaluate', durationMs: 3, ok: true },
+    ],
+    counters: {
+      rulesEvaluated: 7,
+      policiesMatched: 1,
+    },
+    timingsMs: {
+      total: 3,
+    },
+  }))
+  .emit()
+```
+
+---
+
+## 20. Summary
+
+This v1.1 specification defines a **performance-first**, **event-driven**, **explainable** observability model for Nomos.
+
+Key additions since v1.0:
+
+* Normative event envelope + DECIDE artifact types
+* EventBuilder API with lazy explanations and lazy telemetry
+* In-memory bus interfaces with background flushing
+* Optional SQLite-based durable spool for local dev and degraded operation
+* Explicit backpressure and observability-health requirements
+
+---
+
+**End of Specification (v1.1)**
