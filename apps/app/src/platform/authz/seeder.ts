@@ -1,11 +1,12 @@
 /**
  * Nomos Permission Seeder
  *
- * Auto-discovers and seeds permissions from plugins and core modules.
+ * Auto-discovers and seeds permissions from plugins, core modules, and API contracts.
  * Runs on platform startup to ensure all declared intents exist in the database.
  */
 
 import type { PrismaClient } from "@prisma/client"
+import { getLoadedIntents } from "../router/loadRoutes"
 
 // =============================================================================
 // Intent Collection
@@ -21,6 +22,7 @@ export const CORE_INTENTS = [
   "admin.diagnostics",
 
   // Role management
+  "roles.list",
   "roles.read",
   "roles.create",
   "roles.update",
@@ -35,6 +37,7 @@ export const CORE_INTENTS = [
   "subjects.update",
 
   // API Key management
+  "apiKeys.list",
   "apiKeys.read",
   "apiKeys.create",
   "apiKeys.update",
@@ -58,6 +61,7 @@ export const CORE_INTENTS = [
   "sdk.write",
 
   // User management
+  "users.list",
   "users.read",
   "users.create",
   "users.update",
@@ -262,10 +266,13 @@ export const DEFAULT_VIEWER_ROLE = {
   permissions: [
     "admin.access",
     "admin.read",
+    "roles.list",
     "roles.read",
     "permissions.read",
     "subjects.read",
+    "apiKeys.list",
     "apiKeys.read",
+    "users.list",
     "users.read",
   ],
 }
@@ -280,13 +287,16 @@ export const DEFAULT_MANAGER_ROLE = {
   permissions: [
     "admin.access",
     "admin.read",
+    "roles.list",
     "roles.read",
     "permissions.read",
     "subjects.read",
     "subjects.update",
+    "apiKeys.list",
     "apiKeys.read",
     "apiKeys.create",
     "apiKeys.update",
+    "users.list",
     "users.read",
     "users.create",
     "users.update",
@@ -308,6 +318,8 @@ export interface SeederOptions {
   plugins?: Array<{ intents?: string[]; permissions?: string[] }>
   additionalIntents?: string[]
   seedDefaultRoles?: boolean
+  /** Include intents discovered from API contracts (call after loadRoutes) */
+  includeContractIntents?: boolean
 }
 
 /**
@@ -315,7 +327,13 @@ export interface SeederOptions {
  * Call this during platform startup.
  */
 export async function seedAuthzDatabase(options: SeederOptions): Promise<void> {
-  const { prisma, plugins = [], additionalIntents = [], seedDefaultRoles = true } = options
+  const {
+    prisma,
+    plugins = [],
+    additionalIntents = [],
+    seedDefaultRoles = true,
+    includeContractIntents = true,
+  } = options
 
   console.log("[authz] Seeding authorization database...")
 
@@ -325,6 +343,17 @@ export async function seedAuthzDatabase(options: SeederOptions): Promise<void> {
     ...collectIntentsFromPlugins(plugins),
     ...additionalIntents,
   ])
+
+  // Collect intents from loaded API contracts
+  if (includeContractIntents) {
+    const contractIntents = getLoadedIntents()
+    for (const intent of contractIntents) {
+      allIntents.add(intent)
+    }
+    if (contractIntents.length > 0) {
+      console.log(`[authz] Discovered ${contractIntents.length} intents from API contracts`)
+    }
+  }
 
   // If seeding default roles, include their permissions too
   if (seedDefaultRoles) {

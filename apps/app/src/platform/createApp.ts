@@ -11,7 +11,12 @@ import { nanoid } from "nanoid";
 import type { ResolvedNomosConfig } from "./config/nomos-config";
 import { createAuthHelpers, errorResponse, jsonResponse } from "./ctx";
 import type { ApiClient, InMemoryStore } from "./ctx";
-import { HttpError } from "./errors";
+import {
+  HttpError,
+  ErrorResponses,
+  type ValidationErrorDetail,
+} from "./errors";
+import { getRateLimitConfig } from "./router/defineRoute";
 import { createMiddlewareRegistry, resolveMiddleware } from "./middleware/registry";
 import { audit } from "./middleware/builtins/audit";
 import { csrf } from "./middleware/builtins/csrf";
@@ -666,27 +671,33 @@ export async function createApp(config: ResolvedNomosConfig) {
             if (params) {
               const parsed = params.safeParse(ctx.params);
               if (!parsed.success) {
-                throw new HttpError(400, "validation_error", "Validation failed", {
-                  issues: parsed.error.issues
-                });
+                const details: ValidationErrorDetail[] = parsed.error.issues.map((issue) => ({
+                  path: `params.${issue.path.join(".")}`,
+                  message: issue.message,
+                }));
+                throw new HttpError(400, "validation_error", "Validation failed", { details });
               }
               ctx.params = parsed.data;
             }
             if (query) {
               const parsed = query.safeParse(ctx.query);
               if (!parsed.success) {
-                throw new HttpError(400, "validation_error", "Validation failed", {
-                  issues: parsed.error.issues
-                });
+                const details: ValidationErrorDetail[] = parsed.error.issues.map((issue) => ({
+                  path: `query.${issue.path.join(".")}`,
+                  message: issue.message,
+                }));
+                throw new HttpError(400, "validation_error", "Validation failed", { details });
               }
               ctx.query = parsed.data;
             }
             if (body) {
               const parsed = body.safeParse(ctx.body);
               if (!parsed.success) {
-                throw new HttpError(400, "validation_error", "Validation failed", {
-                  issues: parsed.error.issues
-                });
+                const details: ValidationErrorDetail[] = parsed.error.issues.map((issue) => ({
+                  path: `body.${issue.path.join(".")}`,
+                  message: issue.message,
+                }));
+                throw new HttpError(400, "validation_error", "Validation failed", { details });
               }
               ctx.body = parsed.data;
             }
@@ -723,18 +734,35 @@ export async function createApp(config: ResolvedNomosConfig) {
           const err = error instanceof Error ? error : new Error("Unknown error");
           ctx.log.error({ err }, "Route handler failed.");
           if (error instanceof HttpError) {
-            reply.code(error.statusCode).send({
-              ok: false,
-              error: {
-                code: error.code,
+            // Use spec-compliant error format based on error code
+            const details = error.details as Record<string, unknown> | undefined;
+            if (error.code === "validation_error" && details && "details" in details) {
+              reply.code(400).send(ErrorResponses.validationError(details.details as ValidationErrorDetail[]));
+            } else if (error.code === "unauthorized") {
+              reply.code(401).send(ErrorResponses.unauthorized());
+            } else if (error.code === "forbidden") {
+              reply.code(403).send(ErrorResponses.forbidden(
+                (details?.intent as string) ?? "unknown",
+                details?.reason as string | undefined
+              ));
+            } else if (error.code === "rate_limit_exceeded") {
+              reply.code(429).send(ErrorResponses.rateLimitExceeded(
+                (details?.retryAfter as number) ?? 60
+              ));
+            } else if (error.code === "not_found") {
+              reply.code(404).send(ErrorResponses.notFound(details?.resource as string | undefined));
+            } else {
+              // Generic HttpError format for other errors
+              reply.code(error.statusCode).send({
+                error: error.code,
                 message: error.message,
-                details: { ...(error.details ? { info: error.details } : {}), requestId: req.id }
-              }
-            });
+                ...(error.details ? { details: error.details } : {}),
+              });
+            }
           } else {
             reply.code(500).send({
-              ok: false,
-              error: { code: "internal_error", message: "Unexpected error", details: { requestId: req.id } }
+              error: "internal_error",
+              message: "Unexpected error",
             });
             db.errors.push({ timestamp: new Date().toISOString(), error: err.message });
           }

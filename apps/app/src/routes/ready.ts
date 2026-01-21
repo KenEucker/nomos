@@ -1,15 +1,16 @@
-export const config = {
-  auth: "none",
-  tags: ["system"],
-  summary: "Readiness check"
-};
-
 import type { Ctx } from "../platform/ctx";
+import { defineRoute } from "../platform/router/defineRoute";
+import { systemContract } from "./system.contract";
 
-export const get = async (ctx: Ctx) => {
-  return ctx.json({
-    status: "ok",
-    database: ctx.services.config.database.url ? "connected" : "missing",
-    queue: "ok"
-  });
-};
+export default defineRoute(systemContract, {
+  auth: "none",
+  handlers: {
+    get: async (ctx: Ctx) => {
+      return ctx.json({
+        status: "ok",
+        database: ctx.services.config.database.url ? "connected" : "missing",
+        queue: "ok",
+      });
+    },
+  },
+});

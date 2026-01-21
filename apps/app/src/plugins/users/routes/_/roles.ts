@@ -1,33 +1,28 @@
-import { z } from "zod";
 import type { Ctx } from "../../../../platform/ctx";
+import { defineRoute } from "../../../../platform/router/defineRoute";
+import { adminRolesContract } from "../users.contract";
 
-export const config = {
-  auth: "required",
-  intent: "roles.manage",
-  tags: ["admin"],
-  summary: "Manage roles"
-};
-
-export const get = async (ctx: Ctx) => {
-  const roles = Array.from(ctx.db.roles.entries()).map(([name, permissions]) => ({
-    name,
-    permissions
-  }));
-  return ctx.json({ roles });
-};
-
-export const postConfig = {
-  auth: "required",
-  intent: "roles.manage",
-  validate: {
-    body: z.object({
-      name: z.string(),
-      permissions: z.array(z.string())
-    })
-  }
-};
-
-export const post = async (ctx: Ctx) => {
-  ctx.db.roles.set(ctx.body.name, ctx.body.permissions);
-  return ctx.json({ status: "created" }, 201);
-};
+export default defineRoute(adminRolesContract, {
+  operations: {
+    get: {
+      intent: adminRolesContract.intents.list,
+      summary: "List roles",
+      handler: async (ctx: Ctx) => {
+        const roles = Array.from(ctx.db.roles.entries()).map(([name, permissions]) => ({
+          name,
+          permissions,
+        }));
+        return ctx.json({ roles });
+      },
+    },
+    post: {
+      intent: adminRolesContract.intents.create,
+      validate: { body: adminRolesContract.schema.createBody },
+      summary: "Create role",
+      handler: async (ctx: Ctx) => {
+        ctx.db.roles.set(ctx.body.name, ctx.body.permissions);
+        return ctx.json({ status: "created" }, 201);
+      },
+    },
+  },
+});

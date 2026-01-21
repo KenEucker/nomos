@@ -1,11 +1,7 @@
 import { getOpenApiSpec, OPENAPI_DOCS_PATH, OPENAPI_JSON_PATH } from "../platform/openapi/spec";
 import type { Ctx } from "../platform/ctx";
-
-export const config = {
-  auth: "none",
-  tags: ["system"],
-  summary: "API index"
-};
+import { defineRoute } from "../platform/router/defineRoute";
+import { systemContract } from "./system.contract";
 
 type Resource = {
   id: string;
@@ -41,7 +37,7 @@ export function extractResourcesFromOpenApi(spec: { paths?: Record<string, any> 
     .map(([id, methodSet]) => ({
       id,
       href: `/${id}`,
-      methods: Array.from(methodSet).sort()
+      methods: Array.from(methodSet).sort(),
     }))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
@@ -78,35 +74,40 @@ const renderHtml = (name: string, version: string | undefined, resources: Resour
 </html>`;
 };
 
-export const get = async (ctx: Ctx) => {
-  const spec = getOpenApiSpec();
-  const name = spec.info?.title ?? "API";
-  const version = spec.info?.version;
-  const resources = extractResourcesFromOpenApi(spec);
-  const outputParam =
-    typeof ctx.query.output === "string" ? ctx.query.output.toLowerCase() : undefined;
+export default defineRoute(systemContract, {
+  auth: "none",
+  handlers: {
+    get: async (ctx: Ctx) => {
+      const spec = getOpenApiSpec();
+      const name = spec.info?.title ?? "API";
+      const version = spec.info?.version;
+      const resources = extractResourcesFromOpenApi(spec);
+      const outputParam =
+        typeof ctx.query.output === "string" ? ctx.query.output.toLowerCase() : undefined;
 
-  if (outputParam === "html") {
-    ctx.reply.type("text/html; charset=utf-8").send(renderHtml(name, version, resources));
-    return;
-  }
+      if (outputParam === "html") {
+        ctx.reply.type("text/html; charset=utf-8").send(renderHtml(name, version, resources));
+        return;
+      }
 
-  const payload: {
-    name: string;
-    version?: string;
-    openapi: string;
-    docs: string;
-    resources: Resource[];
-  } = {
-    name,
-    openapi: OPENAPI_JSON_PATH,
-    docs: OPENAPI_DOCS_PATH,
-    resources
-  };
+      const payload: {
+        name: string;
+        version?: string;
+        openapi: string;
+        docs: string;
+        resources: Resource[];
+      } = {
+        name,
+        openapi: OPENAPI_JSON_PATH,
+        docs: OPENAPI_DOCS_PATH,
+        resources,
+      };
 
-  if (version) {
-    payload.version = version;
-  }
+      if (version) {
+        payload.version = version;
+      }
 
-  ctx.reply.type("application/json; charset=utf-8").send(payload);
-};
+      ctx.reply.type("application/json; charset=utf-8").send(payload);
+    },
+  },
+});
