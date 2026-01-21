@@ -5,36 +5,21 @@ const prisma = getPrismaClient()
 
 async function main() {
   // ---------------------------------------------------------------------------
-  // Roles (schema-agnostic: works with both old and new schema)
+  // Roles
   // ---------------------------------------------------------------------------
   const roles = [
-    { key: "admin", name: "Administrator" },
-    { key: "platform_admin", name: "Platform Admin" },
-    { key: "editor", name: "Editor" },
-    { key: "viewer", name: "Viewer" }
+    { key: "admin", name: "Administrator", description: "Full administrative access" },
+    { key: "platform_admin", name: "Platform Admin", description: "Platform administration access" },
+    { key: "editor", name: "Editor", description: "Content editing access" },
+    { key: "viewer", name: "Viewer", description: "Read-only access" }
   ]
 
-  // Check if the new schema (with updatedAt) is in use by checking table columns
-  const tableInfo = await prisma.$queryRaw<Array<{ name: string }>>`PRAGMA table_info(Role)`
-  const hasUpdatedAt = tableInfo.some((col) => col.name === "updatedAt")
-
   for (const role of roles) {
-    if (hasUpdatedAt) {
-      // New schema with updatedAt - must provide it explicitly for SQLite
-      const now = new Date()
-      await prisma.$executeRaw`
-        INSERT INTO Role (id, key, name, createdAt, updatedAt)
-        VALUES (${`role-${role.key}`}, ${role.key}, ${role.name}, ${now}, ${now})
-        ON CONFLICT(key) DO UPDATE SET name = ${role.name}, updatedAt = ${now}
-      `
-    } else {
-      // Old schema without updatedAt
-      await prisma.role.upsert({
-        where: { key: role.key },
-        update: { name: role.name },
-        create: { key: role.key, name: role.name }
-      })
-    }
+    await prisma.role.upsert({
+      where: { key: role.key },
+      update: { name: role.name, description: role.description },
+      create: { key: role.key, name: role.name, description: role.description }
+    })
   }
 
   // ---------------------------------------------------------------------------
@@ -95,35 +80,29 @@ async function main() {
     const roleId = roleByKey.get(assignment.role)
     if (!roleId) continue
 
-    // UserRole assignment
+    // UserRole assignment (legacy)
     await prisma.userRole.upsert({
       where: { userId_roleId: { userId: assignment.user.id, roleId } },
       update: {},
       create: { userId: assignment.user.id, roleId }
     })
 
-    // SubjectRole for authz system (if table exists after migration)
-    try {
-      if ((prisma as any).subjectRole) {
-        await (prisma as any).subjectRole.upsert({
-          where: {
-            subjectType_subjectId_roleId: {
-              subjectType: "user",
-              subjectId: assignment.user.id,
-              roleId
-            }
-          },
-          update: {},
-          create: {
-            subjectType: "user",
-            subjectId: assignment.user.id,
-            roleId
-          }
-        })
+    // SubjectRole assignment (new authz system)
+    await prisma.subjectRole.upsert({
+      where: {
+        subjectType_subjectId_roleId: {
+          subjectType: "user",
+          subjectId: assignment.user.id,
+          roleId
+        }
+      },
+      update: {},
+      create: {
+        subjectType: "user",
+        subjectId: assignment.user.id,
+        roleId
       }
-    } catch {
-      // SubjectRole table may not exist yet if migration hasn't run
-    }
+    })
   }
 
   console.log("Seeded admin login: admin@nomos.local / admin123 (roles: admin, platform_admin)")
@@ -135,7 +114,5 @@ main()
     process.exit(1)
   })
   .finally(async () => {
-    // If you prefer, you can omit disconnecting so the singleton can be reused,
-    // but for a one-shot seed process this is fine.
     await prisma.$disconnect()
   })
