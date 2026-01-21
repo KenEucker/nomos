@@ -14,13 +14,27 @@ async function main() {
     { key: "viewer", name: "Viewer" }
   ]
 
-  const now = new Date()
+  // Check if the new schema (with updatedAt) is in use by checking table columns
+  const tableInfo = await prisma.$queryRaw<Array<{ name: string }>>`PRAGMA table_info(Role)`
+  const hasUpdatedAt = tableInfo.some((col) => col.name === "updatedAt")
+
   for (const role of roles) {
-    await prisma.role.upsert({
-      where: { key: role.key },
-      update: { name: role.name, updatedAt: now },
-      create: { key: role.key, name: role.name, updatedAt: now }
-    })
+    if (hasUpdatedAt) {
+      // New schema with updatedAt - must provide it explicitly for SQLite
+      const now = new Date()
+      await prisma.$executeRaw`
+        INSERT INTO Role (id, key, name, createdAt, updatedAt)
+        VALUES (${`role-${role.key}`}, ${role.key}, ${role.name}, ${now}, ${now})
+        ON CONFLICT(key) DO UPDATE SET name = ${role.name}, updatedAt = ${now}
+      `
+    } else {
+      // Old schema without updatedAt
+      await prisma.role.upsert({
+        where: { key: role.key },
+        update: { name: role.name },
+        create: { key: role.key, name: role.name }
+      })
+    }
   }
 
   // ---------------------------------------------------------------------------
