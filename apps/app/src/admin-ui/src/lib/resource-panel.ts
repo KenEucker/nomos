@@ -125,18 +125,19 @@ export const createResourcePanel = ({
   const viewHref = (id: string) => `${basePath}/view?id=${id}`
   const intents = resource.intents ?? {}
   const rowActionConfig = resource.list?.rowActions
+  const getEndpoint = resource.endpoints.get
+  const updateEndpoint = resource.endpoints.update
   const deleteEndpoint = resource.endpoints.delete
+  // Row actions default to showing only if the corresponding endpoint exists
   const rowActionCandidates: Array<RowAction | null> = [
-    rowActionConfig?.view ?? true
+    (rowActionConfig?.view ?? Boolean(getEndpoint))
       ? { id: "view", label: "View", variant: "secondary", intent: intents.read }
       : null,
-    rowActionConfig?.edit ?? true
+    (rowActionConfig?.edit ?? Boolean(updateEndpoint))
       ? { id: "edit", label: "Edit", variant: "secondary", intent: intents.update }
       : null,
-    rowActionConfig?.delete ?? true
-      ? deleteEndpoint
-        ? { id: "delete", label: "Delete", variant: "destructive", intent: intents.delete }
-        : null
+    (rowActionConfig?.delete ?? Boolean(deleteEndpoint))
+      ? { id: "delete", label: "Delete", variant: "destructive", intent: intents.delete }
       : null,
   ]
   const rowActions = rowActionCandidates.filter((action): action is RowAction => Boolean(action))
@@ -215,7 +216,7 @@ export const createResourcePanel = ({
         ? ctx.query.pageSize !== undefined
           ? ctx.state.pageSize
           : resource.list?.pageSize ?? ctx.state.pageSize
-        : Math.max(resource.list?.pageSize ?? 20, 250)
+        : Math.min(resource.list?.pageSize ?? 100, 100)
       const sort = serverSideList
         ? ctx.state.sort ??
           (resource.list?.defaultSort

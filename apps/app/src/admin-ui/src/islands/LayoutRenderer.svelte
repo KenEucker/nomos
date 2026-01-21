@@ -20,6 +20,13 @@
     return path.split(".").reduce((acc, key) => (acc ? acc[key] : undefined), source)
   }
 
+  const interpolate = (template: string, row: Record<string, any>): string => {
+    return template.replace(/\{(\w+)\}/g, (_, key) => {
+      const value = row[key]
+      return value !== undefined ? encodeURIComponent(String(value)) : `{${key}}`
+    })
+  }
+
   const spanClass = (span?: number) => {
     switch (span) {
       case 1:
@@ -122,7 +129,7 @@
         rowIdKey={node.props.rowIdKey ?? "id"}
         showSelection={false}
         showActions={true}
-        enableEdit={node.props.enableEdit ?? true}
+        enableEdit={node.props.enableEdit ?? false}
         loading={false}
         showSearch={node.props.searchable ?? true}
         searchPlaceholder={node.props.searchPlaceholder}
@@ -152,10 +159,7 @@
           if (!id) return
           const basePath = node.props.rowActionBasePath ?? ""
           if (action.type === "link" && action.href) {
-            const href = action.href.includes("{id}")
-              ? action.href.replace("{id}", encodeURIComponent(String(id)))
-              : action.href
-            window.location.href = href
+            window.location.href = interpolate(action.href, row)
             return
           }
           if (action.type === "method" && action.endpoint) {
@@ -164,15 +168,13 @@
               : true
             if (!confirmed) return
             try {
-              const endpoint = action.endpoint.includes("{id}")
-                ? action.endpoint.replace("{id}", encodeURIComponent(String(id)))
-                : action.endpoint
+              const endpoint = interpolate(action.endpoint, row)
               await apiFetch(endpoint, { method: action.method ?? "POST" })
               if (action.toast?.success) {
                 notify(action.toast.success, "success")
               }
               if (action.after === "navigate" && action.href) {
-                window.location.href = action.href.replace("{id}", encodeURIComponent(String(id)))
+                window.location.href = interpolate(action.href, row)
                 return
               }
               onStateChange(state)
@@ -193,9 +195,7 @@
           if (action.id === "delete" && node.props.rowActionDeleteEndpoint) {
             const confirmed = window.confirm("Delete this item?")
             if (!confirmed) return
-            const endpoint = node.props.rowActionDeleteEndpoint.includes("{id}")
-              ? node.props.rowActionDeleteEndpoint.replace("{id}", String(id))
-              : `${node.props.rowActionDeleteEndpoint}?id=${encodeURIComponent(String(id))}`
+            const endpoint = interpolate(node.props.rowActionDeleteEndpoint, row)
             await apiFetch(endpoint, { method: "DELETE" })
             onStateChange(state)
           }
@@ -203,9 +203,7 @@
         onSave={
           node.props.saveEndpoint
             ? async ({ row, patch }) => {
-                const endpoint = node.props.saveEndpoint!.includes("{id}")
-                  ? node.props.saveEndpoint!.replace("{id}", String(row.id))
-                  : node.props.saveEndpoint!
+                const endpoint = interpolate(node.props.saveEndpoint!, row)
                 await apiFetch(endpoint, {
                   method: node.props.saveMethod ?? "PATCH",
                   body: JSON.stringify({ id: row.id, patch }),

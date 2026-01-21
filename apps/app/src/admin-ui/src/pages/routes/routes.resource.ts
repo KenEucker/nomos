@@ -34,11 +34,6 @@ export const routesResource = createResourceDefinition({
       { key: "config.summary", label: "Summary", hideOnMobile: true },
       { key: "config.auth", label: "Auth", hideOnMobile: true },
     ],
-    rowActions: {
-      view: false,
-      edit: false,
-      delete: false,
-    },
   },
   intents: {
     read: "admin.access",

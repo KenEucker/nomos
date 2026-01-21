@@ -25,11 +25,6 @@ export const webhooksResource = createResourceDefinition({
       { key: "retryPolicy.delayMs", label: "Retry Delay (ms)", hideOnMobile: true },
       { key: "createdAt", label: "Created", render: "datetime", hideOnMobile: true },
     ],
-    rowActions: {
-      view: false,
-      edit: false,
-      delete: false,
-    },
   },
   form: {
     fields: [

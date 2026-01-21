@@ -35,11 +35,6 @@ export const errorsResource = createResourceDefinition({
       { key: "routeId", label: "Route ID", hideOnMobile: true },
       { key: "stack", label: "Stack", render: "json", hideOnMobile: true },
     ],
-    rowActions: {
-      view: false,
-      edit: false,
-      delete: false,
-    },
   },
   intents: {
     read: "admin.access",

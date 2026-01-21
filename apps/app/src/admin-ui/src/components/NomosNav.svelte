@@ -182,9 +182,19 @@
     update()
     const stopThemeWatch = watchSystemTheme()
     media.addEventListener("change", update)
+
+    // Listen for Swup navigation events to update current path
+    const handleSwupNavigation = () => {
+      currentPath = window.location.pathname
+    }
+    document.addEventListener("swup:contentReplaced", handleSwupNavigation)
+    document.addEventListener("swup:pageView", handleSwupNavigation)
+
     return () => {
       media.removeEventListener("change", update)
       stopThemeWatch()
+      document.removeEventListener("swup:contentReplaced", handleSwupNavigation)
+      document.removeEventListener("swup:pageView", handleSwupNavigation)
     }
   })
 
@@ -205,7 +215,7 @@
 
   <nav
     class={cn(
-      "nomos-nav bg-card text-card-foreground flex h-full min-h-0 flex-col",
+      "nomos-nav bg-card text-card-foreground flex min-h-0 flex-col md:h-full",
       $navPreferences.sidebarCollapsed && mode === "nav" ? "items-center" : "items-stretch"
     )}
     aria-label="Nomos admin navigation"
