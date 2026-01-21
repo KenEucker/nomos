@@ -185,11 +185,11 @@
             return
           }
           if (action.id === "view") {
-            window.location.href = `${basePath}/view?id=${encodeURIComponent(String(id))}`
+            window.location.href = `${basePath}/${encodeURIComponent(String(id))}`
             return
           }
           if (action.id === "edit") {
-            window.location.href = `${basePath}/edit?id=${encodeURIComponent(String(id))}`
+            window.location.href = `${basePath}/${encodeURIComponent(String(id))}/edit`
             return
           }
           if (action.id === "delete" && node.props.rowActionDeleteEndpoint) {
