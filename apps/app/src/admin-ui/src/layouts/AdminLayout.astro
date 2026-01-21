@@ -58,15 +58,13 @@ const actionClass = (variant?: string) => {
 <BaseLayout title={title}>
   <ShellState client:load />
   <SessionLoader client:load />
-  <div class="min-h-screen bg-background text-foreground">
-    <div class="flex min-h-screen">
-      <aside class="w-full border-b border-border bg-card/40 md:w-72 md:border-b-0 md:border-r">
-        <div class="sticky top-0 h-full">
-          <NomosNav client:load {navItems} />
-        </div>
-      </aside>
+  <div class="min-h-screen bg-background text-foreground" style="--nomos-header-height: 0px;">
+    <div class="admin-shell">
+      <div class="admin-shell-nav">
+        <NomosNav client:load {navItems} />
+      </div>
 
-      <main id="swup" class="flex-1 overflow-x-hidden admin-main">
+      <main id="swup" class="admin-shell-main overflow-x-hidden">
         <div class="p-4 sm:p-6 md:p-8">
           <div class="mb-6 space-y-2">
             {breadcrumbs.length > 0 ? (

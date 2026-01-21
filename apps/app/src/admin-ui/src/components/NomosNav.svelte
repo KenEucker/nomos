@@ -222,7 +222,7 @@
   >
   {#if mode === "nav"}
     {#if useCompactMobileNav}
-      <div class="flex-1">
+      <div>
         <ul class="flex items-center justify-around gap-2 px-2 py-2">
           {#each mobileItems as item}
             <li class="flex-1">

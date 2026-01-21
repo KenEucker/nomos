@@ -10,10 +10,25 @@ const { title = "Nomos Admin" } = Astro.props;
 
     <script is:inline>
       (function() {
-        const stored = localStorage.getItem("nomos.theme.v1");
-        if (stored === "dark" || (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-          document.documentElement.classList.add("dark");
+        var root = document.documentElement;
+
+        // Initialize theme
+        var themeStored = localStorage.getItem("nomos.theme.v1");
+        if (themeStored === "dark" || (!themeStored && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          root.classList.add("dark");
         }
+
+        // Initialize nav preferences data attributes
+        var navStored = localStorage.getItem("nomos.nav.preferences.v1");
+        var navPrefs = navStored ? JSON.parse(navStored) : {};
+        root.dataset.navDesktopDock = navPrefs.desktopDock || "left";
+        root.dataset.navMobileDock = navPrefs.mobileDock || "top";
+        root.dataset.navCollapsed = navPrefs.sidebarCollapsed ? "true" : "false";
+        root.dataset.navDense = navPrefs.denseMode ? "true" : "false";
+        root.dataset.navShowGroups = navPrefs.showGroupHeadings !== false ? "true" : "false";
+        root.dataset.navTooltips = navPrefs.enableTooltips !== false ? "true" : "false";
+        root.dataset.navReduceMotion = navPrefs.reduceMotion ? "true" : "false";
+        root.dataset.navMode = "nav";
       })();
     </script>
   </head>
