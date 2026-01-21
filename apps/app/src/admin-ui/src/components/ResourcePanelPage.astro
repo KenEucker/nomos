@@ -5,8 +5,9 @@ import PanelRuntime from "../islands/PanelRuntime.svelte"
 import { buildPanelCtx } from "../lib/state"
 import type { PanelModule } from "../lib/types"
 import type { ResourcePanelConfig } from "../lib/resource-panel"
-// import AdminLayout from "./AdminLayout.astro"
 import AdminLayout from "../layouts/AdminLayout.astro"
+import ErrorDisplay from "./ErrorDisplay.astro"
+import { ServerApiError } from "../lib/server/api"
 
 const { panel, panelModuleKey = "/src/lib/resource.panel.ts", resourceConfig } = Astro.props as {
   panel: PanelModule
@@ -15,32 +16,62 @@ const { panel, panelModuleKey = "/src/lib/resource.panel.ts", resourceConfig } =
 }
 
 const ctx = buildPanelCtx(new URL(Astro.request.url), {}, Astro.request)
-const data = await panel.query(ctx)
 
-if (!data || typeof data !== "object" || Array.isArray(data)) {
-  throw new Error("Panel query must return a keyed data bag")
+// Try to fetch data, catch errors gracefully
+let data: Record<string, unknown> | null = null
+let error: { message: string; code?: string; status?: number } | null = null
+
+try {
+  const result = await panel.query(ctx)
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    throw new Error("Panel query must return a keyed data bag")
+  }
+  data = result as Record<string, unknown>
+} catch (e) {
+  if (e instanceof ServerApiError) {
+    error = {
+      message: e.message,
+      code: e.code,
+      status: e.status,
+    }
+  } else if (e instanceof Error) {
+    error = { message: e.message }
+  } else {
+    error = { message: "An unknown error occurred" }
+  }
 }
 
-const nodes = panel.layout(data, ctx)
-const commands = panel.commandBar(ctx, data)
 const clientResource = { ...resourceConfig.resource, schema: undefined }
 const clientConfig = { ...resourceConfig, resource: clientResource }
 const authPayload = Astro.locals.auth ?? { subject: null, capabilities: {} }
 const authJson = JSON.stringify(authPayload)
 ---
 
-<AdminLayout subject={authPayload.subject}>
-  <div class="space-y-6">
-    <PanelRuntime
-      panelModuleKey={panelModuleKey}
-      initialData={data}
-      initialNodes={nodes}
-      initialCommands={commands}
-      href={Astro.request.url}
-      resourceConfig={clientConfig}
-      client:load
+{error ? (
+  <AdminLayout title="Error">
+    <ErrorDisplay
+      title={error.status === 403 ? "Access Denied" : "Error"}
+      message={error.message}
+      code={error.code}
+      status={error.status}
     />
-  </div>
-  <Toaster client:load />
-</AdminLayout>
-<script type="application/json" id="nomos-auth" set:html={authJson}></script>
+  </AdminLayout>
+) : data ? (
+  <>
+    <AdminLayout subject={authPayload.subject}>
+      <div class="space-y-6">
+        <PanelRuntime
+          panelModuleKey={panelModuleKey}
+          initialData={data}
+          initialNodes={panel.layout(data, ctx)}
+          initialCommands={panel.commandBar(ctx, data)}
+          href={Astro.request.url}
+          resourceConfig={clientConfig}
+          client:load
+        />
+      </div>
+      <Toaster client:load />
+    </AdminLayout>
+    <script type="application/json" id="nomos-auth" set:html={authJson}></script>
+  </>
+) : null}

@@ -4,7 +4,8 @@
  * Resolves effective permissions for a subject via database-backed RBAC.
  * Implements per-request memoization and deny-by-default on errors.
  *
- * Uses raw SQL to handle Prisma client/schema mismatch during migrations.
+ * NOTE: Requires `npx prisma generate` to be run after schema migrations
+ * to ensure the Prisma client has the new SubjectRole, RolePermission, etc. models.
  */
 
 import type { PrismaClient } from "@prisma/client"
@@ -60,41 +61,19 @@ export function createGrantProvider(prisma: PrismaClient): GrantProvider {
 }
 
 // =============================================================================
-// Raw SQL Types
-// =============================================================================
-
-interface RoleRow {
-  roleKey: string
-}
-
-interface PermissionRow {
-  permissionKey: string
-}
-
-// =============================================================================
-// Schema Detection
-// =============================================================================
-
-/**
- * Check if the SubjectRole table exists.
- */
-async function hasSubjectRoleTable(prisma: PrismaClient): Promise<boolean> {
-  try {
-    const tables = await prisma.$queryRaw<Array<{ name: string }>>`
-      SELECT name FROM sqlite_master WHERE type='table' AND name='SubjectRole'
-    `
-    return tables.length > 0
-  } catch {
-    return false
-  }
-}
-
-// =============================================================================
 // Grant Resolution
 // =============================================================================
 
 /**
- * Resolve grants for a subject from the database using raw SQL.
+ * Check if the new authz models are available in Prisma client.
+ */
+function hasAuthzModels(prisma: PrismaClient): boolean {
+  const p = prisma as any
+  return !!p.subjectRole && !!p.rolePermission && !!p.permission
+}
+
+/**
+ * Resolve grants for a subject from the database.
  *
  * Query path:
  *   SubjectRole → Role → RolePermission → Permission
@@ -103,41 +82,48 @@ async function hasSubjectRoleTable(prisma: PrismaClient): Promise<boolean> {
  */
 async function resolveGrants(prisma: PrismaClient, subject: Subject): Promise<Grants> {
   try {
-    // Check if new authz tables exist
-    const hasNewTables = await hasSubjectRoleTable(prisma)
-
-    if (!hasNewTables) {
+    // Check if new authz models are available
+    if (!hasAuthzModels(prisma)) {
       // Fall back to legacy behavior: use UserRole if subject is a user
       if (subject.type === "user") {
         return resolveLegacyUserGrants(prisma, subject)
       }
-      // No grants for non-user subjects without new tables
+      // No grants for non-user subjects without new models
       return { permissions: new Set(), roles: [] }
     }
 
-    // Query roles assigned to this subject
-    const roleRows = await prisma.$queryRaw<RoleRow[]>`
-      SELECT r.key as roleKey
-      FROM SubjectRole sr
-      JOIN Role r ON r.id = sr.roleId
-      WHERE sr.subjectType = ${subject.type}
-        AND sr.subjectId = ${subject.id}
-    `
+    // Type assertion to access new models
+    const p = prisma as any
 
-    const roles = roleRows.map((r) => r.roleKey)
+    // Query all roles assigned to this subject, including their permissions
+    const subjectRoles = await p.subjectRole.findMany({
+      where: {
+        subjectType: subject.type,
+        subjectId: subject.id,
+      },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
+    })
 
-    // Query permissions from all assigned roles
-    const permissionRows = await prisma.$queryRaw<PermissionRow[]>`
-      SELECT DISTINCT p.key as permissionKey
-      FROM SubjectRole sr
-      JOIN Role r ON r.id = sr.roleId
-      JOIN RolePermission rp ON rp.roleId = r.id
-      JOIN Permission p ON p.id = rp.permissionId
-      WHERE sr.subjectType = ${subject.type}
-        AND sr.subjectId = ${subject.id}
-    `
+    // Collect roles
+    const roles = subjectRoles.map((sr: any) => sr.role.key)
 
-    const permissions = new Set<string>(permissionRows.map((p) => p.permissionKey))
+    // Collect permissions from all roles
+    const permissions = new Set<string>()
+    for (const sr of subjectRoles) {
+      for (const rp of (sr as any).role.permissions) {
+        permissions.add(rp.permission.key)
+      }
+    }
 
     // Check for wildcard permission in claims (for service accounts, etc.)
     if (subject.claims?.permissions) {
@@ -157,24 +143,25 @@ async function resolveGrants(prisma: PrismaClient, subject: Subject): Promise<Gr
 
 /**
  * Legacy grant resolution using UserRole table (for backwards compatibility).
+ * Used when SubjectRole table doesn't exist or Prisma client isn't updated.
  */
 async function resolveLegacyUserGrants(prisma: PrismaClient, subject: Subject): Promise<Grants> {
   try {
     // Query roles using legacy UserRole table
-    const roleRows = await prisma.$queryRaw<RoleRow[]>`
-      SELECT r.key as roleKey
-      FROM UserRole ur
-      JOIN Role r ON r.id = ur.roleId
-      WHERE ur.userId = ${subject.id}
-    `
+    const userRoles = await prisma.userRole.findMany({
+      where: {
+        userId: subject.id,
+      },
+      include: {
+        role: true,
+      },
+    })
 
-    const roles = roleRows.map((r) => r.roleKey)
+    const roles = userRoles.map((ur) => ur.role.key)
 
-    // For legacy mode, derive permissions from role names
-    // Admin role gets all permissions
+    // For legacy mode, admin roles get wildcard permission
     const permissions = new Set<string>()
     if (roles.includes("admin") || roles.includes("platform_admin")) {
-      // Grant all core permissions for admin
       permissions.add("*") // Wildcard permission
     }
 
