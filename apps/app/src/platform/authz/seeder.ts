@@ -22,6 +22,7 @@ export const CORE_INTENTS = [
   "admin.diagnostics",
 
   // Role management
+  "roles.list",
   "roles.read",
   "roles.create",
   "roles.update",
@@ -36,6 +37,7 @@ export const CORE_INTENTS = [
   "subjects.update",
 
   // API Key management
+  "apiKeys.list",
   "apiKeys.read",
   "apiKeys.create",
   "apiKeys.update",
@@ -59,6 +61,7 @@ export const CORE_INTENTS = [
   "sdk.write",
 
   // User management
+  "users.list",
   "users.read",
   "users.create",
   "users.update",
@@ -263,10 +266,13 @@ export const DEFAULT_VIEWER_ROLE = {
   permissions: [
     "admin.access",
     "admin.read",
+    "roles.list",
     "roles.read",
     "permissions.read",
     "subjects.read",
+    "apiKeys.list",
     "apiKeys.read",
+    "users.list",
     "users.read",
   ],
 }
@@ -281,13 +287,16 @@ export const DEFAULT_MANAGER_ROLE = {
   permissions: [
     "admin.access",
     "admin.read",
+    "roles.list",
     "roles.read",
     "permissions.read",
     "subjects.read",
     "subjects.update",
+    "apiKeys.list",
     "apiKeys.read",
     "apiKeys.create",
     "apiKeys.update",
+    "users.list",
     "users.read",
     "users.create",
     "users.update",
