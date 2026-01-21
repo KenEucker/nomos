@@ -8,17 +8,25 @@ async function main() {
   // Roles
   // ---------------------------------------------------------------------------
   const roles = [
-    { key: "admin", name: "Administrator" },
-    { key: "platform_admin", name: "Platform Admin" },
-    { key: "editor", name: "Editor" },
-    { key: "viewer", name: "Viewer" }
+    { key: "admin", name: "Administrator", description: "Full administrative access" },
+    { key: "platform_admin", name: "Platform Admin", description: "Platform administration access" },
+    { key: "editor", name: "Editor", description: "Content editing access" },
+    { key: "viewer", name: "Viewer", description: "Read-only access" }
   ]
 
   for (const role of roles) {
     await prisma.role.upsert({
       where: { key: role.key },
-      update: { name: role.name },
-      create: role
+      update: {
+        name: role.name,
+        description: role.description,
+        updatedAt: new Date()
+      },
+      create: {
+        key: role.key,
+        name: role.name,
+        description: role.description
+      }
     })
   }
 
@@ -80,11 +88,28 @@ async function main() {
     const roleId = roleByKey.get(assignment.role)
     if (!roleId) continue
 
+    // Legacy UserRole (for backward compatibility)
     await prisma.userRole.upsert({
-      // assumes a compound unique constraint named `userId_roleId`
       where: { userId_roleId: { userId: assignment.user.id, roleId } },
       update: {},
       create: { userId: assignment.user.id, roleId }
+    })
+
+    // New SubjectRole (for authz system)
+    await prisma.subjectRole.upsert({
+      where: {
+        subjectType_subjectId_roleId: {
+          subjectType: "user",
+          subjectId: assignment.user.id,
+          roleId
+        }
+      },
+      update: {},
+      create: {
+        subjectType: "user",
+        subjectId: assignment.user.id,
+        roleId
+      }
     })
   }
 
