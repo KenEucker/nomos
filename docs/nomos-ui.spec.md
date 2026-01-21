@@ -1,7 +1,7 @@
 # Nomos UI Specification (Nomos-UI)
 
 **Status:** Active Draft
-**Version:** 0.1.1
+**Version:** 0.1.2
 **Audience:** Framework users, UI contributors, plugin authors
 **Scope:** Defines Nomos-UI, Panels, PanelModules, ResourceDefinitions, and UI generation
 
