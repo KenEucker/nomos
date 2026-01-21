@@ -16,7 +16,7 @@ This document specifies the **Nomos API Routing system**, a contract-driven mech
 
 * Filesystem is the **single source of truth** for route existence
 * Zod is the **authoring format** for API contracts
-* OpenAPI remains the **published interface** (Swagger + SDK generation)
+* OpenAPI remains the **published interface** (Swagger); the SDK is a **derived, instance-served artifact** generated from OpenAPI
 * No opaque runtime discovery or auto-generated hidden routes
 * Full compatibility with authorization infrastructure
 
@@ -254,7 +254,7 @@ Validation is always enforced via Zod.
 `defineRoute()` populates the existing `config.openapi` structure, ensuring:
 
 * Compatibility with current Swagger UI
-* No change to SDK generation pipeline
+  * SDK artifacts remain derived from OpenAPI and served per instance
 
 ---
 
@@ -542,7 +542,7 @@ The Nomos API Routing system provides:
 * Zod-first API contracts
 * Deterministic filesystem-based routing
 * Minimal boilerplate for REST CRUD operations
-* Seamless OpenAPI + SDK continuity
+* Seamless OpenAPI + instance-served SDK continuity
 * Integrated authorization with intent-based access control
 * Built-in rate limiting with per-route overrides
 * Complete request pipeline observability

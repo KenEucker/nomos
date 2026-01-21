@@ -24,7 +24,7 @@ It unifies:
 - Admin UI rendering
 - Authorization and policy evaluation
 - Observability and audit logging
-- SDK generation
+- SDK artifact generation (instance-served)
 - OpenAPI specification
 
 into a single, coherent runtime.
@@ -61,7 +61,8 @@ The source of truth is:
 - runtime schemas (Zod)
 - policy definitions
 
-OpenAPI and SDKs are **derived artifacts**, never hand-authored.
+OpenAPI and SDKs are **derived artifacts**, never hand-authored. OpenAPI is the
+published interface; SDKs are instance-served derivatives.
 
 ---
 
@@ -84,7 +85,7 @@ Nomos runs as a **single unified runtime** that serves:
 - `/api/*` — API endpoints
 - `/admin/*` — Admin UI (Nomos-UI)
 - `/openapi.json` — Generated OpenAPI spec
-- SDK artifacts — Generated per platform version
+- SDK artifacts — Derived from OpenAPI and served per instance (staleness tracked by instance build identifier)
 
 There is no conceptual separation between "backend" and "admin".
 Both are first-class surfaces of the same system.
@@ -323,16 +324,16 @@ Multi-database support may be added in future versions.
 
 ## 11. SDK
 
-The SDK is a generated, version-locked artifact.
+The SDK is a generated, instance-served artifact.
 
-- Generated from platform contracts (API + schemas)
+- Derived from the instance OpenAPI surface and runtime capabilities
 - Type-safe where possible
-- Serves as a stable integration contract
+- Cached/invalidated using an instance build identifier (for staleness only)
+- Exposes capabilities so clients can handle runtime plugin drift
 
-The SDK is not a convenience abstraction.
-It is a **formal interface to the platform**.
-
-**Note**: Runtime plugin changes (enable/disable) may affect SDK type guarantees. This is an accepted tradeoff for runtime flexibility.
+The SDK is not published as a separately versioned dependency. It is a
+**capability-aware interface to a running instance**, and runtime plugin changes
+are handled via the capabilities interface rather than version numbers.
 
 ---
 
@@ -444,7 +445,7 @@ Nomos is not:
 * Auto-generated CRUD UIs from ResourceDefinitions
 * Database-backed observability
 * Rate limiting
-* SDK generation
+* Instance-served SDK generation (optional)
 * OpenAPI generation
 
 ### 17.2 Explicitly Out of Scope for v1
@@ -458,7 +459,7 @@ Nomos is not:
 ### 17.3 Future Considerations
 
 * Background jobs (needs specification)
-* SDK details (needs specification)
+* SDK details (see docs/nomos-sdk.spec.md)
 * WebSocket/SSE support
 * True plugin sandboxing
 * Multi-database support

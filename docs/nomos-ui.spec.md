@@ -346,7 +346,7 @@ PanelModules may declare data requirements via:
 
 * data loader functions (executed server-side or client-side)
 * platform services
-* API endpoints (via SDK)
+* API endpoints (via internal REST client or optional SDK)
 
 **Important**: PanelModules are not directly tied to API contracts in terms of compile-time enforcement.
 
@@ -356,23 +356,26 @@ PanelModules may declare data requirements via:
 
 ### 7.2 SDK Usage
 
-Panels typically use the platform SDK to fetch data:
+Panels may use the platform SDK when it is enabled, but core Nomos admin panels
+should rely on the internal API client so SDK generation can be disabled for
+admin-only deployments:
 
 ```typescript
 // In PanelModule data loader
 async loadData(ctx) {
-  // SDK provides type-safe API access
-  return await ctx.sdk.api.users.list({
+  // Internal API client for admin UI
+  return await ctx.api.users.list({
     page: ctx.query.page || 1
   })
 }
 ```
 
-The SDK is:
+The SDK (when enabled) is:
 
-* Generated from API contracts
+* Derived from OpenAPI as an instance-served artifact
 * Type-safe where possible
-* Subject to runtime changes (plugins can be enabled/disabled)
+* Capability-aware to handle runtime plugin changes
+* Optional for browser/SSR frontends, never required by core admin UI
 
 ---
 
@@ -395,7 +398,7 @@ actions: [
     name: "delete-user",
     intent: "users.delete",  // Checked before execution
     handler: async (ctx, userId) => {
-      await ctx.sdk.api.users.delete({ id: userId })
+      await ctx.api.users.delete({ id: userId })
       ctx.emit('user-deleted', { userId })
     }
   }
@@ -464,11 +467,12 @@ Nomos-UI uses the same authentication system as the API:
 * Sessions are maintained
 * API keys can be used for machine-to-machine requests
 
-The UI uses the platform SDK, which handles authentication automatically:
+The core admin UI uses the internal API client, which carries authentication
+context automatically (SDK usage is optional for external frontends):
 
 ```typescript
-// SDK automatically includes auth credentials
-const users = await sdk.api.users.list()
+// Internal client includes auth credentials
+const users = await ctx.api.users.list()
 ```
 
 ---
@@ -484,7 +488,7 @@ When API contracts change in core modules:
 For plugin-contributed APIs:
 
 * Plugins can be enabled/disabled at runtime
-* SDK type guarantees may be affected
+* SDK type guarantees may be affected; clients must use capabilities checks
 * This is a known tradeoff for runtime plugin flexibility
 
 ---
