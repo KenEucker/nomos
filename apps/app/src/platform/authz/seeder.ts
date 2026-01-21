@@ -3,9 +3,12 @@
  *
  * Auto-discovers and seeds permissions from plugins and core modules.
  * Runs on platform startup to ensure all declared intents exist in the database.
+ *
+ * Uses raw SQL to handle Prisma client/schema mismatch during migrations.
  */
 
 import type { PrismaClient } from "@prisma/client"
+import { randomUUID } from "crypto"
 
 // =============================================================================
 // Intent Collection
@@ -71,12 +74,33 @@ export function collectIntentsFromPlugins(
 }
 
 // =============================================================================
-// Database Seeding
+// Schema Detection
+// =============================================================================
+
+interface TableInfo {
+  name: string
+}
+
+/**
+ * Check if the new authz tables exist in the database.
+ */
+async function hasAuthzTables(prisma: PrismaClient): Promise<boolean> {
+  try {
+    const tables = await prisma.$queryRaw<TableInfo[]>`
+      SELECT name FROM sqlite_master WHERE type='table' AND name='Permission'
+    `
+    return tables.length > 0
+  } catch {
+    return false
+  }
+}
+
+// =============================================================================
+// Database Seeding (Raw SQL)
 // =============================================================================
 
 /**
- * Ensure all intents exist in the permissions table.
- * Uses upsert to avoid duplicates and never deletes existing permissions.
+ * Ensure all intents exist in the permissions table using raw SQL.
  */
 export async function ensurePermissions(
   prisma: PrismaClient,
@@ -87,16 +111,19 @@ export async function ensurePermissions(
 
   for (const key of intents) {
     try {
-      const result = await prisma.permission.upsert({
-        where: { key },
-        create: { key },
-        update: {}, // No-op update to get existing record
-      })
+      // Check if permission exists
+      const existingPerm = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM Permission WHERE key = ${key}
+      `
 
-      // Check if it was just created (no updatedAt change for new records in same transaction)
-      // We'll use a simpler heuristic: if createdAt equals updatedAt, it's new
-      if (result.createdAt.getTime() === result.updatedAt.getTime()) {
-        // This isn't perfect but close enough for logging purposes
+      if (existingPerm.length === 0) {
+        // Create new permission
+        const id = randomUUID()
+        const now = new Date()
+        await prisma.$executeRaw`
+          INSERT INTO Permission (id, key, createdAt, updatedAt)
+          VALUES (${id}, ${key}, ${now}, ${now})
+        `
         created.push(key)
       } else {
         existing.push(key)
@@ -110,7 +137,7 @@ export async function ensurePermissions(
 }
 
 /**
- * Ensure default roles exist with their permissions.
+ * Ensure default roles exist with their permissions using raw SQL.
  */
 export async function ensureDefaultRoles(
   prisma: PrismaClient,
@@ -122,39 +149,61 @@ export async function ensureDefaultRoles(
   }>
 ): Promise<void> {
   for (const roleData of roles) {
-    // First, ensure role exists
-    const role = await prisma.role.upsert({
-      where: { key: roleData.key },
-      create: {
-        key: roleData.key,
-        name: roleData.name,
-        description: roleData.description,
-      },
-      update: {
-        name: roleData.name,
-        description: roleData.description,
-      },
-    })
+    try {
+      // Check if role exists
+      const existingRole = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM Role WHERE key = ${roleData.key}
+      `
 
-    // Get all permission IDs for this role
-    const permissions = await prisma.permission.findMany({
-      where: { key: { in: roleData.permissions } },
-      select: { id: true },
-    })
+      let roleId: string
 
-    // Clear existing role permissions and set new ones
-    await prisma.rolePermission.deleteMany({
-      where: { roleId: role.id },
-    })
+      if (existingRole.length === 0) {
+        // Create new role
+        roleId = randomUUID()
+        const now = new Date()
+        await prisma.$executeRaw`
+          INSERT INTO Role (id, key, name, description, createdAt, updatedAt)
+          VALUES (${roleId}, ${roleData.key}, ${roleData.name}, ${roleData.description ?? null}, ${now}, ${now})
+        `
+      } else {
+        roleId = existingRole[0].id
+        // Update existing role
+        const now = new Date()
+        await prisma.$executeRaw`
+          UPDATE Role SET name = ${roleData.name}, description = ${roleData.description ?? null}, updatedAt = ${now}
+          WHERE id = ${roleId}
+        `
+      }
 
-    if (permissions.length > 0) {
-      await prisma.rolePermission.createMany({
-        data: permissions.map((p) => ({
-          roleId: role.id,
-          permissionId: p.id,
-        })),
-        skipDuplicates: true,
-      })
+      // Get all permission IDs for this role
+      const permissions = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM Permission WHERE key IN (${roleData.permissions.join("','")})
+      `
+
+      // This query approach doesn't work well with arrays in raw SQL
+      // Let's query permissions one by one
+      const permissionIds: string[] = []
+      for (const permKey of roleData.permissions) {
+        const perm = await prisma.$queryRaw<Array<{ id: string }>>`
+          SELECT id FROM Permission WHERE key = ${permKey}
+        `
+        if (perm.length > 0) {
+          permissionIds.push(perm[0].id)
+        }
+      }
+
+      // Clear existing role permissions
+      await prisma.$executeRaw`DELETE FROM RolePermission WHERE roleId = ${roleId}`
+
+      // Create new role permissions
+      for (const permissionId of permissionIds) {
+        await prisma.$executeRaw`
+          INSERT OR IGNORE INTO RolePermission (roleId, permissionId)
+          VALUES (${roleId}, ${permissionId})
+        `
+      }
+    } catch (error) {
+      console.error(`[authz] Failed to ensure role "${roleData.key}":`, error)
     }
   }
 }
@@ -233,6 +282,14 @@ export async function seedAuthzDatabase(options: SeederOptions): Promise<void> {
   const { prisma, plugins = [], additionalIntents = [], seedDefaultRoles = true } = options
 
   console.log("[authz] Seeding authorization database...")
+
+  // Check if authz tables exist
+  const tablesExist = await hasAuthzTables(prisma)
+  if (!tablesExist) {
+    console.log("[authz] Authorization tables not found. Skipping seeding.")
+    console.log("[authz] Run 'npx prisma migrate dev' to create the tables.")
+    return
+  }
 
   // Collect all intents
   const allIntents = new Set<string>([
