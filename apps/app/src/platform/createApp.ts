@@ -735,19 +735,22 @@ export async function createApp(config: ResolvedNomosConfig) {
           ctx.log.error({ err }, "Route handler failed.");
           if (error instanceof HttpError) {
             // Use spec-compliant error format based on error code
-            if (error.code === "validation_error" && error.details && "details" in error.details) {
-              reply.code(400).send(ErrorResponses.validationError(error.details.details as ValidationErrorDetail[]));
+            const details = error.details as Record<string, unknown> | undefined;
+            if (error.code === "validation_error" && details && "details" in details) {
+              reply.code(400).send(ErrorResponses.validationError(details.details as ValidationErrorDetail[]));
             } else if (error.code === "unauthorized") {
               reply.code(401).send(ErrorResponses.unauthorized());
             } else if (error.code === "forbidden") {
-              const details = error.details as { intent?: string; reason?: string } | undefined;
-              reply.code(403).send(ErrorResponses.forbidden(details?.intent ?? "unknown", details?.reason));
+              reply.code(403).send(ErrorResponses.forbidden(
+                (details?.intent as string) ?? "unknown",
+                details?.reason as string | undefined
+              ));
             } else if (error.code === "rate_limit_exceeded") {
-              const details = error.details as { retryAfter?: number } | undefined;
-              reply.code(429).send(ErrorResponses.rateLimitExceeded(details?.retryAfter ?? 60));
+              reply.code(429).send(ErrorResponses.rateLimitExceeded(
+                (details?.retryAfter as number) ?? 60
+              ));
             } else if (error.code === "not_found") {
-              const details = error.details as { resource?: string } | undefined;
-              reply.code(404).send(ErrorResponses.notFound(details?.resource));
+              reply.code(404).send(ErrorResponses.notFound(details?.resource as string | undefined));
             } else {
               // Generic HttpError format for other errors
               reply.code(error.statusCode).send({
