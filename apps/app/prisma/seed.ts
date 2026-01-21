@@ -14,11 +14,12 @@ async function main() {
     { key: "viewer", name: "Viewer" }
   ]
 
+  const now = new Date()
   for (const role of roles) {
     await prisma.role.upsert({
       where: { key: role.key },
-      update: { name: role.name },
-      create: { key: role.key, name: role.name }
+      update: { name: role.name, updatedAt: now },
+      create: { key: role.key, name: role.name, updatedAt: now }
     })
   }
 
