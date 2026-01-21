@@ -11,7 +11,7 @@ const querySchema = z.object({
 
 export const config = {
   auth: "required",
-  roles: ["admin"],
+  intent: "admin.read",
   tags: ["admin"],
   summary: "List sessions",
   validate: { query: querySchema }

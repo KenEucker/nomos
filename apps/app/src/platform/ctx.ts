@@ -6,7 +6,11 @@ import type { ServicesRegistry } from "./plugins/registry";
 import type { PrismaClient } from "@prisma/client";
 import { HttpError } from "./errors";
 import type { AppLogger } from "./logging/logger";
+import type { Subject, Decision } from "./authz";
 
+/**
+ * @deprecated Use Subject from authz module instead
+ */
 export type UserIdentity = {
   id: string;
   roles: string[];
@@ -28,8 +32,14 @@ export type Ctx = {
   query: Record<string, any>;
   body: any;
   headers: Record<string, string | string[] | undefined>;
+  /** The authenticated subject (user, apiKey, service, etc.) */
+  subject: Subject | null;
+  /** @deprecated Use subject instead */
   user: UserIdentity | null;
+  /** @deprecated Use subject instead */
   apiClient: ApiClient | null;
+  /** The authorization decision for this request (if intent was checked) */
+  authzDecision?: Decision;
   db: InMemoryStore;
   prisma: PrismaClient;
   services: ServicesRegistry;
@@ -40,6 +50,10 @@ export type Ctx = {
     requireUser: () => UserIdentity;
     requirePermission: (permission: string) => void;
     hasPermission: (permission: string) => boolean;
+    /** Get the current subject */
+    getSubject: () => Subject | null;
+    /** Require a subject to be authenticated */
+    requireSubject: () => Subject;
   };
   log: AppLogger;
   json: (payload: any, statusCode?: number, meta?: Record<string, any>) => Promise<void>;
@@ -92,7 +106,16 @@ export function createAuthHelpers(ctx: Omit<Ctx, "auth">): Ctx["auth"] {
         hasPermission(permission, ctx.apiClient?.permissions) ||
         false
       );
-    }
+    },
+    getSubject: () => {
+      return ctx.subject;
+    },
+    requireSubject: () => {
+      if (!ctx.subject) {
+        throw new HttpError(401, "unauthorized", "Authentication required");
+      }
+      return ctx.subject;
+    },
   };
 }
 

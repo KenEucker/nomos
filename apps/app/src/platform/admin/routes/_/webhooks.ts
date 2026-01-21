@@ -1,6 +1,6 @@
 export const config = {
   auth: "required",
-  permissions: ["webhooks.manage"],
+  intent: "webhooks.manage",
   tags: ["admin"],
   summary: "Webhook destinations"
 };

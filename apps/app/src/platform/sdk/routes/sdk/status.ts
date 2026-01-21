@@ -4,7 +4,7 @@ import { okResponse } from "../../../../routes/_openapi";
 
 export const config = {
   auth: "required",
-  permissions: ["sdk.read"],
+  intent: "sdk.read",
   tags: ["sdk"],
   summary: "SDK generation status",
   openapi: {

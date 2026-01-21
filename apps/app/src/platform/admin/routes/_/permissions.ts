@@ -2,7 +2,7 @@ import type { Ctx } from "../../../ctx";
 
 export const config = {
   auth: "required",
-  permissions: ["admin.read"],
+  intent: "permissions.read",
   tags: ["admin"],
   summary: "List available permissions"
 };

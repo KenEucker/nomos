@@ -2,7 +2,7 @@ import type { Ctx } from "../../../../ctx";
 
 export const config = {
   auth: "required",
-  permissions: ["webhooks.manage"],
+  intent: "webhooks.manage",
   tags: ["admin"],
   summary: "List available webhook events"
 };

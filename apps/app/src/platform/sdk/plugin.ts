@@ -11,7 +11,7 @@ export default {
   version: "1.0.0",
   description: "Runtime SDK generation and delivery for the Nomos OpenAPI surface.",
   menuGroup: "System",
-  permissions: ["sdk.read", "sdk.write"],
+  intents: ["sdk.read", "sdk.write"],
   routes: [{ baseDir: path.join(__dirname, "routes"), owner: "sdk" }],
   adminPages: [{ path: "/sdk", label: "SDK" }],
   services: {

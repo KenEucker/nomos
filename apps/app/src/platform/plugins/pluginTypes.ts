@@ -17,6 +17,14 @@ export type PluginManifest = {
   slug?: string;
   name?: string;
   dependsOn?: string[];
+  /**
+   * Intents (permissions) declared by this plugin.
+   * Format: "resource.action" (e.g., "posts.read", "posts.update")
+   */
+  intents?: string[];
+  /**
+   * @deprecated Use intents instead
+   */
   permissions?: string[];
   roles?: string[];
   middleware?: Record<string, (...args: any[]) => any>;

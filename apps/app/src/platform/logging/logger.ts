@@ -15,6 +15,7 @@ export const LOG_DOMAINS = [
   "router",
   "plugins",
   "auth",
+  "authz",
   "admin",
   "jobs",
   "events",

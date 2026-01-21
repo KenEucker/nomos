@@ -8,7 +8,7 @@ export const config = {
   auth: "required",
   tags: ["Plugins"],
   summary: "List plugins",
-  roles: ["admin"]
+  intent: "plugins.manage"
 };
 
 export const get = async (ctx: Ctx) => {

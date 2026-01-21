@@ -6,7 +6,7 @@ const paramsSchema = z.object({ id: z.string() });
 
 export const config = {
   auth: "required",
-  roles: ["admin"],
+  intent: "admin.read",
   tags: ["admin"],
   summary: "Get session",
   validate: { params: paramsSchema }
@@ -38,7 +38,7 @@ export const get = async (ctx: Ctx) => {
 
 export const delConfig = {
   auth: "required",
-  roles: ["admin"],
+  intent: "admin.read",
   validate: { params: paramsSchema }
 };
 

@@ -9,7 +9,7 @@ export const getConfig = {
   auth: "required",
   tags: ["Plugins"],
   summary: "Get plugin",
-  roles: ["admin"],
+  intent: "plugins.manage",
   validate: {
     params: z.object({ slug: z.string().min(1) })
   }

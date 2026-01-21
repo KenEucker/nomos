@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default {
   name: "auth",
-  permissions: ["auth.manage"],
+  intents: ["auth.manage"],
   routes: [
     {
       baseDir: path.join(__dirname, "routes"),

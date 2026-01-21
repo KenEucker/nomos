@@ -18,7 +18,7 @@ export const config = {
   auth: "required",
   tags: ["Roles"],
   summary: "List roles",
-  roles: ["admin"],
+  intent: "roles.read",
   validate: { query: querySchema },
   openapi: {
     components: { schemas: modelSchemas },
@@ -89,7 +89,7 @@ export const get = async (ctx: Ctx) => {
 
 export const postConfig = {
   auth: "required",
-  roles: ["admin"],
+  intent: "roles.create",
   validate: { body: createSchema },
   openapi: {
     components: { schemas: modelSchemas },

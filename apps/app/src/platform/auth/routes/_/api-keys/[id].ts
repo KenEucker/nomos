@@ -3,7 +3,7 @@ import type { Ctx } from "../../../../ctx";
 
 export const config = {
   auth: "required",
-  permissions: ["auth.manage"],
+  intent: "auth.manage",
   tags: ["admin"],
   summary: "Update API key",
   validate: {
