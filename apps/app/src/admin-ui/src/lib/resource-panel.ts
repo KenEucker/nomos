@@ -120,9 +120,9 @@ export const createResourcePanel = ({
   const serverSideList = false
 
   const listHref = basePath
-  const createHref = `${basePath}/create`
-  const editHref = (id: string) => `${basePath}/edit?id=${id}`
-  const viewHref = (id: string) => `${basePath}/view?id=${id}`
+  const createHref = `${basePath}/new`
+  const editHref = (id: string) => `${basePath}/${id}/edit`
+  const viewHref = (id: string) => `${basePath}/${id}`
   const intents = resource.intents ?? {}
   const rowActionConfig = resource.list?.rowActions
   const getEndpoint = resource.endpoints.get
