@@ -5,7 +5,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default {
   name: "admin",
-  permissions: ["admin.read", "admin.diagnostics", "webhooks.manage", "jobs.manage"],
+  intents: ["admin.read", "admin.diagnostics", "webhooks.manage", "jobs.manage"],
   routes: [
     {
       baseDir: path.join(__dirname, "routes"),

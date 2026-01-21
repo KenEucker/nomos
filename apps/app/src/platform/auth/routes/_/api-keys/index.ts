@@ -3,14 +3,14 @@ import type { Ctx } from "../../../../ctx";
 
 export const config = {
   auth: "required",
-  permissions: ["auth.manage"],
+  intent: "auth.manage",
   tags: ["admin"],
   summary: "Manage API keys"
 };
 
 export const postConfig = {
   auth: "required",
-  permissions: ["auth.manage"],
+  intent: "auth.manage",
   validate: {
     body: z.object({
       name: z.string().optional(),

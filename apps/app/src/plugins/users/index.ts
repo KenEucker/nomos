@@ -14,7 +14,7 @@ export default {
   name: "users",
   version: "1.0.0",
   description: "Core user management plugin with routes, admin UI, and jobs.",
-  permissions: [
+  intents: [
     "users.read",
     "users.create",
     "users.update",

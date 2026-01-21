@@ -18,10 +18,58 @@ model User {
 }
 
 model Role {
-  id    String     @id @default(cuid())
-  key   String     @unique
-  name  String
-  users UserRole[]
+  id          String           @id @default(cuid())
+  key         String           @unique
+  name        String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       UserRole[]
+  permissions RolePermission[]
+  subjects    SubjectRole[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model SubjectRole {
+  id          String   @id @default(cuid())
+  subjectType String
+  subjectId   String
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([subjectType, subjectId, roleId])
+  @@index([subjectType, subjectId])
+}
+
+model ApiKey {
+  id           String    @id @default(cuid())
+  keyHash      String    @unique
+  name         String
+  description  String?
+  lastUsedAt   DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  revokedAt    DateTime?
+  allowedHosts String?
 }
 
 model UserRole {

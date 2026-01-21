@@ -1,6 +1,6 @@
 export const config = {
   auth: "required",
-  permissions: ["admin.diagnostics"],
+  intent: "admin.diagnostics",
   tags: ["admin"],
   summary: "Diagnostics routes"
 };

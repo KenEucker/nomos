@@ -16,7 +16,7 @@ const patchSchema = z.object({
 
 export const config = {
   auth: "required",
-  roles: ["admin"],
+  intent: "users.read",
   tags: ["Users"],
   summary: "Get user",
   validate: { params: paramsSchema },
@@ -54,7 +54,7 @@ export const get = async (ctx: Ctx) => {
 
 export const patchConfig = {
   auth: "required",
-  roles: ["admin"],
+  intent: "users.update",
   validate: { params: paramsSchema, body: patchSchema },
   openapi: {
     components: { schemas: modelSchemas },
@@ -142,7 +142,7 @@ export const patch = async (ctx: Ctx) => {
 
 export const delConfig = {
   auth: "required",
-  roles: ["admin"],
+  intent: "users.delete",
   validate: { params: paramsSchema },
   openapi: {
     operation: {

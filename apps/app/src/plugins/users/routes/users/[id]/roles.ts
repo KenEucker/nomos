@@ -9,7 +9,7 @@ const bodySchema = z.object({ roles: z.array(z.string()) });
 
 export const config = {
   auth: "required",
-  roles: ["admin"],
+  intent: "roles.manage",
   tags: ["Users"],
   summary: "Replace user roles",
   validate: { params: paramsSchema, body: bodySchema },

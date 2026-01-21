@@ -1,6 +1,6 @@
 export const config = {
   auth: "required",
-  permissions: ["jobs.manage"],
+  intent: "jobs.manage",
   tags: ["admin"],
   summary: "Jobs"
 };

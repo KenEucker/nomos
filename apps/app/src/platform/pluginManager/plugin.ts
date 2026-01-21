@@ -5,7 +5,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default {
   name: "pluginManager",
-  permissions: ["plugins.manage"],
+  intents: ["plugins.manage"],
   menuGroup: "Integrations",
   routes: [
     {

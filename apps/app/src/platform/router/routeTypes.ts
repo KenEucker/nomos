@@ -3,9 +3,11 @@ import type { Handler } from "../ctx";
 
 export type RouteConfig = {
   auth?: "required" | "optional" | "none";
-  permissions?: string[];
-  permissionsAny?: string[];
-  roles?: string[];
+  /**
+   * The intent (permission) required to access this route.
+   * Format: "resource.action" (e.g., "posts.read", "users.update")
+   */
+  intent?: string;
   middleware?: string[];
   validate?: {
     params?: ZodSchema<any>;

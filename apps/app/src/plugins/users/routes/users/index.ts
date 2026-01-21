@@ -20,7 +20,7 @@ const createSchema = z.object({
 
 export const config = {
   auth: "required",
-  roles: ["admin"],
+  intent: "users.read",
   tags: ["Users"],
   summary: "List users",
   validate: { query: querySchema },
@@ -85,7 +85,7 @@ export const get = async (ctx: Ctx) => {
 
 export const postConfig = {
   auth: "required",
-  roles: ["admin"],
+  intent: "users.create",
   validate: { body: createSchema },
   openapi: {
     components: { schemas: modelSchemas },

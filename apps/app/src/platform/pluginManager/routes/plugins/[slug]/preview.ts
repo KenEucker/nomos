@@ -10,7 +10,7 @@ export const postConfig = {
   auth: "required",
   tags: ["Plugins"],
   summary: "Preview plugin",
-  roles: ["admin"],
+  intent: "plugins.manage",
   validate: {
     params: z.object({ slug: z.string().min(1) })
   }

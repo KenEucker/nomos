@@ -3,7 +3,7 @@ import type { Ctx } from "../../../../platform/ctx";
 
 export const config = {
   auth: "required",
-  permissions: ["roles.manage"],
+  intent: "roles.manage",
   tags: ["admin"],
   summary: "Manage roles"
 };
@@ -18,7 +18,7 @@ export const get = async (ctx: Ctx) => {
 
 export const postConfig = {
   auth: "required",
-  permissions: ["roles.manage"],
+  intent: "roles.manage",
   validate: {
     body: z.object({
       name: z.string(),

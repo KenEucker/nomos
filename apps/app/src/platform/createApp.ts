@@ -35,9 +35,18 @@ import { LocalStorageProvider } from "./storage/local";
 import { getSession } from "./auth/sessions";
 import { verifyJwt } from "./auth/jwt";
 import { findApiKey } from "./auth/apiKeys";
-import { resolvePermissions } from "./auth/permissions";
 import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logging/logger";
 import { getPrismaClient } from "./db/prisma";
+import {
+  createAuthorizationEngine,
+  createGrantProvider,
+  createPolicyRegistry,
+  createAuthzMiddleware,
+  seedAuthzDatabase,
+  type Subject,
+  type AuthorizationEngine,
+  type GrantProvider,
+} from "./authz";
 
 export async function createApp(config: ResolvedNomosConfig) {
   // Build DATABASE_URL from config
@@ -110,6 +119,14 @@ export async function createApp(config: ResolvedNomosConfig) {
   // Prisma singleton handles DATABASE_URL normalization and adapter wiring (Prisma 7).
   const prisma = getPrismaClient();
   await prisma.$connect();
+
+  // Initialize authorization system
+  const authzLog = createDomainLogger(baseLogger, "authz", allowedDomains);
+  const policyRegistry = createPolicyRegistry();
+  const grantProvider = createGrantProvider(prisma);
+  const authzEngine = createAuthorizationEngine({ grantProvider, policyRegistry });
+  const authzMiddleware = createAuthzMiddleware(authzEngine);
+  authzLog.info("Authorization engine initialized.");
 
   await app.register(cookie);
   await app.register(formbody);
@@ -243,22 +260,24 @@ export async function createApp(config: ResolvedNomosConfig) {
   const plugins = await loadPlugins(baseDir, corePlugins);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
 
-  for (const perm of plugins.registry.permissions) {
-    db.permissions.add(perm);
-  }
-  if (!db.roles.has("admin")) {
-    db.roles.set("admin", Array.from(db.permissions));
-  }
-  if (!db.roles.has("platform_admin")) {
-    db.roles.set("platform_admin", ["*"]);
-  }
+  // Seed authorization database with permissions from plugins
+  await seedAuthzDatabase({
+    prisma,
+    plugins: plugins.manifests.map((p) => ({
+      intents: p.manifest.intents,
+      permissions: p.manifest.permissions,
+    })),
+    seedDefaultRoles: true,
+  });
+  authzLog.info("Authorization database seeded.")
 
-  const authBypassUser = config.modules.auth.enabled
+  // When auth is disabled, create a bypass subject with admin role
+  const authBypassSubject: Subject | null = config.modules.auth.enabled
     ? null
     : {
+        type: "user",
         id: "system",
-        roles: ["admin"],
-        permissions: resolvePermissions({ roles: ["admin"] }, db.roles)
+        claims: { roles: ["admin"], name: "System" }
       };
 
   const middlewareRegistry = createMiddlewareRegistry();
@@ -458,10 +477,13 @@ export async function createApp(config: ResolvedNomosConfig) {
       config: { routeId: route.id },
       handler: async (req, reply) => {
         const reqId = (req.headers["x-request-id"] as string) ?? req.id ?? nanoid();
-        let user = authBypassUser;
+        let subject: Subject | null = authBypassSubject;
         let apiClient: ApiClient | null = null;
         let authMode: "session" | "jwt" | "apiKey" | "none" | "disabled" =
           config.modules.auth.enabled ? "none" : "disabled";
+
+        // Clear grant provider cache for this request
+        grantProvider.clearCache();
 
         if (config.modules.auth.enabled) {
           // 1. Try session cookie authentication
@@ -475,23 +497,36 @@ export async function createApp(config: ResolvedNomosConfig) {
               });
               if (userRecord) {
                 const roles = userRecord.roles.map((entry) => entry.role.key);
-                user = {
+                subject = {
+                  type: "user",
                   id: userRecord.id,
-                  roles,
-                  permissions: resolvePermissions({ roles }, db.roles)
+                  claims: {
+                    email: userRecord.email,
+                    name: userRecord.name,
+                    roles,
+                  }
                 };
                 authMode = "session";
-                authLog.debug({ userId: user.id }, "Authenticated via session");
+                authLog.debug({ userId: subject.id }, "Authenticated via session");
               }
             }
           }
 
           // 2. Try API key authentication (X-API-Key header)
-          if (!user && !apiClient) {
+          if (!subject) {
             const apiKeyHeader = req.headers["x-api-key"] as string | undefined;
             if (apiKeyHeader) {
               const foundKey = findApiKey(db.apiKeys, apiKeyHeader);
               if (foundKey) {
+                subject = {
+                  type: "apiKey",
+                  id: foundKey.id,
+                  claims: {
+                    name: foundKey.name,
+                    allowedHosts: foundKey.allowedHosts,
+                  }
+                };
+                // Keep apiClient for backward compatibility in context
                 apiClient = {
                   id: foundKey.id,
                   name: foundKey.name,
@@ -499,26 +534,26 @@ export async function createApp(config: ResolvedNomosConfig) {
                   allowedHosts: foundKey.allowedHosts
                 };
                 authMode = "apiKey";
-                authLog.debug({ apiKeyId: apiClient.id }, "Authenticated via API key");
+                authLog.debug({ apiKeyId: subject.id }, "Authenticated via API key");
               }
             }
           }
 
           // 3. Try Bearer JWT authentication
-          if (!user && !apiClient) {
+          if (!subject) {
             const authHeader = req.headers.authorization as string | undefined;
             if (authHeader?.startsWith("Bearer ")) {
               const token = authHeader.slice(7);
               const payload = verifyJwt(token, config.auth.jwtSecret);
               if (payload) {
                 const roles = payload.roles ?? [];
-                user = {
+                subject = {
+                  type: "user",
                   id: payload.sub,
-                  roles,
-                  permissions: resolvePermissions({ roles }, db.roles)
+                  claims: { roles }
                 };
                 authMode = "jwt";
-                authLog.debug({ userId: user.id }, "Authenticated via JWT");
+                authLog.debug({ userId: subject.id }, "Authenticated via JWT");
               }
             }
           }
@@ -526,7 +561,14 @@ export async function createApp(config: ResolvedNomosConfig) {
 
         (req as any).routeId = route.id;
         (req as any).authMode = authMode;
-        (req as any).userId = user?.id;
+        (req as any).userId = subject?.id;
+
+        // Create legacy user object for backward compatibility
+        const user = subject?.type === "user" ? {
+          id: subject.id,
+          roles: (subject.claims?.roles as string[]) ?? [],
+          permissions: [] as string[], // Permissions now resolved via authz engine
+        } : null;
 
         const ctxBase = {
           reqId,
@@ -536,6 +578,7 @@ export async function createApp(config: ResolvedNomosConfig) {
           query: req.query as any,
           body: req.body,
           headers: req.headers as any,
+          subject,
           user,
           apiClient,
           db,
@@ -552,13 +595,17 @@ export async function createApp(config: ResolvedNomosConfig) {
             method: req.method,
             path: req.url,
             routeId: route.id,
-            userId: user?.id,
+            userId: subject?.id,
+            subjectType: subject?.type,
             apiKeyId: (apiClient as ApiClient | null)?.id
           }),
           json: async (payload: any, statusCode = 200, meta?: Record<string, any>) =>
             jsonResponse(reply, payload, statusCode, meta),
           error: errorResponse
         };
+
+        // Attach subject to request for middleware access
+        (req as any).ctx = { subject };
 
         const ctx = { ...ctxBase, auth: createAuthHelpers(ctxBase) };
 
@@ -570,27 +617,46 @@ export async function createApp(config: ResolvedNomosConfig) {
           ) {
             throw new HttpError(404, "not_found", "Plugin route is disabled");
           }
+
+          // Authorization check using the new authz engine
           if (config.modules.auth.enabled) {
-            if (route.config.auth === "required" && !ctx.user && !ctx.apiClient) {
+            // Check if authentication is required
+            if (route.config.auth === "required" && !subject) {
               throw new HttpError(401, "unauthorized", "Authentication required");
             }
 
-            if (route.config.permissions?.length) {
-              const hasAll = route.config.permissions.every((perm) => ctx.auth.hasPermission(perm));
-              if (!hasAll) throw new HttpError(403, "forbidden", "Missing permissions");
-            }
+            // Check intent-based authorization
+            if (route.config.intent && subject) {
+              const decision = await authzEngine.decide({
+                intent: route.config.intent,
+                subject,
+                context: {
+                  params: req.params,
+                  query: req.query,
+                },
+                surface: {
+                  kind: "api",
+                  id: route.path,
+                },
+                trace: {
+                  requestId: reqId,
+                },
+              });
 
-            if (route.config.permissionsAny?.length) {
-              const hasAny = route.config.permissionsAny.some((perm) => ctx.auth.hasPermission(perm));
-              if (!hasAny) throw new HttpError(403, "forbidden", "Missing permissions");
-            }
-
-            if (route.config.roles?.length && ctx.user) {
-              const hasRole = route.config.roles.some((role) => ctx.user?.roles.includes(role));
-              const hasWildcard = ctx.auth.hasPermission("*");
-              if (!hasRole && !hasWildcard) {
-                throw new HttpError(403, "forbidden", "Missing role");
+              if (!decision.allowed) {
+                authzLog.warn(
+                  {
+                    subject: { type: subject.type, id: subject.id },
+                    intent: route.config.intent,
+                    reason: decision.evidence.failure?.kind,
+                  },
+                  "Authorization denied"
+                );
+                throw new HttpError(403, "forbidden", decision.evidence.failure?.detail ?? "Access denied");
               }
+
+              // Attach decision to context for audit
+              (ctx as any).authzDecision = decision;
             }
           }
 

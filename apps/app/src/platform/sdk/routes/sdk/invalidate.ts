@@ -4,7 +4,7 @@ import { okResponse } from "../../../../routes/_openapi";
 
 export const config = {
   auth: "required",
-  permissions: ["sdk.write"],
+  intent: "sdk.write",
   tags: ["sdk"],
   summary: "Invalidate SDK artifacts",
   openapi: {

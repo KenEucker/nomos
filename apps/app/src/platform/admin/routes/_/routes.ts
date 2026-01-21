@@ -1,6 +1,6 @@
 export const config = {
   auth: "required",
-  permissions: ["admin.read"],
+  intent: "admin.read",
   tags: ["admin"],
   summary: "Route registry"
 };
