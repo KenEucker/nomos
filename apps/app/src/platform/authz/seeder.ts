@@ -176,7 +176,6 @@ export async function ensureDefaultRoles(
             roleId: role.id,
             permissionId: perm.id,
           })),
-          skipDuplicates: true,
         })
       }
     } catch (error) {
