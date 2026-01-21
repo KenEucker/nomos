@@ -1,318 +1,284 @@
-# Nomos AI Agents Guide
+# Nomos — Agent Guide (Root)
 
-> This document instructs **AI agents** (LLMs, copilots, and automated code assistants) on how to **develop, extend, and customize the Nomos platform**.
+> This file defines **how Nomos is meant to be understood, extended, and evolved**.
 >
-> It is intended to be **shipped with Nomos itself** and **copied into new Nomos applications**, where it serves as the canonical source of truth for how Nomos should be evolved—primarily through **plugins**, **resource definitions**, and **panel modules**, not ad‑hoc changes.
+> It is written primarily for **AI agents**, but it is equally normative for human contributors.
+>
+> If guidance in this file conflicts with assumptions derived from code inspection,
+> **this file and the specification documents take precedence**.
 
 ---
 
-## Purpose of This File
+## What Nomos Is
 
-Nomos is designed to be **AI‑friendly by construction**.
+Nomos is a **platform**, not an application.
 
-This file exists to:
+It is designed to host:
 
-* Teach AI agents *how Nomos wants to be extended*
-* Prevent architectural drift and copy‑paste anti‑patterns
-* Encode platform conventions that are difficult to infer from code alone
-* Enable users to safely delegate Nomos development to AI systems
+* APIs
+* Admin and operational UIs
+* Authorization and policy logic
+* Observability and audit infrastructure
+* Plugins that extend all of the above
 
-If you are an AI reading this file:
+Nomos is **contract-first**, **policy-driven**, and **observable by default**.
 
-> **You are expected to follow this document over your own assumptions.**
-
----
-
-## Core Principles
-
-### 1. Nomos Is a Platform, Not an App
-
-Nomos is a **host platform** for building applications.
-
-That means:
-
-* Prefer **extensibility** over hard‑coding
-* Prefer **configuration + conventions** over custom logic
-* Prefer **plugins** over modifying core
-
-If a change *could* be implemented as a plugin, it **should** be.
+There is no sharp boundary between “backend” and “admin UI” in Nomos.
+They are **two surfaces of the same runtime**.
 
 ---
 
-### 2. Optimize for AI‑Driven Development
+## Source of Truth
 
-Nomos explicitly optimizes for LLM workflows:
+Nomos is governed by **specification documents**, not ad-hoc conventions.
 
-* Declarative schemas over imperative UI code
-* Strong file‑system conventions
-* Predictable resolution order
-* Minimal hidden magic
+Before modifying or generating code, agents MUST align with:
 
-If you introduce a pattern that:
+* Platform architecture and scope
+* Authorization (AuthZ) model
+* API routing and contracts
+* Configuration and runtime behavior
+* Observability and decision artifacts
+* Plugin boundaries and lifecycle
+* Nomos-UI abstractions (Panels, PanelModules, ResourceDefinitions)
 
-* Requires global context
-* Requires reading many unrelated files
-* Cannot be described succinctly in this document
+If something is unclear:
 
-…it is probably the wrong pattern.
-
----
-
-### 3. CRUD Is the 80% Case
-
-Nomos assumes:
-
-* **~80%** of admin interfaces are standard CRUD
-* **~20%** require customization
-
-The platform is intentionally biased toward making the **80% trivial** and the **20% explicit**.
+> **Consult the relevant specification before inventing behavior.**
 
 ---
 
-## The Three‑Layer Admin UI Model (Critical)
+## Core Design Principles (Non‑Negotiable)
 
-All admin UI behavior flows through **three distinct layers**.
+### 1. Declarative Over Imperative
+
+Nomos prefers:
+
+* schemas over runtime inference
+* contracts over conventions
+* explicit declarations over hidden magic
+
+If behavior cannot be explained declaratively, it should be questioned.
+
+---
+
+### 2. Determinism Over Convenience
+
+Nomos favors:
+
+* filesystem‑discoverable structure
+* predictable resolution order
+* static analyzability
+
+An agent should be able to understand the system **without executing it**.
+
+---
+
+### 3. Intent‑Based Authorization Everywhere
+
+All access control is expressed as **intents** (`resource.action`).
+
+This applies equally to:
+
+* UI gating
+* API routing
+* background jobs
+* admin panels
+
+All surfaces must rely on the **same authorization engine**.
+
+There are:
+
+* no direct role checks
+* no implicit permissions
+* no UI‑only authorization logic
+
+---
+
+### 4. Observability Is a Platform Concern
+
+Logging, tracing, metrics, and decisions are **not optional**.
+
+Important actions must:
+
+* emit structured events
+* record outcomes
+* be explainable (DECIDE)
+* be correlatable across layers
+
+Agents must never introduce silent or opaque behavior.
+
+---
+
+### 5. Plugins Are the Primary Extension Mechanism
+
+If a change can be implemented as a plugin, **it should be**.
+
+Core code should evolve slowly.
+Plugins are where customization lives.
+
+---
+
+## Architectural Layers (Mental Model)
+
+Nomos should be understood as layered but unified:
 
 ```
-Resource Definitions  →  Panel Modules  →  Templates
-(Layer 1)               (Layer 2)         (Layer 3)
+┌──────────────────────────────┐
+│ Nomos Runtime                │
+│                              │
+│  ┌──────── API ───────────┐  │
+│  │ Zod • Routes • Intents │  │
+│  └───────────────────────┘  │
+│                              │
+│  ┌────── Admin UI ────────┐  │
+│  │ Panels • Resources     │  │
+│  │ SSR + CSR              │  │
+│  └───────────────────────┘  │
+│                              │
+│  ┌──── Authorization ─────┐ │
+│  │ Subjects • Intents     │ │
+│  │ Policies • Decisions   │ │
+│  └───────────────────────┘ │
+│                              │
+│  ┌──── Observability ─────┐ │
+│  │ Events • DECIDE        │ │
+│  │ Metrics • Traces       │ │
+│  └───────────────────────┘ │
+│                              │
+│  ┌──────── Plugins ───────┐ │
+│  │ Routes • UI • Policies │ │
+│  │ Services • Hooks       │ │
+│  └───────────────────────┘ │
+└──────────────────────────────┘
 ```
 
-You **must not collapse these layers**.
-
-### Layer 1 — Resource Definitions (Declarative)
-
-**What they are:**
-
-* Declarative TypeScript objects
-* Describe *what* a resource looks like
-* No business logic
-
-**What they do:**
-
-* Define fields, columns, endpoints, actions
-* Enable automatic CRUD generation
-
-**When to use:**
-
-* Standard CRUD (List / Create / Edit / Show / Delete)
-* Simple validation and relationships
-
-**Preferred locations (by convention):**
-
-* Co-located with admin UI routes (common case)
-* Defined inline in an `.astro` route when the resource is small
-* Provided by plugins when the resource is owned by a plugin
-
-> If CRUD can be expressed here, it *must* be expressed here.
+No layer bypasses another.
+All layers participate in authorization and observability.
 
 ---
 
-### Layer 2 — Panel Modules (Behavior Contracts)
+## UI Model (Critical)
 
-**What they are:**
-
-* The contract between data and UI
-* Encapsulate queries, actions, navigation, and lifecycle hooks
-
-**What they do:**
-
-* Load data
-* Execute mutations
-* Define page‑level behavior
-
-**Important rule:**
-
-> **Astro route files are allowed to compose panel modules directly.**
-
-For simple cases, this is preferred.
-
-**Resolution order:**
-
-1. Route‑aligned handwritten panel module (`src/pages/**/<route>.panel.ts`, next to the `.astro` page)
-2. Auto-derived panel behavior from the resource definition (when no handwritten panel module exists)
-
-**When to write a handwritten panel module:**
-
-* Multi‑endpoint data composition
-* Conditional workflows
-* Complex validation
-* Non‑CRUD admin screens
-
----
-
-### Layer 3 — Templates (Rendering Only)
-
-**What they are:**
-
-* Svelte components
-* Pure rendering logic
-* No business rules
-
-**What they do:**
-
-* Render a resolved panel module
-* Compose islands and UI primitives
-
-**Override hierarchy (highest → lowest):**
-
-1. Plugin template override
-2. Platform module override
-3. Resource‑specific template
-4. Default template
-
-Templates **must remain dumb**.
-
----
-
-## Plugins Are the Primary Extension Mechanism
-
-Nomos expects most user‑level customization to happen via **plugins**.
-
-Plugins may:
-
-* Register resources
-* Add routes
-* Override templates
-* Provide admin UI extensions
-* Integrate third‑party services
-
-Plugins should **not**:
-
-* Patch core platform code
-* Monkey‑patch runtime behavior
-* Duplicate existing platform features
-
-If a plugin requires core changes, that is a **platform discussion**, not a plugin decision.
-
----
-
-## File‑System Conventions Matter
-
-Nomos relies heavily on **predictable structure**.
-
-You must respect:
-
-* Route‑aligned files
-* Co‑location of definitions and pages
-* Naming conventions
-
-Examples:
+Nomos‑UI follows a **strict three‑layer model**:
 
 ```
-pages/users/index.astro      → List
-pages/users/[id].astro       → Show
-pages/users/new.astro        → Create
-pages/users/[id]/edit.astro  → Edit
+ResourceDefinitions → PanelModules → Templates
 ```
 
-Violating these conventions breaks discoverability for both humans **and AI**.
+* **ResourceDefinitions**
+  Serializable, declarative, no functions
+  Enable auto‑generated CRUD
 
----
+* **PanelModules**
+  TypeScript modules, may contain logic
+  Define data loading, actions, and intent requirements
 
-## What *Not* to Do (Hard Rules)
+* **Templates**
+  Rendering only
+  No business logic, no access decisions
 
-❌ Do **not** create wrapper templates that only render a single island
-
-❌ Do **not** split simple routes into multiple `List.ts`, `Detail.ts` files
-
-❌ Do **not** hard‑code admin UI logic into templates
-
-❌ Do **not** bypass the resource system for CRUD
-
-❌ Do **not** invent parallel abstractions
-
-If you feel tempted to do one of these, stop and reassess.
+Agents MUST NOT collapse these layers.
 
 ---
 
 ## Backend Expectations
 
-Admin-facing routes/resources consumed by the admin UI expect:
+API behavior consumed by Nomos‑UI assumes:
 
-* Consistent REST semantics
+* REST‑style semantics
 * Zod validation
-* Predictable response shapes
+* stable response shapes
+* intent enforcement at the routing layer
 
-Standard success shape:
+Authorization failures must be:
 
-```ts
-{
-  ok: true,
-  data: {...},
-  meta?: {...}
-}
-```
-
-Standard error shape:
-
-```ts
-{
-  ok: false,
-  error: { code: string, message: string }
-}
-```
-
-Breaking this contract breaks the admin UI.
+* explicit
+* structured
+* observable
 
 ---
 
-## Non‑CRUD Admin Screens
+## Authorization Expectations
 
-Some admin screens are **intentionally not CRUD**:
+Authorization is:
 
-* Jobs
-* Webhooks
-* Audit logs
-* Error logs
-* Diagnostics
+* **subject‑based**, not user‑based
+* **deny‑by‑default**
+* **explainable**
 
-These should be implemented as:
+Every decision can produce:
 
-* Handwritten panel modules
-* Custom templates
-* View‑only or action‑limited interfaces
+* evidence
+* rationale
+* DECIDE artifacts
 
-Do **not** force these into the CRUD system.
+Agents must never:
+
+* assume a user model
+* hard‑code role logic
+* skip authorization for “internal” paths
 
 ---
 
-## How AI Agents Should Approach Changes
+## Observability Expectations
 
-When asked to modify or extend Nomos:
+When adding or modifying behavior, ask:
 
-1. **Identify the layer** involved
-2. Prefer the **lowest layer possible**
-3. Prefer **configuration over code**
+* What event does this emit?
+* What decision is being made?
+* What evidence exists?
+* Can this be explained after the fact?
+
+If the answer is “nothing”:
+
+> The change is incomplete.
+
+---
+
+## How Agents Should Approach Changes
+
+When asked to implement something:
+
+1. Identify the **layer** (API, UI, AuthZ, Plugin, Observability)
+2. Prefer the **lowest declarative layer**
+3. Prefer **existing platform mechanisms**
 4. Prefer **plugins over core changes**
-5. Maintain architectural symmetry
+5. Preserve determinism and analyzability
 
-If you are unsure:
+If unsure:
 
-> Stop and ask for clarification rather than guessing.
+> Stop and ask rather than guessing.
 
 ---
 
-## Guiding Question
+## What Not to Do (Hard Rules)
 
-Before implementing anything, ask:
+❌ Do not introduce hidden runtime discovery
+❌ Do not bypass intent checks
+❌ Do not log instead of emitting events
+❌ Do not embed policy logic in UI templates
+❌ Do not invent parallel abstractions
+❌ Do not optimize prematurely at the cost of clarity
 
-> *Will this make Nomos easier or harder for the **next AI** to understand?*
+---
 
-If the answer is “harder”, rethink the approach.
+## Guiding Question (Always Ask This)
+
+> **Will this make Nomos easier or harder for the next agent to understand and extend?**
+
+If harder, rethink the approach.
 
 ---
 
 ## Final Note
 
-Nomos is intentionally opinionated.
+This file is **normative**.
 
-Those opinions exist to:
+Nomos is intentionally opinionated so that:
 
-* Enable delegation to AI
-* Keep systems understandable at scale
-* Avoid framework entropy
+* humans can reason about it
+* AI agents can safely extend it
+* systems remain explainable over time
 
-If you follow this document closely, your changes will almost always align with the platform’s intent.
-
-**This file is normative. Treat it as part of the platform API.**
+Follow this guide, and changes will almost always align with the platform’s intent.
