@@ -120,28 +120,51 @@
 </script>
 
 <div class="flex flex-col h-full">
-  <div class="flex items-center justify-between px-3 py-2 border-b border-border">
-    <button
-      type="button"
-      class={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-      on:click={onBack}
-      aria-label="Back to navigation"
-    >
-      <ArrowLeftIcon class="size-4" />
-      <span class="text-sm">Back</span>
-    </button>
-    <div class="text-sm font-semibold">Screen Settings</div>
-    <button
-      type="button"
-      class={cn(buttonVariants({ variant: "default", size: "sm" }))}
-      on:click={onSave}
-      aria-label="Save screen settings"
-      title={isDirty ? "Save changes" : "No changes to save"}
-    >
-      <CheckIcon class="size-4" />
-      <span class="text-sm">Save</span>
-    </button>
-  </div>
+  {#if variant === "form"}
+    <div class="flex items-center justify-between px-3 py-2 border-b border-border">
+      <button
+        type="button"
+        class={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+        on:click={onBack}
+        aria-label="Back to navigation"
+      >
+        <ArrowLeftIcon class="size-4" />
+        <span class="text-sm">Back</span>
+      </button>
+      <div class="text-sm font-semibold">Screen Settings</div>
+      <button
+        type="button"
+        class={cn(buttonVariants({ variant: "default", size: "sm" }))}
+        on:click={onSave}
+        aria-label="Save screen settings"
+        title={isDirty ? "Save changes" : "No changes to save"}
+      >
+        <CheckIcon class="size-4" />
+        <span class="text-sm">Save</span>
+      </button>
+    </div>
+  {:else if !isMobile}
+    <div class="flex flex-col items-center gap-2 px-2 py-2 border-b border-border">
+      <button
+        type="button"
+        class={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "w-full")}
+        on:click={onBack}
+        aria-label="Back to navigation"
+        title="Back"
+      >
+        <ArrowLeftIcon class="size-4" />
+      </button>
+      <button
+        type="button"
+        class={cn(buttonVariants({ variant: "default", size: "icon-sm" }), "w-full")}
+        on:click={onSave}
+        aria-label="Save screen settings"
+        title={isDirty ? "Save changes" : "No changes to save"}
+      >
+        <CheckIcon class="size-4" />
+      </button>
+    </div>
+  {/if}
 
   {#if variant === "form"}
     <div class="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
@@ -273,82 +296,139 @@
       </div>
     </div>
   {:else}
-    <div class="flex-1 px-3 py-4 overflow-y-auto">
-      <div class="flex flex-wrap items-center justify-between gap-2 sm:grid sm:grid-cols-2 sm:gap-3">
-        {#if !isMobile}
+    {#if isMobile}
+      <div class="flex-1 overflow-x-auto">
+        <div class="flex items-center gap-2 px-2 py-2 min-w-max">
           <button
             type="button"
-            class={
-              draft.desktopDock === "left"
-                ? "flex flex-1 flex-col items-center gap-2 rounded-xl border border-border bg-accent px-3 py-4 text-sm font-medium sm:flex-none"
-                : "flex flex-1 flex-col items-center gap-2 rounded-xl border border-border px-3 py-4 text-sm sm:flex-none"
-            }
-            aria-label={`Desktop dock ${draft.desktopDock === "left" ? "left" : "right"}`}
-            aria-pressed={draft.desktopDock === "left"}
-            on:click={toggleDesktopDock}
+            class="flex items-center justify-center rounded-md bg-primary text-primary-foreground p-3 text-sm font-medium flex-shrink-0 hover:bg-primary/90 transition-colors"
+            on:click={onBack}
+            aria-label="Back to navigation"
+            title="Back"
           >
-            {#if draft.desktopDock === "left"}
-              <PanelLeftIcon class="size-5" />
-            {:else}
-              <PanelRightIcon class="size-5" />
-            {/if}
-            <span class="hidden text-[10px] text-muted-foreground sm:block">Desktop dock</span>
+            <ArrowLeftIcon class="size-5" />
           </button>
-        {:else}
+          <button
+            type="button"
+            class="flex items-center justify-center rounded-md bg-primary text-primary-foreground p-3 text-sm font-medium flex-shrink-0 hover:bg-primary/90 transition-colors"
+            on:click={onSave}
+            aria-label="Save screen settings"
+            title={isDirty ? "Save changes" : "No changes to save"}
+          >
+            <CheckIcon class="size-5" />
+          </button>
+          <div class="h-8 w-px bg-border flex-shrink-0"></div>
           <button
             type="button"
             class={
               draft.mobileDock === "top"
-                ? "flex flex-1 flex-col items-center gap-2 rounded-xl border border-border bg-accent px-3 py-4 text-sm font-medium sm:flex-none"
-                : "flex flex-1 flex-col items-center gap-2 rounded-xl border border-border px-3 py-4 text-sm sm:flex-none"
+                ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium flex-shrink-0"
+                : "flex items-center justify-center rounded-md border border-border p-3 text-sm flex-shrink-0"
             }
             aria-label={`Mobile dock ${draft.mobileDock === "top" ? "top" : "bottom"}`}
             aria-pressed={draft.mobileDock === "top"}
             on:click={toggleMobileDock}
+            title="Mobile dock"
           >
             {#if draft.mobileDock === "top"}
               <BookDown class="size-5" />
             {:else}
               <BookUp class="size-5" />
             {/if}
-            <span class="hidden text-[10px] text-muted-foreground sm:block">Mobile dock</span>
           </button>
-        {/if}
-        <button
-          type="button"
-          class={
-            themeIsDark
-              ? "flex flex-1 flex-col items-center gap-2 rounded-xl border border-border bg-accent px-3 py-4 text-sm font-medium sm:flex-none"
-              : "flex flex-1 flex-col items-center gap-2 rounded-xl border border-border px-3 py-4 text-sm sm:flex-none"
-          }
-          aria-label="Toggle theme"
-          aria-pressed={themeIsDark}
-          on:click={toggleTheme}
-        >
-          {#if themeIsDark}
-            <MoonIcon class="size-5" />
-          {:else}
-            <SunIcon class="size-5" />
-          {/if}
-          <span class="hidden text-[10px] text-muted-foreground sm:block">Theme</span>
-        </button>
-        {#each toggles as toggle}
           <button
             type="button"
             class={
-              draft[toggle.key]
-                ? "flex flex-1 flex-col items-center gap-2 rounded-xl border border-border bg-accent px-3 py-4 text-sm font-medium sm:flex-none"
-                : "flex flex-1 flex-col items-center gap-2 rounded-xl border border-border px-3 py-4 text-sm sm:flex-none"
+              themeIsDark
+                ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium flex-shrink-0"
+                : "flex items-center justify-center rounded-md border border-border p-3 text-sm flex-shrink-0"
             }
-            aria-label={toggle.label}
-            aria-pressed={draft[toggle.key]}
-            on:click={() => toggleValue(toggle.key)}
+            aria-label="Toggle theme"
+            aria-pressed={themeIsDark}
+            on:click={toggleTheme}
+            title="Toggle theme"
           >
-            <svelte:component this={toggle.icon} class="size-5" />
-            <span class="hidden text-[10px] text-muted-foreground sm:block">{toggle.label}</span>
+            {#if themeIsDark}
+              <MoonIcon class="size-5" />
+            {:else}
+              <SunIcon class="size-5" />
+            {/if}
           </button>
-        {/each}
+          {#each toggles as toggle}
+            <button
+              type="button"
+              class={
+                draft[toggle.key]
+                  ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium flex-shrink-0"
+                  : "flex items-center justify-center rounded-md border border-border p-3 text-sm flex-shrink-0"
+              }
+              aria-label={toggle.label}
+              aria-pressed={draft[toggle.key]}
+              on:click={() => toggleValue(toggle.key)}
+              title={toggle.label}
+            >
+              <svelte:component this={toggle.icon} class="size-5" />
+            </button>
+          {/each}
+        </div>
       </div>
-    </div>
+    {:else}
+      <div class="flex-1 px-2 py-4 overflow-y-auto">
+        <div class="flex flex-col items-center gap-2">
+          <button
+            type="button"
+            class={
+              draft.desktopDock === "left"
+                ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium w-full"
+                : "flex items-center justify-center rounded-md border border-border p-3 text-sm w-full"
+            }
+            aria-label={`Desktop dock ${draft.desktopDock === "left" ? "left" : "right"}`}
+            aria-pressed={draft.desktopDock === "left"}
+            on:click={toggleDesktopDock}
+            title="Desktop dock"
+          >
+            {#if draft.desktopDock === "left"}
+              <PanelLeftIcon class="size-5" />
+            {:else}
+              <PanelRightIcon class="size-5" />
+            {/if}
+          </button>
+          <button
+            type="button"
+            class={
+              themeIsDark
+                ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium w-full"
+                : "flex items-center justify-center rounded-md border border-border p-3 text-sm w-full"
+            }
+            aria-label="Toggle theme"
+            aria-pressed={themeIsDark}
+            on:click={toggleTheme}
+            title="Toggle theme"
+          >
+            {#if themeIsDark}
+              <MoonIcon class="size-5" />
+            {:else}
+              <SunIcon class="size-5" />
+            {/if}
+          </button>
+          {#each toggles as toggle}
+            <button
+              type="button"
+              class={
+                draft[toggle.key]
+                  ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium w-full"
+                  : "flex items-center justify-center rounded-md border border-border p-3 text-sm w-full"
+              }
+              aria-label={toggle.label}
+              aria-pressed={draft[toggle.key]}
+              on:click={() => toggleValue(toggle.key)}
+              title={toggle.label}
+            >
+              <svelte:component this={toggle.icon} class="size-5" />
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
   {/if}
 </div>

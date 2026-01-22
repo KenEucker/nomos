@@ -246,11 +246,11 @@ body:not(.mobile-menu-collapsed) .admin-mobile-nav-items {
   border-inline-start: 1px solid var(--border);
 }
 
-[data-nav-collapsed="true"]:not([data-nav-mode="settings"]) {
+[data-nav-collapsed="true"] {
   --nomos-nav-width: var(--nomos-nav-width-collapsed);
 }
 
-[data-nav-mode="settings"] {
+[data-nav-mode="settings"]:not([data-nav-collapsed="true"]) {
   --nomos-nav-width: 240px;
 }
 
