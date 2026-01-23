@@ -151,24 +151,24 @@
       </button>
     </div>
   {:else if !isMobile}
-    <div class="flex flex-col items-center gap-2 px-2 py-2 border-b border-border">
+    <div class="flex flex-col items-center gap-1 px-2 py-2 border-b border-border">
       <button
         type="button"
-        class={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "w-full")}
+        class="flex items-center justify-center px-2 py-3 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
         on:click={onBack}
         aria-label="Back to navigation"
         title="Back"
       >
-        <ArrowLeftIcon class="size-4" />
+        <ArrowLeftIcon class="size-6" />
       </button>
       <button
         type="button"
-        class={cn(buttonVariants({ variant: "default", size: "icon-sm" }), "w-full")}
+        class="flex items-center justify-center px-2 py-3 transition rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
         on:click={onSave}
         aria-label="Save screen settings"
         title={isDirty ? "Save changes" : "No changes to save"}
       >
-        <CheckIcon class="size-4" />
+        <CheckIcon class="size-6" />
       </button>
     </div>
   {/if}
@@ -329,7 +329,7 @@
         <div class="flex items-center gap-2 px-2 py-2 min-w-max">
           <button
             type="button"
-            class="flex items-center justify-center rounded-md bg-primary text-primary-foreground p-3 text-sm font-medium flex-shrink-0 hover:bg-primary/90 transition-colors"
+            class="flex items-center justify-center flex-shrink-0 p-3 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
             on:click={onBack}
             aria-label="Back to navigation"
             title="Back"
@@ -338,14 +338,14 @@
           </button>
           <button
             type="button"
-            class="flex items-center justify-center rounded-md bg-primary text-primary-foreground p-3 text-sm font-medium flex-shrink-0 hover:bg-primary/90 transition-colors"
+            class="flex items-center justify-center flex-shrink-0 p-3 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
             on:click={onSave}
             aria-label="Save screen settings"
             title={isDirty ? "Save changes" : "No changes to save"}
           >
             <CheckIcon class="size-5" />
           </button>
-          <div class="h-8 w-px bg-border flex-shrink-0"></div>
+          <div class="flex-shrink-0 w-px h-8 bg-border"></div>
           <!-- Shared: Theme toggle -->
           <button
             type="button"
@@ -382,7 +382,7 @@
               <svelte:component this={toggle.icon} class="size-5" />
             </button>
           {/each}
-          <div class="h-8 w-px bg-border flex-shrink-0"></div>
+          <div class="flex-shrink-0 w-px h-8 bg-border"></div>
           <!-- Mobile-only: Navigation position -->
           <button
             type="button"
@@ -407,14 +407,14 @@
     {:else}
       <!-- Desktop quick settings (collapsed sidebar): shared + desktop-only -->
       <div class="flex-1 px-2 py-4 overflow-y-auto">
-        <div class="flex flex-col items-center gap-2">
+        <div class="flex flex-col items-center gap-1">
           <!-- Shared: Theme toggle -->
           <button
             type="button"
             class={
               themeIsDark
-                ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium w-full"
-                : "flex items-center justify-center rounded-md border border-border p-3 text-sm w-full"
+                ? "flex items-center justify-center rounded-md bg-accent px-2 py-3"
+                : "flex items-center justify-center rounded-md px-2 py-3 text-muted-foreground hover:bg-accent hover:text-foreground transition"
             }
             aria-label="Toggle dark mode"
             aria-pressed={themeIsDark}
@@ -422,9 +422,9 @@
             title="Dark mode"
           >
             {#if themeIsDark}
-              <MoonIcon class="size-5" />
+              <MoonIcon class="size-6" />
             {:else}
-              <SunIcon class="size-5" />
+              <SunIcon class="size-6" />
             {/if}
           </button>
           <!-- Shared toggles -->
@@ -433,25 +433,25 @@
               type="button"
               class={
                 draft[toggle.key]
-                  ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium w-full"
-                  : "flex items-center justify-center rounded-md border border-border p-3 text-sm w-full"
+                  ? "flex items-center justify-center rounded-md bg-accent px-2 py-3"
+                  : "flex items-center justify-center rounded-md px-2 py-3 text-muted-foreground hover:bg-accent hover:text-foreground transition"
               }
               aria-label={toggle.label}
               aria-pressed={draft[toggle.key]}
               on:click={() => toggleValue(toggle.key)}
               title={toggle.label}
             >
-              <svelte:component this={toggle.icon} class="size-5" />
+              <svelte:component this={toggle.icon} class="size-6" />
             </button>
           {/each}
-          <div class="h-px w-full bg-border my-1"></div>
+          <div class="self-stretch h-px my-2 bg-border"></div>
           <!-- Desktop-only: Sidebar position -->
           <button
             type="button"
             class={
               draft.desktopDock === "left"
-                ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium w-full"
-                : "flex items-center justify-center rounded-md border border-border p-3 text-sm w-full"
+                ? "flex items-center justify-center rounded-md bg-accent px-2 py-3"
+                : "flex items-center justify-center rounded-md px-2 py-3 text-muted-foreground hover:bg-accent hover:text-foreground transition"
             }
             aria-label={`Sidebar ${draft.desktopDock === "left" ? "left" : "right"}`}
             aria-pressed={draft.desktopDock === "left"}
@@ -459,9 +459,9 @@
             title="Sidebar position"
           >
             {#if draft.desktopDock === "left"}
-              <PanelLeftIcon class="size-5" />
+              <PanelLeftIcon class="size-6" />
             {:else}
-              <PanelRightIcon class="size-5" />
+              <PanelRightIcon class="size-6" />
             {/if}
           </button>
           <!-- Desktop toggles -->
@@ -470,15 +470,15 @@
               type="button"
               class={
                 draft[toggle.key]
-                  ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium w-full"
-                  : "flex items-center justify-center rounded-md border border-border p-3 text-sm w-full"
+                  ? "flex items-center justify-center rounded-md bg-accent px-2 py-3"
+                  : "flex items-center justify-center rounded-md px-2 py-3 text-muted-foreground hover:bg-accent hover:text-foreground transition"
               }
               aria-label={toggle.label}
               aria-pressed={draft[toggle.key]}
               on:click={() => toggleValue(toggle.key)}
               title={toggle.label}
             >
-              <svelte:component this={toggle.icon} class="size-5" />
+              <svelte:component this={toggle.icon} class="size-6" />
             </button>
           {/each}
         </div>

@@ -250,8 +250,24 @@ body:not(.mobile-menu-collapsed) .admin-mobile-nav-items {
   --nomos-nav-width: var(--nomos-nav-width-collapsed);
 }
 
+[data-nav-collapsed="true"] .nomos-nav {
+  width: var(--nomos-nav-width-collapsed);
+  max-width: var(--nomos-nav-width-collapsed);
+  overflow: hidden;
+}
+
 [data-nav-mode="settings"]:not([data-nav-collapsed="true"]) {
   --nomos-nav-width: 240px;
+}
+
+[data-nav-mode="settings"][data-nav-collapsed="true"] {
+  --nomos-nav-width: var(--nomos-nav-width-collapsed);
+}
+
+[data-nav-mode="settings"][data-nav-collapsed="true"] .nomos-nav {
+  width: var(--nomos-nav-width-collapsed);
+  max-width: var(--nomos-nav-width-collapsed);
+  overflow: hidden;
 }
 
 [data-nav-reduce-motion="true"] .nomos-nav * {
