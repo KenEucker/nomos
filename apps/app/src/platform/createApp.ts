@@ -35,7 +35,6 @@ import { EventBus } from "./events/bus";
 import { createHookRegistry } from "./events/hooks";
 import { JobsRuntime } from "./jobs/runtime";
 import { WebhookRuntime } from "./webhooks/outbound";
-import { registerDefaultListeners } from "./observability/listeners";
 import { LocalStorageProvider } from "./storage/local";
 import { getSession } from "./auth/sessions";
 import { verifyJwt } from "./auth/jwt";
@@ -52,8 +51,47 @@ import {
   type AuthorizationEngine,
   type GrantProvider,
 } from "./authz";
+import {
+  initializeObservability,
+  shutdownObservability,
+  getObserver,
+  createPluginObserver,
+  createContext,
+  runWithContextAsync,
+  type NomosObserver,
+  type NomosEnv,
+} from "./observability";
 
 export async function createApp(config: ResolvedNomosConfig) {
+  // Initialize observability runtime first (before anything else logs)
+  const nomosEnv: NomosEnv = config.app.env === "production" ? "prod" :
+                            config.app.env === "test" ? "test" : "dev";
+
+  let observabilityRuntime: ReturnType<typeof initializeObservability> | null = null;
+  let observer: NomosObserver | null = null;
+
+  if (config.observability.enabled) {
+    observabilityRuntime = initializeObservability({
+      env: nomosEnv,
+      explanationsEnabled: config.observability.explanations,
+      telemetryEnabled: config.observability.telemetry,
+      decideEnabled: config.observability.decide,
+      bestEffortBusSize: config.observability.bestEffortBusSize,
+      durableBusSize: config.observability.durableBusSize,
+      flushIntervalMs: config.observability.flushIntervalMs,
+      flushBatchSize: config.observability.flushBatchSize,
+      spoolEnabled: config.observability.spoolEnabled,
+      spoolPath: config.observability.spoolPath,
+      consoleSinkEnabled: config.observability.consoleSink,
+      consoleSinkPretty: config.logging.pretty,
+      consoleSinkMinLevel: config.observability.consoleSinkLevel,
+      dropDebugUnderPressure: config.observability.dropDebugUnderPressure,
+      sampleTraceRate: config.observability.sampleTraceRate,
+      healthSignalIntervalMs: config.observability.healthSignalIntervalMs,
+    });
+    observer = getObserver();
+  }
+
   // Build DATABASE_URL from config
   const databaseUrl = config.database.url
     ?? (config.database.sqliteFile.startsWith("file:")
@@ -205,8 +243,6 @@ export async function createApp(config: ResolvedNomosConfig) {
     permissions: new Set<string>(),
     apiKeys: new Map<string, any>(),
     sessions: new Map<string, any>(),
-    auditLog: [],
-    errors: [],
     webhookDestinations: new Map<string, any>(),
     webhookDeliveries: [],
     jobs: new Map<string, any>(),
@@ -300,7 +336,11 @@ export async function createApp(config: ResolvedNomosConfig) {
     pluginManifests: plugins.manifests,
     eventsRegistry: events,
     hooksRegistry: hooks,
-    storage
+    storage,
+    // Observability
+    observer,
+    observabilityRuntime,
+    createPluginObserver,
   };
 
   for (const [name, service] of Object.entries(plugins.registry.services)) {
@@ -331,6 +371,7 @@ export async function createApp(config: ResolvedNomosConfig) {
       events,
       jobs: jobsRuntime!,
       webhooks: webhooksRuntime!,
+      observer,
       log: jobsLog.child({ reqId, method: "JOB", path: "job" }),
       json: async () => undefined,
       error: errorResponse,
@@ -375,14 +416,34 @@ export async function createApp(config: ResolvedNomosConfig) {
 
   jobsRuntime.start();
 
+  // Call plugin setup functions with observer context
   for (const plugin of plugins.manifests) {
     if (plugin.manifest.setup) {
-      await plugin.manifest.setup(hooks, events);
+      await plugin.manifest.setup(hooks, events, {
+        observer,
+        createPluginObserver: config.observability.enabled ? createPluginObserver : null,
+      });
     }
   }
 
-  registerDefaultListeners(events, db);
-  observabilityLog.info("Default listeners registered.");
+
+  // Emit platform startup event via observability
+  if (observer) {
+    observer
+      .event("platform.startup", {
+        kind: "log",
+        level: "info",
+        source: "nomos-core",
+        data: {
+          appName: config.app.name,
+          env: config.app.env,
+          pluginsLoaded: plugins.manifests.length,
+          authEnabled: config.modules.auth.enabled,
+          adminEnabled: config.modules.admin.enabled,
+        },
+      })
+      .emit();
+  }
 
   for (const listener of plugins.listeners) {
     events.on(listener.event, listener.handler, { mode: listener.mode });
@@ -565,18 +626,29 @@ export async function createApp(config: ResolvedNomosConfig) {
           }
         }
 
-        (req as any).routeId = route.id;
-        (req as any).authMode = authMode;
-        (req as any).userId = subject?.id;
+        // Create observability context for this request
+        // This establishes AsyncLocalStorage context so that observer.step() and
+        // collectSteps() work correctly within the request lifecycle.
+        const obsContext = createContext({
+          requestId: reqId,
+          actorId: subject?.id,
+          actorType: subject?.type,
+        });
 
-        // Create legacy user object for backward compatibility
-        const user = subject?.type === "user" ? {
-          id: subject.id,
-          roles: (subject.claims?.roles as string[]) ?? [],
-          permissions: [] as string[], // Permissions now resolved via authz engine
-        } : null;
+        // Run the rest of the handler within the observability context
+        return runWithContextAsync(obsContext, async () => {
+          (req as any).routeId = route.id;
+          (req as any).authMode = authMode;
+          (req as any).userId = subject?.id;
 
-        const ctxBase = {
+          // Create legacy user object for backward compatibility
+          const user = subject?.type === "user" ? {
+            id: subject.id,
+            roles: (subject.claims?.roles as string[]) ?? [],
+            permissions: [] as string[], // Permissions now resolved via authz engine
+          } : null;
+
+          const ctxBase = {
           reqId,
           method: req.method,
           path: route.path,
@@ -593,6 +665,7 @@ export async function createApp(config: ResolvedNomosConfig) {
           events,
           jobs: jobsRuntime,
           webhooks: webhooksRuntime,
+          observer,
           req,
           reply,
           log: req.log.child({
@@ -764,9 +837,22 @@ export async function createApp(config: ResolvedNomosConfig) {
               error: "internal_error",
               message: "Unexpected error",
             });
-            db.errors.push({ timestamp: new Date().toISOString(), error: err.message });
+            // Emit error event via observability
+            observer?.event("platform.error.unhandled", {
+              kind: "log",
+              level: "error",
+              source: "nomos-core",
+              data: {
+                routeId: route.id,
+                path: route.path,
+                method: req.method,
+                error: err.message,
+                stack: err.stack,
+              },
+            }).emit();
           }
         }
+        }); // End of runWithContextAsync
       }
     });
   }
@@ -793,6 +879,7 @@ export async function createApp(config: ResolvedNomosConfig) {
       events,
       jobs: jobsRuntime,
       webhooks: webhooksRuntime,
+      observer,
       req,
       reply,
       log: req.log.child({
@@ -945,6 +1032,24 @@ export async function createApp(config: ResolvedNomosConfig) {
       }
     }
   }
+
+  // Add graceful shutdown hook for observability
+  app.addHook("onClose", async () => {
+    if (observer) {
+      observer
+        .event("platform.shutdown", {
+          kind: "log",
+          level: "info",
+          source: "nomos-core",
+          data: {
+            appName: config.app.name,
+          },
+        })
+        .emit();
+    }
+    await shutdownObservability();
+    serverLog.info("Observability runtime shut down.");
+  });
 
   return app;
 }

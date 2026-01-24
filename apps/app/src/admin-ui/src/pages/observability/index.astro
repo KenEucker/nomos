@@ -1,0 +1,7 @@
+---
+import PanelPage from "../../components/PanelPage.astro";
+import observabilityPanel from "./index.panel";
+
+const panelModuleKey = "/src/pages/observability/index.panel.ts";
+---
+<PanelPage panel={observabilityPanel} panelModuleKey={panelModuleKey} />
