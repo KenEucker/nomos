@@ -145,4 +145,7 @@ vite.config.ts.timestamp-*
 .local-uploads/
 apps/app/prisma/dev.db
 
+# Nomos runtime data (observability spool, caches, etc.)
+.nomos/
+
 .DS_Store

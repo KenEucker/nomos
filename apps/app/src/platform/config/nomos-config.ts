@@ -3,6 +3,39 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import dotenv from "dotenv";
 
+export type ObservabilityConfig = {
+  /** Enable the observability subsystem */
+  enabled?: boolean;
+  /** Enable lazy explanation evaluation */
+  explanations?: boolean;
+  /** Enable lazy telemetry evaluation */
+  telemetry?: boolean;
+  /** Enable DECIDE artifact evaluation */
+  decide?: boolean;
+  /** Best-effort bus capacity */
+  bestEffortBusSize?: number;
+  /** Durable bus capacity */
+  durableBusSize?: number;
+  /** Flush interval in milliseconds */
+  flushIntervalMs?: number;
+  /** Maximum events per flush batch */
+  flushBatchSize?: number;
+  /** Enable SQLite spool for durable event persistence */
+  spoolEnabled?: boolean;
+  /** Path to SQLite spool file */
+  spoolPath?: string;
+  /** Enable console sink */
+  consoleSink?: boolean;
+  /** Console sink minimum level */
+  consoleSinkLevel?: "debug" | "info" | "warn" | "error";
+  /** Drop debug events under backpressure */
+  dropDebugUnderPressure?: boolean;
+  /** Trace sampling rate (0.0 to 1.0) */
+  sampleTraceRate?: number;
+  /** Health signal emission interval in milliseconds (0 to disable) */
+  healthSignalIntervalMs?: number;
+};
+
 export type NomosConfig = {
   app?: {
     name?: string;
@@ -30,6 +63,7 @@ export type NomosConfig = {
     errorStack?: boolean;
     domains?: Record<string, boolean>;
   };
+  observability?: ObservabilityConfig;
   swagger?: {
     public?: boolean;
   };
@@ -78,6 +112,24 @@ export type PluginManagerConfig = {
   };
 };
 
+export type ResolvedObservabilityConfig = {
+  enabled: boolean;
+  explanations: boolean;
+  telemetry: boolean;
+  decide: boolean;
+  bestEffortBusSize: number;
+  durableBusSize: number;
+  flushIntervalMs: number;
+  flushBatchSize: number;
+  spoolEnabled: boolean;
+  spoolPath?: string;
+  consoleSink: boolean;
+  consoleSinkLevel: "debug" | "info" | "warn" | "error";
+  dropDebugUnderPressure: boolean;
+  sampleTraceRate: number;
+  healthSignalIntervalMs: number;
+};
+
 export type ResolvedNomosConfig = {
   app: {
     name: string;
@@ -105,6 +157,7 @@ export type ResolvedNomosConfig = {
     errorStack: boolean;
     domains?: Record<string, boolean>;
   };
+  observability: ResolvedObservabilityConfig;
   swagger: {
     public: boolean;
   };
@@ -285,6 +338,27 @@ export function resolveNomosConfig(
   const diagnosticsDefault = !isProduction;
   const diagnosticsEnabled = raw.dev?.diagnostics ?? parseBoolEnv(process.env.DIAGNOSTICS_ENABLED, diagnosticsDefault);
 
+  // Observability configuration
+  const obsRaw = raw.observability ?? {};
+  const obsEnabled = obsRaw.enabled ?? true;
+  const observability: ResolvedObservabilityConfig = {
+    enabled: obsEnabled,
+    explanations: obsRaw.explanations ?? true,
+    telemetry: obsRaw.telemetry ?? true,
+    decide: obsRaw.decide ?? true,
+    bestEffortBusSize: obsRaw.bestEffortBusSize ?? 10000,
+    durableBusSize: obsRaw.durableBusSize ?? 5000,
+    flushIntervalMs: obsRaw.flushIntervalMs ?? 1000,
+    flushBatchSize: obsRaw.flushBatchSize ?? 100,
+    spoolEnabled: obsRaw.spoolEnabled ?? true,
+    spoolPath: obsRaw.spoolPath,
+    consoleSink: obsRaw.consoleSink ?? !isProduction,
+    consoleSinkLevel: obsRaw.consoleSinkLevel ?? (isProduction ? "info" : "debug"),
+    dropDebugUnderPressure: obsRaw.dropDebugUnderPressure ?? true,
+    sampleTraceRate: obsRaw.sampleTraceRate ?? 1.0,
+    healthSignalIntervalMs: obsRaw.healthSignalIntervalMs ?? 30000,
+  };
+
   return {
     app: {
       name: appName,
@@ -312,6 +386,7 @@ export function resolveNomosConfig(
       errorStack: Boolean(loggingErrorStack),
       domains: raw.logging?.domains
     },
+    observability,
     swagger: {
       public: Boolean(swaggerPublic)
     },

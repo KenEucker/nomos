@@ -7,6 +7,7 @@ import type { PrismaClient } from "@prisma/client";
 import { HttpError } from "./errors";
 import type { AppLogger } from "./logging/logger";
 import type { Subject, Decision } from "./authz";
+import type { NomosObserver } from "./observability";
 
 /**
  * @deprecated Use Subject from authz module instead
@@ -46,6 +47,19 @@ export type Ctx = {
   events: EventBus;
   jobs: JobsRuntime;
   webhooks: WebhookRuntime;
+  /**
+   * Observability observer for emitting structured events.
+   * Plugins and routes MUST use this instead of direct console logging.
+   *
+   * @example
+   * ctx.observer?.event('user.action', {
+   *   kind: 'audit',
+   *   level: 'info',
+   *   outcome: 'success',
+   *   data: { userId: ctx.subject?.id, action: 'profile.update' },
+   * }).emit();
+   */
+  observer: NomosObserver | null;
   auth: {
     requireUser: () => UserIdentity;
     requirePermission: (permission: string) => void;
@@ -70,8 +84,6 @@ export type InMemoryStore = {
   permissions: Set<string>;
   apiKeys: Map<string, any>;
   sessions: Map<string, any>;
-  auditLog: any[];
-  errors: any[];
   webhookDestinations: Map<string, any>;
   webhookDeliveries: any[];
   jobs: Map<string, any>;
