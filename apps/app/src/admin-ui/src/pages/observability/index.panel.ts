@@ -317,25 +317,21 @@ const panel: PanelModule = {
   },
   commandBar: () => [
     {
+      type: "method",
       label: "Clear Events",
-      action: {
-        type: "api",
-        method: "POST",
-        url: "/_/observability",
-        body: { action: "clear" },
-        confirm: "Are you sure you want to clear all stored events?",
-        successMessage: "Events cleared",
-      },
+      endpoint: "/_/observability/actions",
+      method: "POST",
+      payload: () => ({ action: "clear" }),
+      confirm: { title: "Are you sure you want to clear all stored events?" },
+      toast: { success: "Events cleared" },
     },
     {
+      type: "method",
       label: "Cleanup Spool",
-      action: {
-        type: "api",
-        method: "POST",
-        url: "/_/observability",
-        body: { action: "cleanup" },
-        successMessage: "Spool cleaned up",
-      },
+      endpoint: "/_/observability/actions",
+      method: "POST",
+      payload: () => ({ action: "cleanup" }),
+      toast: { success: "Spool cleaned up" },
     },
   ],
 }
