@@ -16,7 +16,9 @@ import { isObservabilityInitialized, getRuntime } from "../../../observability";
 
 export const get = async (ctx: Ctx) => {
   const search = typeof ctx.query.search === "string" ? ctx.query.search.trim().toLowerCase() : "";
-  const limit = Math.min(Number(ctx.query.limit) || 200, 500);
+  // Clamp limit to valid range: minimum 1, maximum 500, default 200
+  const rawLimit = Number(ctx.query.limit);
+  const limit = Number.isNaN(rawLimit) ? 200 : Math.max(1, Math.min(rawLimit, 500));
 
   if (!isObservabilityInitialized()) {
     return ctx.json({ audit: [] }, 200, { total: 0 });
@@ -30,7 +32,7 @@ export const get = async (ctx: Ctx) => {
   }
 
   // Get audit events from the event store
-  let result = eventStore.query({
+  const result = eventStore.query({
     kind: 'audit',
     limit: limit,
   });
@@ -49,6 +51,8 @@ export const get = async (ctx: Ctx) => {
   }));
 
   // Apply search filter if provided
+  // When search is applied, total reflects filtered count (we can't know true total without full scan)
+  // When no search, total reflects actual count in the store
   if (search) {
     audit = audit.filter((entry) => {
       const fields = [
@@ -65,7 +69,8 @@ export const get = async (ctx: Ctx) => {
         .toLowerCase();
       return fields.includes(search);
     });
+    return ctx.json({ audit }, 200, { total: audit.length });
   }
 
-  return ctx.json({ audit }, 200, { total: audit.length });
+  return ctx.json({ audit }, 200, { total: result.total });
 };

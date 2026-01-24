@@ -72,6 +72,7 @@ const DEFAULT_CONFIG: FlusherConfig = {
 export class BackgroundFlusher {
   private intervalHandle?: ReturnType<typeof setInterval>
   private running = false
+  private flushing = false // Guard to prevent overlapping flush executions
   private sinkFailuresTotal = 0
   private lastFlushAt?: number
   private lastFlushDurationMs?: number
@@ -148,8 +149,16 @@ export class BackgroundFlusher {
   /**
    * Flush events from buses to sinks.
    * Called automatically on interval, but can be invoked manually for graceful shutdown.
+   * 
+   * Uses a guard flag to prevent overlapping executions when flush takes longer
+   * than the interval period.
    */
   async flush(): Promise<void> {
+    // Prevent overlapping flush executions
+    if (this.flushing) {
+      return
+    }
+    
     // Check if there's anything to flush
     const bestEffortStats = this.bestEffortBus.stats()
     const durableStats = this.durableBus.stats()
@@ -164,6 +173,9 @@ export class BackgroundFlusher {
       }
       return
     }
+
+    // Set guard flag
+    this.flushing = true
 
     // Reset empty counter since we have work to do
     this.consecutiveEmptyFlushes = 0
@@ -210,6 +222,9 @@ export class BackgroundFlusher {
       }
 
       throw error
+    } finally {
+      // Always reset guard flag to allow next flush
+      this.flushing = false
     }
   }
 

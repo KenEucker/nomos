@@ -31,6 +31,25 @@ let defaultBuildId: string | undefined
 let defaultVersion: string | undefined
 
 /**
+ * Stable anonymous context singleton for code running outside of request context.
+ * This ensures that steps recorded outside of a request context are still retrievable
+ * via collectSteps() - without this, each call to getContextOrAnonymous() would return
+ * a different object, making WeakMap-based step collection impossible.
+ */
+let anonymousContext: NomosContext | null = null
+
+function getAnonymousContext(): NomosContext {
+  if (!anonymousContext) {
+    anonymousContext = {
+      env: defaultEnv,
+      buildId: defaultBuildId,
+      version: defaultVersion,
+    }
+  }
+  return anonymousContext
+}
+
+/**
  * Configure the default context values for new requests.
  * Should be called once at application startup.
  */
@@ -42,6 +61,8 @@ export function configureDefaultContext(config: {
   if (config.env) defaultEnv = config.env
   if (config.buildId) defaultBuildId = config.buildId
   if (config.version) defaultVersion = config.version
+  // Reset anonymous context so it picks up new defaults
+  anonymousContext = null
 }
 
 // =============================================================================
@@ -115,13 +136,12 @@ export function requireContext(): NomosContext {
 /**
  * Get the current execution context or a fallback "anonymous" context.
  * Useful for code that may run both inside and outside of request context.
+ * 
+ * Note: When no AsyncLocalStorage context exists, returns a stable singleton
+ * to ensure that step collection (which uses WeakMap) works correctly.
  */
 export function getContextOrAnonymous(): NomosContext {
-  return contextStorage.getStore() ?? {
-    env: defaultEnv,
-    buildId: defaultBuildId,
-    version: defaultVersion,
-  }
+  return contextStorage.getStore() ?? getAnonymousContext()
 }
 
 // =============================================================================

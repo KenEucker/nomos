@@ -44,15 +44,26 @@ export const get = async (ctx: Ctx) => {
     return ctx.json({ error: "Event store not enabled", events: [], total: 0 }, 400);
   }
 
-  // Parse query parameters
+  // Parse and sanitize query parameters
   const kind = ctx.query.kind as NomosEventKind | undefined;
   const level = ctx.query.level as NomosLevel | undefined;
   const source = ctx.query.source as string | undefined;
   const name = ctx.query.name as string | undefined;
-  const since = ctx.query.since ? Number(ctx.query.since) : undefined;
-  const until = ctx.query.until ? Number(ctx.query.until) : undefined;
-  const limit = Math.min(Number(ctx.query.limit) || 50, 200);
-  const offset = Number(ctx.query.offset) || 0;
+  
+  // Sanitize timestamp filters: treat NaN/negative as undefined
+  const rawSince = ctx.query.since ? Number(ctx.query.since) : undefined;
+  const since = rawSince !== undefined && !Number.isNaN(rawSince) && rawSince >= 0 ? rawSince : undefined;
+  
+  const rawUntil = ctx.query.until ? Number(ctx.query.until) : undefined;
+  const until = rawUntil !== undefined && !Number.isNaN(rawUntil) && rawUntil >= 0 ? rawUntil : undefined;
+  
+  // Clamp limit to valid range: minimum 1, maximum 200, default 50
+  const rawLimit = Number(ctx.query.limit);
+  const limit = Number.isNaN(rawLimit) ? 50 : Math.max(1, Math.min(rawLimit, 200));
+  
+  // Clamp offset to non-negative, default 0
+  const rawOffset = Number(ctx.query.offset);
+  const offset = Number.isNaN(rawOffset) || rawOffset < 0 ? 0 : Math.floor(rawOffset);
 
   try {
     const result = eventStore.query({

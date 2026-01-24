@@ -136,23 +136,34 @@ export class ObservabilityRuntime {
     this.classify = createClassifier(this.config.durableOverrides ?? [])
 
     // Create spool if enabled (with environment-appropriate config)
+    // Wrap in try/catch to allow graceful degradation if spool cannot be initialized
+    // (e.g., permission denied, disk full, SQLite corruption)
     if (this.config.spoolEnabled) {
-      const spoolPath = this.config.spoolPath ?? `${process.cwd()}/.nomos/observability-spool.db`
-      const isProduction = this.config.env === 'prod'
-      this.spool = createSpool({
-        filePath: spoolPath,
-        config: isProduction ? {
-          // Production: aggressive cleanup
-          maxAgeMs: 4 * 60 * 60 * 1000, // 4 hours
-          maxEvents: 5000,
-          cleanupIntervalMs: 60 * 1000, // 1 minute
-        } : {
-          // Development: more relaxed
-          maxAgeMs: 24 * 60 * 60 * 1000, // 24 hours
-          maxEvents: 10000,
-          cleanupIntervalMs: 5 * 60 * 1000, // 5 minutes
-        },
-      })
+      try {
+        const spoolPath = this.config.spoolPath ?? `${process.cwd()}/.nomos/observability-spool.db`
+        const isProduction = this.config.env === 'prod'
+        this.spool = createSpool({
+          filePath: spoolPath,
+          config: isProduction ? {
+            // Production: aggressive cleanup
+            maxAgeMs: 4 * 60 * 60 * 1000, // 4 hours
+            maxEvents: 5000,
+            cleanupIntervalMs: 60 * 1000, // 1 minute
+          } : {
+            // Development: more relaxed
+            maxAgeMs: 24 * 60 * 60 * 1000, // 24 hours
+            maxEvents: 10000,
+            cleanupIntervalMs: 5 * 60 * 1000, // 5 minutes
+          },
+        })
+      } catch (error) {
+        // Log warning and continue without spool - observability should not crash the app
+        console.warn(
+          '[nomos-obs] Failed to initialize spool, continuing without durable storage:',
+          error instanceof Error ? error.message : String(error)
+        )
+        // spool remains undefined, which is handled gracefully by the flusher
+      }
     }
 
     // Create sink registry and register default sinks

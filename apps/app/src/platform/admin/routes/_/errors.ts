@@ -15,17 +15,19 @@ import type { Ctx } from "../../../ctx";
 import { isObservabilityInitialized, getRuntime } from "../../../observability";
 
 export const get = async (ctx: Ctx) => {
-  const limit = Math.min(Number(ctx.query.limit) || 200, 500);
+  // Clamp limit to valid range: minimum 1, maximum 500, default 200
+  const rawLimit = Number(ctx.query.limit);
+  const limit = Number.isNaN(rawLimit) ? 200 : Math.max(1, Math.min(rawLimit, 500));
 
   if (!isObservabilityInitialized()) {
-    return ctx.json({ errors: [] });
+    return ctx.json({ errors: [] }, 200, { total: 0 });
   }
 
   const runtime = getRuntime();
   const eventStore = runtime.getEventStore();
 
   if (!eventStore) {
-    return ctx.json({ errors: [] });
+    return ctx.json({ errors: [] }, 200, { total: 0 });
   }
 
   // Get error-level events from the event store
@@ -49,5 +51,6 @@ export const get = async (ctx: Ctx) => {
     explanation: event.explanation,
   }));
 
-  return ctx.json({ errors }, 200, { total: errors.length });
+  // Use result.total for the actual count of error events in the store
+  return ctx.json({ errors }, 200, { total: result.total });
 };

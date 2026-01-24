@@ -626,18 +626,29 @@ export async function createApp(config: ResolvedNomosConfig) {
           }
         }
 
-        (req as any).routeId = route.id;
-        (req as any).authMode = authMode;
-        (req as any).userId = subject?.id;
+        // Create observability context for this request
+        // This establishes AsyncLocalStorage context so that observer.step() and
+        // collectSteps() work correctly within the request lifecycle.
+        const obsContext = createContext({
+          requestId: reqId,
+          actorId: subject?.id,
+          actorType: subject?.type,
+        });
 
-        // Create legacy user object for backward compatibility
-        const user = subject?.type === "user" ? {
-          id: subject.id,
-          roles: (subject.claims?.roles as string[]) ?? [],
-          permissions: [] as string[], // Permissions now resolved via authz engine
-        } : null;
+        // Run the rest of the handler within the observability context
+        return runWithContextAsync(obsContext, async () => {
+          (req as any).routeId = route.id;
+          (req as any).authMode = authMode;
+          (req as any).userId = subject?.id;
 
-        const ctxBase = {
+          // Create legacy user object for backward compatibility
+          const user = subject?.type === "user" ? {
+            id: subject.id,
+            roles: (subject.claims?.roles as string[]) ?? [],
+            permissions: [] as string[], // Permissions now resolved via authz engine
+          } : null;
+
+          const ctxBase = {
           reqId,
           method: req.method,
           path: route.path,
@@ -841,6 +852,7 @@ export async function createApp(config: ResolvedNomosConfig) {
             }).emit();
           }
         }
+        }); // End of runWithContextAsync
       }
     });
   }

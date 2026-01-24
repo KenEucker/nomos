@@ -1,19 +1,20 @@
 /**
- * Admin route for observability management.
+ * Admin route for observability status (read-only).
  * 
  * Provides:
  * - Current health status
- * - Recent events query
+ * - Event store statistics
  * - Spool statistics
- * - Manual cleanup trigger
  * - Configuration view
+ * 
+ * For write operations (cleanup, clear), see observability/actions.ts
  */
 
 export const config = {
   auth: "required",
   intent: "admin.read",
   tags: ["admin"],
-  summary: "Observability status, events, and management"
+  summary: "Observability status and statistics"
 };
 
 import type { Ctx } from "../../../ctx";
@@ -21,8 +22,6 @@ import {
   isObservabilityInitialized,
   getRuntime,
   type NomosObservabilityHealth,
-  type NomosEventKind,
-  type NomosLevel,
 } from "../../../observability";
 
 interface ObservabilityStatus {
@@ -133,95 +132,3 @@ export const get = async (ctx: Ctx) => {
 
   return ctx.json(status);
 };
-
-/**
- * POST /_/observability - Actions (cleanup, clear)
- */
-export const post = async (ctx: Ctx) => {
-  if (!isObservabilityInitialized()) {
-    return ctx.json({ error: "Observability not enabled" }, 400);
-  }
-
-  const action = ctx.body?.action as string;
-
-  if (action === "cleanup") {
-    return handleCleanup(ctx);
-  } else if (action === "clear") {
-    return handleClear(ctx);
-  } else {
-    return ctx.json({ error: "Invalid action. Use 'cleanup' or 'clear'" }, 400);
-  }
-};
-
-async function handleCleanup(ctx: Ctx) {
-  try {
-    const runtime = getRuntime();
-    const spool = runtime.getSpool();
-    
-    if (!spool) {
-      return ctx.json({ error: "Spool not enabled" }, 400);
-    }
-
-    const result = spool.cleanup();
-    
-    // Emit cleanup event
-    ctx.observer?.event("obs.spool.cleanup", {
-      kind: "audit",
-      level: "info",
-      source: "nomos-admin",
-      data: {
-        deletedByAge: result.deletedByAge,
-        deletedByCount: result.deletedByCount,
-        triggeredBy: ctx.subject?.id ?? "unknown",
-      },
-    }).emit();
-
-    return ctx.json({
-      success: true,
-      action: "cleanup",
-      deleted: {
-        byAge: result.deletedByAge,
-        byCount: result.deletedByCount,
-        total: result.deletedByAge + result.deletedByCount,
-      },
-      remaining: spool.stats().queued,
-    });
-  } catch (error) {
-    ctx.log.error({ err: error }, "Failed to cleanup spool");
-    return ctx.json({ error: "Cleanup failed" }, 500);
-  }
-}
-
-async function handleClear(ctx: Ctx) {
-  try {
-    const runtime = getRuntime();
-    const eventStore = runtime.getEventStore();
-    
-    if (!eventStore) {
-      return ctx.json({ error: "Event store not enabled" }, 400);
-    }
-
-    const before = eventStore.stats().count;
-    eventStore.clear();
-    
-    // Emit clear event
-    ctx.observer?.event("obs.eventstore.cleared", {
-      kind: "audit",
-      level: "info",
-      source: "nomos-admin",
-      data: {
-        eventsCleared: before,
-        triggeredBy: ctx.subject?.id ?? "unknown",
-      },
-    }).emit();
-
-    return ctx.json({
-      success: true,
-      action: "clear",
-      eventsCleared: before,
-    });
-  } catch (error) {
-    ctx.log.error({ err: error }, "Failed to clear event store");
-    return ctx.json({ error: "Clear failed" }, 500);
-  }
-}
