@@ -7,7 +7,7 @@ import type { AppLogger } from "../logging/logger";
 
 export class WebhookRuntime {
   constructor(
-    private jobs: JobsRuntime,
+    private jobs: JobsRuntime | null,
     private events: EventBus,
     private store: { destinations: Map<string, WebhookDestination>; deliveries: WebhookDelivery[] },
     private log: AppLogger
@@ -36,10 +36,18 @@ export class WebhookRuntime {
       };
       this.log.debug({ deliveryId: delivery.id, destinationId: destination.id, event }, "Webhook queued.");
       this.store.deliveries.push(delivery);
-      this.jobs.dispatch("platform.webhook.delivery", delivery, {
-        attempts: destination.retryPolicy?.attempts ?? 3,
-        delayMs: destination.retryPolicy?.delayMs ?? 0
-      });
+
+      // Webhook delivery is now handled via the new jobs system
+      // Jobs are discovered from filesystem and executed by the worker
+      // For now, we queue the delivery in memory and it will be picked up
+      // by the webhook delivery job when running in worker mode
+      if (this.jobs) {
+        this.jobs.enqueue("webhooks.deliver", "event", {
+          triggerPayload: delivery,
+        }).catch((err) => {
+          this.log.error({ err, deliveryId: delivery.id }, "Failed to enqueue webhook delivery job");
+        });
+      }
     }
   }
 

@@ -107,3 +107,29 @@ model PluginState {
   lastPreview     Json?
   lastPreviewedAt DateTime?
 }
+
+// =============================================================================
+// Jobs System
+// =============================================================================
+
+model JobRun {
+  id              String    @id @default(cuid())
+  jobId           String
+  status          String    // pending, running, succeeded, failed, cancelled, timed_out
+  trigger         String    // cron, event, manual, api
+  scheduledFor    DateTime
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  attempt         Int       @default(1)
+  error           Json?
+  triggerPayload  Json?
+  correlationId   String?
+  lastHeartbeatAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([jobId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([createdAt])
+}

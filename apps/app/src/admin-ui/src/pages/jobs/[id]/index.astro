@@ -1,0 +1,7 @@
+---
+import PanelPage from "../../../components/PanelPage.astro";
+import panel from "./index.panel";
+
+const { id } = Astro.params;
+---
+<PanelPage panel={panel} panelModuleKey="jobs/[id]/index.panel" />
