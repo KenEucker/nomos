@@ -38,12 +38,25 @@
     | "enableTooltips"
     | "reduceMotion"
 
-  const toggles: Array<{
+  type ToggleConfig = {
     key: BooleanKey
     label: string
     description: string
     icon: typeof Rows3Icon
-  }> = [
+  }
+
+  // Settings that apply to both desktop and mobile
+  const sharedToggles: ToggleConfig[] = [
+    {
+      key: "reduceMotion",
+      label: "Reduce motion",
+      description: "Disable menu animations.",
+      icon: SparklesIcon,
+    },
+  ]
+
+  // Settings that only apply to desktop
+  const desktopToggles: ToggleConfig[] = [
     {
       key: "sidebarCollapsed",
       label: "Icon-only sidebar",
@@ -67,12 +80,6 @@
       label: "Icon tooltips",
       description: "Show tooltips in icon-only mode.",
       icon: MessageCircleIcon,
-    },
-    {
-      key: "reduceMotion",
-      label: "Reduce motion",
-      description: "Disable menu animations.",
-      icon: SparklesIcon,
     },
   ]
 
@@ -144,33 +151,34 @@
       </button>
     </div>
   {:else if !isMobile}
-    <div class="flex flex-col items-center gap-2 px-2 py-2 border-b border-border">
+    <div class="flex flex-col items-center gap-1 px-2 py-2 border-b border-border">
       <button
         type="button"
-        class={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "w-full")}
+        class="flex items-center justify-center px-2 py-3 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
         on:click={onBack}
         aria-label="Back to navigation"
         title="Back"
       >
-        <ArrowLeftIcon class="size-4" />
+        <ArrowLeftIcon class="size-6" />
       </button>
       <button
         type="button"
-        class={cn(buttonVariants({ variant: "default", size: "icon-sm" }), "w-full")}
+        class="flex items-center justify-center px-2 py-3 transition rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
         on:click={onSave}
         aria-label="Save screen settings"
         title={isDirty ? "Save changes" : "No changes to save"}
       >
-        <CheckIcon class="size-4" />
+        <CheckIcon class="size-6" />
       </button>
     </div>
   {/if}
 
   {#if variant === "form"}
     <div class="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+      <!-- Shared settings (both desktop and mobile) -->
       <div class="space-y-3">
         <div class="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
-          Appearance
+          General
         </div>
         <div class="flex items-center justify-between gap-3 px-3 py-2 border rounded-lg border-border">
           <div class="flex items-start gap-3">
@@ -180,27 +188,44 @@
               <SunIcon class="mt-0.5 size-4 text-muted-foreground" />
             {/if}
             <div>
-              <div class="text-sm font-medium">Theme</div>
+              <div class="text-sm font-medium">Dark mode</div>
               <div class="text-xs text-muted-foreground">Toggle light or dark mode.</div>
             </div>
           </div>
           <Switch
             checked={themeIsDark}
-            aria-label="Theme"
+            aria-label="Dark mode"
             onCheckedChange={(value) => onThemeChange(value ? "dark" : "light")}
           />
         </div>
+        {#each sharedToggles as toggle}
+          <div class="flex items-center justify-between gap-3 px-3 py-2 border rounded-lg border-border">
+            <div class="flex items-start gap-3">
+              <svelte:component this={toggle.icon} class="mt-0.5 size-4 text-muted-foreground" />
+              <div>
+                <div class="text-sm font-medium">{toggle.label}</div>
+                <div class="text-xs text-muted-foreground">{toggle.description}</div>
+              </div>
+            </div>
+            <Switch
+              checked={draft[toggle.key]}
+              aria-label={toggle.label}
+              onCheckedChange={(value) => updateDraft({ [toggle.key]: value })}
+            />
+          </div>
+        {/each}
       </div>
 
-      <div class="space-y-3">
-        <div class="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
-          Docking
-        </div>
-        {#if !isMobile}
+      <!-- Desktop-only settings -->
+      {#if !isMobile}
+        <div class="space-y-3">
+          <div class="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+            Desktop
+          </div>
           <div class="flex items-center justify-between gap-3 px-3 py-2 border rounded-lg border-border">
             <div class="flex items-center gap-2">
               <MonitorIcon class="size-4 text-muted-foreground" />
-              <span class="text-sm">Desktop dock</span>
+              <span class="text-sm">Sidebar position</span>
             </div>
             <div class="flex items-center gap-2">
               <button
@@ -233,11 +258,35 @@
               </button>
             </div>
           </div>
-        {:else}
+          {#each desktopToggles as toggle}
+            <div class="flex items-center justify-between gap-3 px-3 py-2 border rounded-lg border-border">
+              <div class="flex items-start gap-3">
+                <svelte:component this={toggle.icon} class="mt-0.5 size-4 text-muted-foreground" />
+                <div>
+                  <div class="text-sm font-medium">{toggle.label}</div>
+                  <div class="text-xs text-muted-foreground">{toggle.description}</div>
+                </div>
+              </div>
+              <Switch
+                checked={draft[toggle.key]}
+                aria-label={toggle.label}
+                onCheckedChange={(value) => updateDraft({ [toggle.key]: value })}
+              />
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <!-- Mobile-only settings -->
+      {#if isMobile}
+        <div class="space-y-3">
+          <div class="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+            Mobile
+          </div>
           <div class="flex items-center justify-between gap-3 px-3 py-2 border rounded-lg border-border">
             <div class="flex items-center gap-2">
               <SmartphoneIcon class="size-4 text-muted-foreground" />
-              <span class="text-sm">Mobile dock</span>
+              <span class="text-sm">Navigation position</span>
             </div>
             <div class="flex items-center gap-2">
               <button
@@ -270,38 +319,17 @@
               </button>
             </div>
           </div>
-        {/if}
-      </div>
-
-      <div class="space-y-3">
-        <div class="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
-          Menu behavior
         </div>
-        {#each toggles as toggle}
-          <div class="flex items-center justify-between gap-3 px-3 py-2 border rounded-lg border-border">
-            <div class="flex items-start gap-3">
-              <svelte:component this={toggle.icon} class="mt-0.5 size-4 text-muted-foreground" />
-              <div>
-                <div class="text-sm font-medium">{toggle.label}</div>
-                <div class="text-xs text-muted-foreground">{toggle.description}</div>
-              </div>
-            </div>
-            <Switch
-              checked={draft[toggle.key]}
-              aria-label={toggle.label}
-              onCheckedChange={(value) => updateDraft({ [toggle.key]: value })}
-            />
-          </div>
-        {/each}
-      </div>
+      {/if}
     </div>
   {:else}
     {#if isMobile}
+      <!-- Mobile quick settings: shared + mobile-only -->
       <div class="flex-1 overflow-x-auto">
         <div class="flex items-center gap-2 px-2 py-2 min-w-max">
           <button
             type="button"
-            class="flex items-center justify-center rounded-md bg-primary text-primary-foreground p-3 text-sm font-medium flex-shrink-0 hover:bg-primary/90 transition-colors"
+            class="flex items-center justify-center flex-shrink-0 p-3 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
             on:click={onBack}
             aria-label="Back to navigation"
             title="Back"
@@ -310,32 +338,15 @@
           </button>
           <button
             type="button"
-            class="flex items-center justify-center rounded-md bg-primary text-primary-foreground p-3 text-sm font-medium flex-shrink-0 hover:bg-primary/90 transition-colors"
+            class="flex items-center justify-center flex-shrink-0 p-3 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
             on:click={onSave}
             aria-label="Save screen settings"
             title={isDirty ? "Save changes" : "No changes to save"}
           >
             <CheckIcon class="size-5" />
           </button>
-          <div class="h-8 w-px bg-border flex-shrink-0"></div>
-          <button
-            type="button"
-            class={
-              draft.mobileDock === "top"
-                ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium flex-shrink-0"
-                : "flex items-center justify-center rounded-md border border-border p-3 text-sm flex-shrink-0"
-            }
-            aria-label={`Mobile dock ${draft.mobileDock === "top" ? "top" : "bottom"}`}
-            aria-pressed={draft.mobileDock === "top"}
-            on:click={toggleMobileDock}
-            title="Mobile dock"
-          >
-            {#if draft.mobileDock === "top"}
-              <BookDown class="size-5" />
-            {:else}
-              <BookUp class="size-5" />
-            {/if}
-          </button>
+          <div class="flex-shrink-0 w-px h-8 bg-border"></div>
+          <!-- Shared: Theme toggle -->
           <button
             type="button"
             class={
@@ -343,10 +354,10 @@
                 ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium flex-shrink-0"
                 : "flex items-center justify-center rounded-md border border-border p-3 text-sm flex-shrink-0"
             }
-            aria-label="Toggle theme"
+            aria-label="Toggle dark mode"
             aria-pressed={themeIsDark}
             on:click={toggleTheme}
-            title="Toggle theme"
+            title="Dark mode"
           >
             {#if themeIsDark}
               <MoonIcon class="size-5" />
@@ -354,7 +365,8 @@
               <SunIcon class="size-5" />
             {/if}
           </button>
-          {#each toggles as toggle}
+          <!-- Shared toggles -->
+          {#each sharedToggles as toggle}
             <button
               type="button"
               class={
@@ -370,61 +382,103 @@
               <svelte:component this={toggle.icon} class="size-5" />
             </button>
           {/each}
-        </div>
-      </div>
-    {:else}
-      <div class="flex-1 px-2 py-4 overflow-y-auto">
-        <div class="flex flex-col items-center gap-2">
+          <div class="flex-shrink-0 w-px h-8 bg-border"></div>
+          <!-- Mobile-only: Navigation position -->
           <button
             type="button"
             class={
-              draft.desktopDock === "left"
-                ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium w-full"
-                : "flex items-center justify-center rounded-md border border-border p-3 text-sm w-full"
+              draft.mobileDock === "top"
+                ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium flex-shrink-0"
+                : "flex items-center justify-center rounded-md border border-border p-3 text-sm flex-shrink-0"
             }
-            aria-label={`Desktop dock ${draft.desktopDock === "left" ? "left" : "right"}`}
-            aria-pressed={draft.desktopDock === "left"}
-            on:click={toggleDesktopDock}
-            title="Desktop dock"
+            aria-label={`Navigation ${draft.mobileDock === "top" ? "top" : "bottom"}`}
+            aria-pressed={draft.mobileDock === "top"}
+            on:click={toggleMobileDock}
+            title="Navigation position"
           >
-            {#if draft.desktopDock === "left"}
-              <PanelLeftIcon class="size-5" />
+            {#if draft.mobileDock === "top"}
+              <BookDown class="size-5" />
             {:else}
-              <PanelRightIcon class="size-5" />
+              <BookUp class="size-5" />
             {/if}
           </button>
+        </div>
+      </div>
+    {:else}
+      <!-- Desktop quick settings (collapsed sidebar): shared + desktop-only -->
+      <div class="flex-1 px-2 py-4 overflow-y-auto">
+        <div class="flex flex-col items-center gap-1">
+          <!-- Shared: Theme toggle -->
           <button
             type="button"
             class={
               themeIsDark
-                ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium w-full"
-                : "flex items-center justify-center rounded-md border border-border p-3 text-sm w-full"
+                ? "flex items-center justify-center rounded-md bg-accent px-2 py-3"
+                : "flex items-center justify-center rounded-md px-2 py-3 text-muted-foreground hover:bg-accent hover:text-foreground transition"
             }
-            aria-label="Toggle theme"
+            aria-label="Toggle dark mode"
             aria-pressed={themeIsDark}
             on:click={toggleTheme}
-            title="Toggle theme"
+            title="Dark mode"
           >
             {#if themeIsDark}
-              <MoonIcon class="size-5" />
+              <MoonIcon class="size-6" />
             {:else}
-              <SunIcon class="size-5" />
+              <SunIcon class="size-6" />
             {/if}
           </button>
-          {#each toggles as toggle}
+          <!-- Shared toggles -->
+          {#each sharedToggles as toggle}
             <button
               type="button"
               class={
                 draft[toggle.key]
-                  ? "flex items-center justify-center rounded-md border border-border bg-accent p-3 text-sm font-medium w-full"
-                  : "flex items-center justify-center rounded-md border border-border p-3 text-sm w-full"
+                  ? "flex items-center justify-center rounded-md bg-accent px-2 py-3"
+                  : "flex items-center justify-center rounded-md px-2 py-3 text-muted-foreground hover:bg-accent hover:text-foreground transition"
               }
               aria-label={toggle.label}
               aria-pressed={draft[toggle.key]}
               on:click={() => toggleValue(toggle.key)}
               title={toggle.label}
             >
-              <svelte:component this={toggle.icon} class="size-5" />
+              <svelte:component this={toggle.icon} class="size-6" />
+            </button>
+          {/each}
+          <div class="self-stretch h-px my-2 bg-border"></div>
+          <!-- Desktop-only: Sidebar position -->
+          <button
+            type="button"
+            class={
+              draft.desktopDock === "left"
+                ? "flex items-center justify-center rounded-md bg-accent px-2 py-3"
+                : "flex items-center justify-center rounded-md px-2 py-3 text-muted-foreground hover:bg-accent hover:text-foreground transition"
+            }
+            aria-label={`Sidebar ${draft.desktopDock === "left" ? "left" : "right"}`}
+            aria-pressed={draft.desktopDock === "left"}
+            on:click={toggleDesktopDock}
+            title="Sidebar position"
+          >
+            {#if draft.desktopDock === "left"}
+              <PanelLeftIcon class="size-6" />
+            {:else}
+              <PanelRightIcon class="size-6" />
+            {/if}
+          </button>
+          <!-- Desktop toggles -->
+          {#each desktopToggles as toggle}
+            <button
+              type="button"
+              class={
+                draft[toggle.key]
+                  ? "flex items-center justify-center rounded-md bg-accent px-2 py-3"
+                  : "flex items-center justify-center rounded-md px-2 py-3 text-muted-foreground hover:bg-accent hover:text-foreground transition"
+              }
+              aria-label={toggle.label}
+              aria-pressed={draft[toggle.key]}
+              on:click={() => toggleValue(toggle.key)}
+              title={toggle.label}
+            >
+              <svelte:component this={toggle.icon} class="size-6" />
             </button>
           {/each}
         </div>

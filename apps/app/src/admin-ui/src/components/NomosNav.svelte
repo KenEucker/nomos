@@ -221,7 +221,7 @@
 
   $: appliedPrefs = mode === "settings" ? draft : $navPreferences
   $: updateDocumentPrefs(appliedPrefs)
-  $: variant = (mode === "settings" && (isMobile || $navPreferences.sidebarCollapsed)) ? "quick" : (isMobile ? "quick" : "form")
+  $: variant = (mode === "settings" && (isMobile || appliedPrefs.sidebarCollapsed)) ? "quick" : (isMobile ? "quick" : "form")
   $: expandedGroups = navGroups
     .filter((group) => {
       if (appliedPrefs.sidebarCollapsed || !appliedPrefs.showGroupHeadings) return true
@@ -236,22 +236,22 @@
   <nav
     class={cn(
       "nomos-nav bg-card text-card-foreground flex min-h-0 flex-col md:h-full",
-      $navPreferences.sidebarCollapsed && mode === "nav" ? "items-center" : "items-stretch"
+      appliedPrefs.sidebarCollapsed ? "items-center" : "items-stretch"
     )}
     aria-label="Nomos admin navigation"
   >
   {#if mode === "nav"}
     {#if useCompactMobileNav}
-      <div class="overflow-x-scroll w-full h-full">
-        <ul class="flex items-center gap-2 px-2 py-2 min-w-max h-full">
+      <div class="w-full h-full overflow-x-scroll">
+        <ul class="flex items-center h-full gap-2 px-2 py-2 min-w-max">
           <li class="flex-shrink-0">
             <a
               href="/admin"
-              class="flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition"
+              class="flex items-center justify-center px-3 py-2 text-sm font-medium transition rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
               aria-label="Home"
             >
               {#if menuLogo}
-                <img src={menuLogo} alt={menuName} class="size-6 object-contain" />
+                <img src={menuLogo} alt={menuName} class="object-contain size-6" />
               {:else}
                 <div class="flex items-center justify-center text-base font-bold size-6">
                   {logoInitial}
@@ -335,7 +335,7 @@
             aria-label="Home"
           >
           {#if menuLogo}
-            <img src={menuLogo} alt={menuName} class="size-8 object-contain rounded-lg" />
+            <img src={menuLogo} alt={menuName} class="object-contain rounded-lg size-8" />
           {:else}
             <div class="flex items-center justify-center text-sm font-semibold rounded-lg size-8 bg-primary text-primary-foreground">
               {logoInitial}
@@ -349,15 +349,15 @@
           <div class="flex items-center gap-1">
             <button
               type="button"
-              class="rounded-md p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground"
+              class="p-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Collapse to icon-only mode"
               on:click={toggleSidebarCollapse}
             >
-              <ChevronRightIcon class="size-4" />
+              <ChevronLeftIcon class="size-4" />
             </button>
             <button
               type="button"
-              class="rounded-md p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground"
+              class="p-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Open screen settings"
               on:click={openSettings}
             >
@@ -367,15 +367,15 @@
         {:else}
           <button
             type="button"
-            class="rounded-md p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground w-full flex items-center justify-center"
+            class="flex items-center justify-center w-full p-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
             aria-label="Expand to full width mode"
             on:click={toggleSidebarCollapse}
           >
-            <ChevronLeftIcon class="size-5" />
+            <ChevronRightIcon class="size-5" />
           </button>
           <button
             type="button"
-            class="rounded-md p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground w-full flex items-center justify-center"
+            class="flex items-center justify-center w-full p-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
             aria-label="Open screen settings"
             on:click={openSettings}
           >
