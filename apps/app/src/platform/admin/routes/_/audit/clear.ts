@@ -27,8 +27,8 @@ export const post = async (ctx: Ctx) => {
     return ctx.json({ cleared: false, error: "Event store not enabled" }, 400);
   }
 
-  const before = eventStore.stats().count;
-  eventStore.clear();
+  // Only clear audit events, not all observability data
+  const clearedCount = eventStore.clearByKind('audit');
 
   // Emit audit event for the clear action
   ctx.observer?.event("audit.log.cleared", {
@@ -36,10 +36,10 @@ export const post = async (ctx: Ctx) => {
     level: "warn",
     source: "nomos-admin",
     data: {
-      eventsCleared: before,
+      auditEventsCleared: clearedCount,
       clearedBy: ctx.subject?.id ?? "unknown",
     },
   }).emit();
 
-  return ctx.json({ cleared: true, eventsCleared: before });
+  return ctx.json({ cleared: true, auditEventsCleared: clearedCount });
 };

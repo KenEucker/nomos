@@ -20,6 +20,7 @@ import type {
   NomosEvent,
   NomosEventMaterialized,
   NomosBus,
+  NomosBusStats,
   NomosSink,
   NomosSpool,
   NomosObservabilityConfig,
@@ -87,7 +88,7 @@ export class BackgroundFlusher {
   constructor(
     private readonly bestEffortBus: NomosBus,
     private readonly durableBus: NomosBus,
-    private readonly sinks: NomosSink[],
+    private readonly getSinks: () => NomosSink[],
     private readonly spool: NomosSpool | null,
     private readonly config: FlusherConfig = DEFAULT_CONFIG,
     private readonly onHealthUpdate?: (health: NomosObservabilityHealth) => void
@@ -169,8 +170,8 @@ export class BackgroundFlusher {
     const start = performance.now()
 
     try {
-      // Calculate pressure
-      const underPressure = this.isUnderPressure(bestEffortStats.depth, durableStats.depth)
+      // Calculate pressure using actual configured bus capacities
+      const underPressure = this.isUnderPressure(bestEffortStats, durableStats)
 
       // Drain durable events first (they're more important)
       const durableEvents = this.durableBus.drain(this.config.batchSize)
@@ -258,13 +259,9 @@ export class BackgroundFlusher {
   // Private Methods
   // ===========================================================================
 
-  private isUnderPressure(bestEffortDepth: number, durableDepth: number): boolean {
-    // Estimate capacity (this is a heuristic)
-    const estimatedBestEffortCapacity = 10000
-    const estimatedDurableCapacity = 5000
-
-    const bestEffortRatio = bestEffortDepth / estimatedBestEffortCapacity
-    const durableRatio = durableDepth / estimatedDurableCapacity
+  private isUnderPressure(bestEffortStats: NomosBusStats, durableStats: NomosBusStats): boolean {
+    const bestEffortRatio = bestEffortStats.depth / bestEffortStats.capacity
+    const durableRatio = durableStats.depth / durableStats.capacity
 
     return bestEffortRatio > this.config.pressureThreshold ||
            durableRatio > this.config.pressureThreshold
@@ -376,7 +373,8 @@ export class BackgroundFlusher {
     events: NomosEventMaterialized[],
     isDurable: boolean
   ): Promise<void> {
-    const availableSinks = this.sinks.filter(sink => sink.available())
+    // Get current sinks (supports dynamic registration)
+    const availableSinks = this.getSinks().filter(sink => sink.available())
 
     if (availableSinks.length === 0) {
       // No sinks available
@@ -440,7 +438,12 @@ export class BackgroundFlusher {
 export interface CreateFlusherOptions {
   bestEffortBus: NomosBus
   durableBus: NomosBus
-  sinks: NomosSink[]
+  /** 
+   * Sinks to write events to. Can be a static array or a getter function.
+   * Using a getter function allows sinks to be registered dynamically after
+   * the flusher is created.
+   */
+  sinks: NomosSink[] | (() => NomosSink[])
   spool?: NomosSpool | null
   config?: Partial<FlusherConfig>
   onHealthUpdate?: (health: NomosObservabilityHealth) => void
@@ -452,10 +455,15 @@ export function createFlusher(options: CreateFlusherOptions): BackgroundFlusher 
     ...options.config,
   }
 
+  // Normalize sinks to a getter function for dynamic registration support
+  const getSinks = typeof options.sinks === 'function' 
+    ? options.sinks 
+    : () => options.sinks as NomosSink[]
+
   return new BackgroundFlusher(
     options.bestEffortBus,
     options.durableBus,
-    options.sinks,
+    getSinks,
     options.spool ?? null,
     config,
     options.onHealthUpdate

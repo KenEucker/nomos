@@ -122,10 +122,10 @@ export class EventStoreSink implements NomosSink {
       filtered = filtered.filter(e => kinds.includes(e.kind))
     }
 
-    // Filter by level
+    // Filter by level (undefined level is treated as 'info' for consistency with write())
     if (options.level) {
       const levels = Array.isArray(options.level) ? options.level : [options.level]
-      filtered = filtered.filter(e => e.level && levels.includes(e.level))
+      filtered = filtered.filter(e => levels.includes(e.level ?? 'info'))
     }
 
     // Filter by source
@@ -222,6 +222,17 @@ export class EventStoreSink implements NomosSink {
    */
   clear(): void {
     this.events = []
+  }
+
+  /**
+   * Clear events by kind.
+   * Returns the number of events removed.
+   */
+  clearByKind(kind: NomosEventKind | NomosEventKind[]): number {
+    const kinds = Array.isArray(kind) ? kind : [kind]
+    const before = this.events.length
+    this.events = this.events.filter(e => !kinds.includes(e.kind))
+    return before - this.events.length
   }
 
   /**

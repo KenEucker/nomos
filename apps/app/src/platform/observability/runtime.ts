@@ -176,11 +176,11 @@ export class ObservabilityRuntime {
       this.sinkRegistry.register(this.eventStore)
     }
 
-    // Create flusher
+    // Create flusher with getter for dynamic sink registration
     this.flusher = createFlusher({
       bestEffortBus: this.bestEffortBus,
       durableBus: this.durableBus,
-      sinks: this.sinkRegistry.all(),
+      sinks: () => this.sinkRegistry.all(),
       spool: this.spool,
       config: {
         intervalMs: this.config.flushIntervalMs,

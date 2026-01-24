@@ -218,6 +218,7 @@ export type NomosBusClass = 'bestEffort' | 'durable'
 
 export interface NomosBusStats {
   depth: number
+  capacity: number
   droppedTotal: number
   lastFlushMs?: number
   lastError?: string

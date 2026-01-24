@@ -73,6 +73,7 @@ export class BestEffortBus implements NomosBus {
   stats(): NomosBusStats {
     return {
       depth: this.count,
+      capacity: this.capacity,
       droppedTotal: this.dropped,
       lastFlushMs: this._lastFlushMs,
       lastError: this._lastError,
@@ -142,6 +143,7 @@ export class DurableBus implements NomosBus {
   stats(): NomosBusStats {
     return {
       depth: this.queue.length,
+      capacity: this.capacity,
       droppedTotal: this.dropped,
       lastFlushMs: this._lastFlushMs,
       lastError: this._lastError,
