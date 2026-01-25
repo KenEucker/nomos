@@ -96,8 +96,27 @@ CREATE TABLE "PluginState" (
     "enabledAt" DATETIME,
     "updatedAt" DATETIME NOT NULL,
     "checksum" TEXT,
-    "lastPreview" TEXT,
+    "lastPreview" JSONB,
     "lastPreviewedAt" DATETIME
+);
+
+-- CreateTable
+CREATE TABLE "JobRun" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "jobId" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "trigger" TEXT NOT NULL,
+    "scheduledFor" DATETIME NOT NULL,
+    "startedAt" DATETIME,
+    "finishedAt" DATETIME,
+    "attempt" INTEGER NOT NULL DEFAULT 1,
+    "error" JSONB,
+    "triggerPayload" JSONB,
+    "correlationId" TEXT,
+    "lastHeartbeatAt" DATETIME,
+    "cancellationRequestedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateIndex
@@ -120,3 +139,18 @@ CREATE UNIQUE INDEX "ApiKey_keyHash_key" ON "ApiKey"("keyHash");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PluginState_slug_key" ON "PluginState"("slug");
+
+-- CreateIndex
+CREATE INDEX "JobRun_jobId_idx" ON "JobRun"("jobId");
+
+-- CreateIndex
+CREATE INDEX "JobRun_status_idx" ON "JobRun"("status");
+
+-- CreateIndex
+CREATE INDEX "JobRun_scheduledFor_idx" ON "JobRun"("scheduledFor");
+
+-- CreateIndex
+CREATE INDEX "JobRun_createdAt_idx" ON "JobRun"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "JobRun_cancellationRequestedAt_idx" ON "JobRun"("cancellationRequestedAt");

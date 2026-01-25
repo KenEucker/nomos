@@ -366,7 +366,7 @@ export class PrismaJobsStore implements JobsStore {
     triggerPayload: unknown;
     correlationId: string | null;
     lastHeartbeatAt: Date | null;
-    cancellationRequestedAt: Date | null;
+    cancellationRequestedAt?: Date | null;
     createdAt: Date;
   }): JobRun {
     const run: JobRun = {
