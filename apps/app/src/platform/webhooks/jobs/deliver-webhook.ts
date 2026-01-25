@@ -47,13 +47,14 @@ const job: JobDefinition = {
     const payload = ctx.triggerPayload as WebhookDeliveryPayload | undefined;
 
     if (!payload || !payload.delivery || !payload.destination) {
-      ctx.log("error", "Webhook delivery job called without required payload", {
+      const errorMessage = "Webhook delivery job called without required payload";
+      ctx.log("error", errorMessage, {
         runId: ctx.runId,
         hasPayload: !!payload,
         hasDelivery: !!payload?.delivery,
         hasDestination: !!payload?.destination,
       });
-      return;
+      throw new Error(errorMessage);
     }
 
     const { delivery, destination } = payload;
