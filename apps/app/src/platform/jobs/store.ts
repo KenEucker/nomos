@@ -95,6 +95,9 @@ export class PrismaJobsStore implements JobsStore {
     if (update.lastHeartbeatAt !== undefined) {
       data.lastHeartbeatAt = update.lastHeartbeatAt;
     }
+    if (update.cancellationRequestedAt !== undefined) {
+      data.cancellationRequestedAt = update.cancellationRequestedAt;
+    }
 
     const record = await this.prisma.jobRun.update({
       where: { id: runId },
@@ -125,13 +128,15 @@ export class PrismaJobsStore implements JobsStore {
       return this.toJobRun(record);
     }
 
-    // If running, mark status to indicate cancellation requested
-    // The worker will pick this up and handle the actual cancellation
+    // If running, persist cancellation request so the worker process can discover it
     if (existing.status === "running") {
-      // We use a special status or flag to indicate cancellation is requested
-      // For now, we'll check getCancellationRequests() in the worker
-      // Just return the existing record - actual cancellation happens in worker
-      return this.toJobRun(existing);
+      const record = await this.prisma.jobRun.update({
+        where: { id: runId },
+        data: {
+          cancellationRequestedAt: new Date(),
+        },
+      });
+      return this.toJobRun(record);
     }
 
     // Already in terminal state, return as-is
@@ -182,11 +187,14 @@ export class PrismaJobsStore implements JobsStore {
   }
 
   async getCancellationRequests(): Promise<JobRun[]> {
-    // For v1, we track cancellation by checking running jobs
-    // that have been explicitly marked for cancellation.
-    // We'll add a cancellationRequested field or use a status transition pattern.
-    // For now, return empty - cancellation is handled via direct worker communication.
-    return [];
+    // Return all running jobs that have cancellation requested
+    const records = await this.prisma.jobRun.findMany({
+      where: {
+        status: "running",
+        cancellationRequestedAt: { not: null },
+      },
+    });
+    return records.map((r) => this.toJobRun(r));
   }
 
   async prune(olderThanDays: number): Promise<number> {
@@ -219,6 +227,7 @@ export class PrismaJobsStore implements JobsStore {
     triggerPayload: unknown;
     correlationId: string | null;
     lastHeartbeatAt: Date | null;
+    cancellationRequestedAt: Date | null;
     createdAt: Date;
   }): JobRun {
     const run: JobRun = {
@@ -234,6 +243,7 @@ export class PrismaJobsStore implements JobsStore {
       triggerPayload: record.triggerPayload ?? undefined,
       correlationId: record.correlationId ?? undefined,
       lastHeartbeatAt: record.lastHeartbeatAt ?? undefined,
+      cancellationRequestedAt: record.cancellationRequestedAt ?? undefined,
       createdAt: record.createdAt,
     };
 

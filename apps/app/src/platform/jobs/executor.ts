@@ -10,6 +10,7 @@
 import { Worker } from "node:worker_threads";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import fs from "node:fs";
 import type {
   JobRun,
   JobRunError,
@@ -54,6 +55,7 @@ interface ActiveWorker {
   timeoutHandle: NodeJS.Timeout;
   graceTimeoutHandle?: NodeJS.Timeout;
   cancelRequested: boolean;
+  cancelGraceMs: number; // Grace period for this specific job
   resolve: (result: ExecutionResult) => void;
 }
 
@@ -84,8 +86,22 @@ export class JobExecutor {
     this.defaultGraceMs = options.defaultGraceMs ?? 5000;
 
     // Path to the worker script
-    // In production this will be compiled, so we need to handle both cases
-    this.workerScriptPath = path.join(__dirname, "worker-script.ts");
+    // In production this will be compiled to .js, in development it's .ts
+    const isDevelopment = process.env.NODE_ENV !== "production";
+    const tsPath = path.join(__dirname, "worker-script.ts");
+    const jsPath = path.join(__dirname, "worker-script.js");
+    
+    // Prefer .js in production, .ts in development, but check what actually exists
+    if (isDevelopment && fs.existsSync(tsPath)) {
+      this.workerScriptPath = tsPath;
+    } else if (fs.existsSync(jsPath)) {
+      this.workerScriptPath = jsPath;
+    } else if (fs.existsSync(tsPath)) {
+      this.workerScriptPath = tsPath;
+    } else {
+      // Fallback - will fail with a clear error
+      this.workerScriptPath = jsPath;
+    }
   }
 
   /**
@@ -150,13 +166,10 @@ export class JobExecutor {
     // Send cancel message to worker
     active.worker.postMessage({ type: "cancel" });
 
-    // Start grace period timer
-    const graceMs =
-      this.getJobGraceMs(active.jobId) ?? this.defaultGraceMs;
-
+    // Start grace period timer using the job-specific grace period
     active.graceTimeoutHandle = setTimeout(() => {
       this.forceTerminate(runId, "cancelled");
-    }, graceMs);
+    }, active.cancelGraceMs);
 
     return true;
   }
@@ -199,12 +212,22 @@ export class JobExecutor {
     callbacks: ExecutionCallbacks | undefined,
     resolve: (result: ExecutionResult) => void
   ): void {
-    // Create the worker with TypeScript support via tsx loader
-    const worker = new Worker(this.workerScriptPath, {
-      execArgv: ["--import", "tsx"],
-    });
+    // Create the worker
+    // In development, use tsx to run TypeScript files
+    // In production, use compiled JavaScript files
+    const isDevelopment = process.env.NODE_ENV !== "production";
+    const isTypeScript = this.workerScriptPath.endsWith(".ts");
+    
+    const workerOptions: { execArgv?: string[] } = {};
+    if (isDevelopment && isTypeScript) {
+      // Only use tsx in development for TypeScript files
+      workerOptions.execArgv = ["--import", "tsx"];
+    }
+    
+    const worker = new Worker(this.workerScriptPath, workerOptions);
 
     const timeoutMs = job.execution.timeoutMs ?? this.defaultTimeoutMs;
+    const cancelGraceMs = job.execution.cancelGraceMs ?? this.defaultGraceMs;
 
     // Set up timeout
     const timeoutHandle = setTimeout(() => {
@@ -217,6 +240,7 @@ export class JobExecutor {
       jobId: job.id,
       timeoutHandle,
       cancelRequested: false,
+      cancelGraceMs, // Store the job-specific grace period
       resolve,
     };
 
@@ -244,14 +268,26 @@ export class JobExecutor {
     worker.on("exit", (code) => {
       const active = this.activeWorkers.get(run.id);
       if (active) {
-        // Worker exited unexpectedly
+        // Worker exited unexpectedly (we haven't received a success/error message)
+        // This can happen if the worker crashes during initialization or exits
+        // without sending a message. We must always resolve, even if code is 0.
         this.cleanupWorker(run.id);
         if (code !== 0) {
-          resolve({
+          // Non-zero exit code indicates an error
+          active.resolve({
             success: false,
             error: {
               message: `Worker exited with code ${code}`,
               code: "WORKER_EXIT",
+            },
+          });
+        } else {
+          // Exit code 0 but no message sent - worker exited cleanly but unexpectedly
+          active.resolve({
+            success: false,
+            error: {
+              message: "Worker exited without sending result",
+              code: "WORKER_NO_RESPONSE",
             },
           });
         }
@@ -330,12 +366,10 @@ export class JobExecutor {
     active.worker.postMessage({ type: "cancel" });
     active.cancelRequested = true;
 
-    // Start grace period before force termination
-    const graceMs = this.getJobGraceMs(active.jobId) ?? this.defaultGraceMs;
-
+    // Start grace period before force termination using the job-specific grace period
     active.graceTimeoutHandle = setTimeout(() => {
       this.forceTerminate(runId, "timeout");
-    }, graceMs);
+    }, active.cancelGraceMs);
   }
 
   /**
@@ -407,12 +441,4 @@ export class JobExecutor {
     }
   }
 
-  /**
-   * Get grace period for a specific job
-   */
-  private getJobGraceMs(_jobId: string): number | undefined {
-    // In a full implementation, this would look up the job definition
-    // For now, return undefined to use default
-    return undefined;
-  }
 }

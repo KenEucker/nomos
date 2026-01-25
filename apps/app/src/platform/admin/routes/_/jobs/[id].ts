@@ -29,9 +29,17 @@ export const get = async (ctx: Ctx) => {
     throw new HttpError(404, "not_found", `Job not found: ${jobId}`);
   }
 
-  // Get run history
-  const limit = ctx.query.limit ? Number(ctx.query.limit) : 50;
-  const offset = ctx.query.offset ? Number(ctx.query.offset) : 0;
+  // Get run history - validate and sanitize limit and offset
+  const limitRaw = ctx.query.limit ? Number(ctx.query.limit) : 50;
+  const offsetRaw = ctx.query.offset ? Number(ctx.query.offset) : 0;
+
+  // Sanitize limit: default to 50, coerce NaN to 50, negatives to 0, cap at 1000
+  const limit = Number.isNaN(limitRaw)
+    ? 50
+    : Math.max(0, Math.min(Math.floor(limitRaw), 1000));
+
+  // Sanitize offset: default to 0, coerce NaN to 0, negatives to 0
+  const offset = Number.isNaN(offsetRaw) ? 0 : Math.max(0, Math.floor(offsetRaw));
 
   const { runs, total } = await jobsRuntime.listRuns({
     jobId,

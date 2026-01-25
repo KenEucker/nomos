@@ -369,10 +369,10 @@ export async function createApp(config: ResolvedNomosConfig) {
   });
 
   let webhooksRuntime: WebhookRuntime;
-  // Note: WebhookRuntime needs update to work without old JobsRuntime
-  // For now, create with a placeholder - webhook delivery job will be filesystem-discovered
+  // WebhookRuntime uses the jobs system to enqueue webhook deliveries
+  // The actual delivery job is discovered from platform/webhooks/jobs/deliver-webhook.ts
   webhooksRuntime = new WebhookRuntime(
-    null as any, // Webhooks will use the new job system via enqueue
+    jobsRuntime, // Pass jobsRuntime so webhooks can be enqueued
     events,
     {
       destinations: db.webhookDestinations,

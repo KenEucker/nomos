@@ -11,6 +11,7 @@
 
 import { nanoid } from "nanoid";
 import type { EventBus } from "../events/bus";
+import type { EventHandler } from "../events/types";
 import type { AppLogger } from "../logging/logger";
 import type { NomosObserver } from "../observability";
 import type {
@@ -64,9 +65,13 @@ export class JobsRuntime {
   // Event subscriptions
   private eventSubscriptions = new Map<string, { jobId: string; filter?: Record<string, unknown> }[]>();
 
+  // Track event handlers we've registered so we can remove them
+  private eventHandlers = new Map<string, EventHandler>();
+
   // Runtime state
   private running = false;
   private pollInterval: NodeJS.Timeout | null = null;
+  private cancellationPollInterval: NodeJS.Timeout | null = null;
 
   constructor(options: JobsRuntimeConfig) {
     this.store = options.store;
@@ -225,12 +230,15 @@ export class JobsRuntime {
       this.emitJobEvent(JOB_EVENT_TYPES.CANCEL_REQUESTED, run, job);
     }
 
-    // If running, request cancellation from executor
+    // If running, persist cancellation request in the store
+    // The worker process will discover it via getCancellationRequests() and apply it
+    // Note: We don't call executor.requestCancellation() here because the executor
+    // is in the worker process, not the API server process
     if (run.status === "running") {
-      this.executor.requestCancellation(runId);
+      // The store.cancel() will persist the cancellation request
     }
 
-    // Update store
+    // Update store (persists cancellationRequestedAt for running jobs)
     return this.store.cancel(runId);
   }
 
@@ -278,6 +286,9 @@ export class JobsRuntime {
     // Start the poll loop for processing queued runs
     this.startPollLoop();
 
+    // Start the cancellation poll loop to check for cancellation requests
+    this.startCancellationPollLoop();
+
     this.log.info(
       {
         registeredJobs: this.registry.size,
@@ -299,10 +310,14 @@ export class JobsRuntime {
     this.log.info("Stopping jobs runtime");
     this.running = false;
 
-    // Stop poll loop
+    // Stop poll loops
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
+    }
+    if (this.cancellationPollInterval) {
+      clearInterval(this.cancellationPollInterval);
+      this.cancellationPollInterval = null;
     }
 
     // Stop all cron jobs
@@ -310,6 +325,12 @@ export class JobsRuntime {
       cron.stop();
       this.cronJobs.delete(id);
     }
+
+    // Clear event subscriptions map
+    // Note: Event handlers remain registered in EventBus but won't execute
+    // because they check `this.running` which is now false
+    this.eventSubscriptions.clear();
+    this.eventHandlers.clear();
 
     // Shutdown executor
     await this.executor.shutdown();
@@ -390,6 +411,10 @@ export class JobsRuntime {
    * Set up event subscriptions for all jobs with event triggers
    */
   private setupEventSubscriptions(): void {
+    // Clear existing subscriptions to prevent duplicates if called multiple times
+    this.eventSubscriptions.clear();
+
+    // Build subscriptions map from registered jobs
     for (const job of this.registry.values()) {
       if (!job.enabled || !job.triggers.events) continue;
 
@@ -406,8 +431,19 @@ export class JobsRuntime {
     }
 
     // Subscribe to the event bus for all event types we care about
+    // Note: If handlers were already registered (from a previous start()),
+    // they will remain but won't execute because they check `this.running`.
+    // We register new handlers which will also check `this.running`.
+    // This is acceptable since handlers are lightweight and the check prevents execution.
     for (const eventType of this.eventSubscriptions.keys()) {
-      this.events.on(eventType, async (payload: unknown) => {
+      // Only register if we haven't already registered a handler for this event type
+      // (to avoid duplicate handlers if start() is called multiple times)
+      if (this.eventHandlers.has(eventType)) {
+        this.log.debug({ eventType }, "Event handler already registered, skipping");
+        continue;
+      }
+
+      const handler: EventHandler = async (payload: unknown) => {
         if (!this.running) return;
 
         const subscribers = this.eventSubscriptions.get(eventType) ?? [];
@@ -428,7 +464,10 @@ export class JobsRuntime {
             );
           }
         }
-      });
+      };
+
+      this.events.on(eventType, handler);
+      this.eventHandlers.set(eventType, handler);
     }
   }
 
@@ -469,6 +508,62 @@ export class JobsRuntime {
 
     // Also do an immediate poll
     poll();
+  }
+
+  /**
+   * Start the cancellation poll loop to check for cancellation requests
+   */
+  private startCancellationPollLoop(): void {
+    const poll = async () => {
+      if (!this.running) return;
+
+      try {
+        await this.processCancellationRequests();
+      } catch (error) {
+        this.log.error({ err: error }, "Error in cancellation poll loop");
+      }
+    };
+
+    // Poll for cancellation requests at the same interval as job processing
+    this.cancellationPollInterval = setInterval(poll, this.config.pollIntervalMs);
+
+    // Also do an immediate poll
+    poll();
+  }
+
+  /**
+   * Process cancellation requests from the store
+   */
+  private async processCancellationRequests(): Promise<void> {
+    const cancellationRequests = await this.store.getCancellationRequests();
+
+    for (const run of cancellationRequests) {
+      // Check if this run is actually running in our executor
+      if (this.executor.isRunning(run.id)) {
+        // Request cancellation from the executor
+        const cancelled = this.executor.requestCancellation(run.id);
+        if (cancelled) {
+          this.log.info(
+            { runId: run.id, jobId: run.jobId },
+            "Cancellation request applied to running job"
+          );
+        }
+      } else {
+        // Run is marked for cancellation but not running in our executor
+        // This could happen if:
+        // 1. The run already completed
+        // 2. The run is running in a different worker instance (not supported in v1)
+        // Clear the cancellation request to avoid repeated checks
+        this.log.debug(
+          { runId: run.id, jobId: run.jobId },
+          "Cancellation requested for run that is not running in this executor, clearing flag"
+        );
+        // Clear the cancellation flag since we can't act on it
+        await this.store.update(run.id, {
+          cancellationRequestedAt: null,
+        });
+      }
+    }
   }
 
   /**
@@ -549,6 +644,7 @@ export class JobsRuntime {
       status,
       finishedAt,
       error: result.error,
+      cancellationRequestedAt: null, // Clear cancellation flag when run completes
     });
 
     this.emitJobEvent(eventType, updatedRun, job);

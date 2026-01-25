@@ -253,6 +253,8 @@ export interface JobRun {
   createdAt: Date;
   /** Last heartbeat timestamp */
   lastHeartbeatAt?: Date;
+  /** When cancellation was requested (for running jobs) */
+  cancellationRequestedAt?: Date;
   /** Duration in milliseconds (computed) */
   durationMs?: number;
   /** Event payload for event-triggered runs */
@@ -282,6 +284,7 @@ export interface JobRunUpdate {
   attempt?: number;
   error?: JobRunError;
   lastHeartbeatAt?: Date;
+  cancellationRequestedAt?: Date | null; // null to clear the flag
 }
 
 // =============================================================================

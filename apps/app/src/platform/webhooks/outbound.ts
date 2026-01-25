@@ -38,12 +38,14 @@ export class WebhookRuntime {
       this.store.deliveries.push(delivery);
 
       // Webhook delivery is now handled via the new jobs system
-      // Jobs are discovered from filesystem and executed by the worker
-      // For now, we queue the delivery in memory and it will be picked up
-      // by the webhook delivery job when running in worker mode
+      // The job is discovered from platform/webhooks/jobs/deliver-webhook.ts
+      // Job ID will be: webhooks.deliver-webhook (namespace + filename)
       if (this.jobs) {
-        this.jobs.enqueue("webhooks.deliver", "event", {
-          triggerPayload: delivery,
+        this.jobs.enqueue("webhooks.deliver-webhook", "event", {
+          triggerPayload: {
+            delivery,
+            destination, // Pass destination so job can deliver without accessing runtime
+          },
         }).catch((err) => {
           this.log.error({ err, deliveryId: delivery.id }, "Failed to enqueue webhook delivery job");
         });
