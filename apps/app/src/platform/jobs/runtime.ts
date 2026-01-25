@@ -261,6 +261,19 @@ export class JobsRuntime {
     return this.store.list(options);
   }
 
+  /**
+   * Get stats for multiple jobs in a single batch query
+   * Returns total runs, running count, and most recent run for each job
+   */
+  async getJobsStats(jobIds: string[], recentRunsLimit?: number): Promise<Array<{
+    jobId: string;
+    totalRuns: number;
+    runningCount: number;
+    lastRun: JobRun | null;
+  }>> {
+    return this.store.getJobsStats(jobIds, recentRunsLimit);
+  }
+
   // ===========================================================================
   // Worker Runtime
   // ===========================================================================
@@ -326,9 +339,13 @@ export class JobsRuntime {
       this.cronJobs.delete(id);
     }
 
-    // Clear event subscriptions map
-    // Note: Event handlers remain registered in EventBus but won't execute
-    // because they check `this.running` which is now false
+    // Remove event handlers from EventBus before clearing maps
+    for (const [eventType, handler] of this.eventHandlers) {
+      this.events.off(eventType, handler);
+      this.log.debug({ eventType }, "Event handler removed");
+    }
+
+    // Clear event subscriptions and handlers maps
     this.eventSubscriptions.clear();
     this.eventHandlers.clear();
 
@@ -544,9 +561,14 @@ export class JobsRuntime {
         const cancelled = this.executor.requestCancellation(run.id);
         if (cancelled) {
           this.log.info(
-            { runId: run.id, jobId: run.jobId },
-            "Cancellation request applied to running job"
-          );
+          { runId: run.id, jobId: run.jobId },
+          "Cancellation request applied to running job"
+        );
+          // Clear the cancellation flag since we've successfully applied it
+          // The executor will handle the actual cancellation
+          await this.store.update(run.id, {
+            cancellationRequestedAt: null,
+          });
         }
       } else {
         // Run is marked for cancellation but not running in our executor

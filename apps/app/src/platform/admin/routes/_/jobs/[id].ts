@@ -1,8 +1,8 @@
 /**
  * Admin API route for individual job
  *
- * GET /_/jobs/:id - Get job details
- * POST /_/jobs/:id/run - Trigger a manual job run (via query param action=run)
+ * GET /_/jobs/:id - Get job details with run history
+ * POST /_/jobs/:id - Trigger a manual job run
  */
 
 export const config = {
@@ -30,8 +30,8 @@ export const get = async (ctx: Ctx) => {
   }
 
   // Get run history - validate and sanitize limit and offset
-  const limitRaw = ctx.query.limit ? Number(ctx.query.limit) : 50;
-  const offsetRaw = ctx.query.offset ? Number(ctx.query.offset) : 0;
+  const limitRaw = typeof ctx.query.limit === "string" ? Number(ctx.query.limit) : 50;
+  const offsetRaw = typeof ctx.query.offset === "string" ? Number(ctx.query.offset) : 0;
 
   // Sanitize limit: default to 50, coerce NaN to 50, negatives to 0, cap at 1000
   const limit = Number.isNaN(limitRaw)
@@ -46,6 +46,26 @@ export const get = async (ctx: Ctx) => {
     limit,
     offset,
   });
+
+  // Get accurate stats by querying all runs with each status
+  // This ensures stats represent totals, not just the paginated subset
+  const [succeededRuns, failedRuns, runningRuns] = await Promise.all([
+    jobsRuntime.listRuns({
+      jobId,
+      status: "succeeded",
+      limit: 1, // We only need the count
+    }),
+    jobsRuntime.listRuns({
+      jobId,
+      status: ["failed", "timed_out"],
+      limit: 1, // We only need the count
+    }),
+    jobsRuntime.listRuns({
+      jobId,
+      status: "running",
+      limit: 1, // We only need the count
+    }),
+  ]);
 
   const formattedRuns = runs.map((run) => ({
     id: run.id,
@@ -83,6 +103,11 @@ export const get = async (ctx: Ctx) => {
     },
     runs: formattedRuns,
     totalRuns: total,
+    stats: {
+      succeeded: succeededRuns.total,
+      failed: failedRuns.total,
+      running: runningRuns.total,
+    },
   });
 };
 

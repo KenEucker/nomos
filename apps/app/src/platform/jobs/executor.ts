@@ -253,7 +253,9 @@ export class JobExecutor {
 
     // Handle worker errors
     worker.on("error", (error) => {
-      this.cleanupWorker(run.id);
+      this.cleanupWorker(run.id).catch(() => {
+        // Ignore termination errors - worker may already be dead
+      });
       resolve({
         success: false,
         error: {
@@ -271,7 +273,11 @@ export class JobExecutor {
         // Worker exited unexpectedly (we haven't received a success/error message)
         // This can happen if the worker crashes during initialization or exits
         // without sending a message. We must always resolve, even if code is 0.
-        this.cleanupWorker(run.id);
+        this.cleanupWorker(run.id).catch(() => {
+          // Ignore termination errors - worker may already be dead
+        });
+
+        // Always resolve the promise when an active worker is found
         if (code !== 0) {
           // Non-zero exit code indicates an error
           active.resolve({
@@ -291,6 +297,8 @@ export class JobExecutor {
             },
           });
         }
+
+        // Ensure queue processing continues after cleanup
         this.processQueue();
       }
     });
@@ -322,13 +330,17 @@ export class JobExecutor {
 
     switch (message.type) {
       case "success":
-        this.cleanupWorker(runId);
+        this.cleanupWorker(runId).catch(() => {
+          // Ignore termination errors
+        });
         active.resolve({ success: true });
         this.processQueue();
         break;
 
       case "error":
-        this.cleanupWorker(runId);
+        this.cleanupWorker(runId).catch(() => {
+          // Ignore termination errors
+        });
         active.resolve({
           success: false,
           error: message.error,
@@ -386,10 +398,12 @@ export class JobExecutor {
         return;
       }
 
-      this.cleanupWorker(runId);
+      // Get resolve callback before cleanup removes it from map
+      const resolve = active.resolve;
 
-      active.worker.terminate().then(() => {
-        active.resolve({
+      // Cleanup and terminate the worker
+      this.cleanupWorker(runId).then(() => {
+        resolve({
           success: false,
           timedOut: reason === "timeout",
           cancelled: reason === "cancelled" || reason === "shutdown",
@@ -410,18 +424,26 @@ export class JobExecutor {
   }
 
   /**
-   * Clean up worker resources
+   * Clean up worker resources and terminate the worker thread
    */
-  private cleanupWorker(runId: string): void {
+  private cleanupWorker(runId: string): Promise<void> {
     const active = this.activeWorkers.get(runId);
-    if (!active) return;
+    if (!active) {
+      return Promise.resolve();
+    }
 
+    // Clear timeouts
     clearTimeout(active.timeoutHandle);
     if (active.graceTimeoutHandle) {
       clearTimeout(active.graceTimeoutHandle);
     }
 
+    // Remove from tracking map
     this.activeWorkers.delete(runId);
+
+    // Terminate the worker thread to prevent memory leaks
+    // The worker script has event listeners that keep it alive
+    return active.worker.terminate().then(() => undefined);
   }
 
   /**

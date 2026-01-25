@@ -48,6 +48,13 @@ export class WebhookRuntime {
           },
         }).catch((err) => {
           this.log.error({ err, deliveryId: delivery.id }, "Failed to enqueue webhook delivery job");
+          // Remove the delivery from the in-memory store since enqueue failed
+          // This prevents leaving a queued-but-unprocessable delivery
+          const index = this.store.deliveries.findIndex((d) => d.id === delivery.id);
+          if (index !== -1) {
+            this.store.deliveries.splice(index, 1);
+            this.log.debug({ deliveryId: delivery.id }, "Removed delivery from store after enqueue failure");
+          }
         });
       }
     }

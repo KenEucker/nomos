@@ -296,11 +296,22 @@ export interface JobRunUpdate {
  */
 export interface ListJobRunsOptions {
   jobId?: string;
+  jobIds?: string[]; // Support multiple jobIds for batch queries
   status?: JobRunStatus | JobRunStatus[];
   limit?: number;
   offset?: number;
   orderBy?: "createdAt" | "scheduledFor" | "startedAt";
   orderDirection?: "asc" | "desc";
+}
+
+/**
+ * Stats for a single job
+ */
+export interface JobStats {
+  jobId: string;
+  totalRuns: number;
+  runningCount: number;
+  lastRun: JobRun | null;
 }
 
 /**
@@ -350,6 +361,12 @@ export interface JobsStore {
    * Clean up old run records
    */
   prune(olderThanDays: number): Promise<number>;
+
+  /**
+   * Get stats for multiple jobs in a single query
+   * Returns total runs, running count, and most recent run for each job
+   */
+  getJobsStats(jobIds: string[], recentRunsLimit?: number): Promise<JobStats[]>;
 }
 
 // =============================================================================

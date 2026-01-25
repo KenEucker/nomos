@@ -96,7 +96,7 @@ CREATE TABLE "PluginState" (
     "enabledAt" DATETIME,
     "updatedAt" DATETIME NOT NULL,
     "checksum" TEXT,
-    "lastPreview" JSONB,
+    "lastPreview" TEXT,
     "lastPreviewedAt" DATETIME
 );
 

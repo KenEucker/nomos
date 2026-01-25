@@ -40,6 +40,11 @@ type JobSummary = {
   job?: JobDetail
   runs?: JobRun[]
   totalRuns?: number
+  stats?: {
+    succeeded: number
+    failed: number
+    running: number
+  }
 }
 
 const formatStatus = (status: string) => {
@@ -91,6 +96,7 @@ const panel: PanelModule = {
     const job = data.job as JobDetail
     const runs = (data.runs ?? []) as JobRun[]
     const totalRuns = data.totalRuns ?? 0
+    const stats = data.stats ?? { succeeded: 0, failed: 0, running: 0 }
 
     // Format job info
     const jobInfo = [
@@ -143,11 +149,6 @@ const panel: PanelModule = {
       canCancel: run.status === "pending" || run.status === "running",
     }))
 
-    // Stats
-    const succeeded = runs.filter(r => r.status === "succeeded").length
-    const failed = runs.filter(r => r.status === "failed" || r.status === "timed_out").length
-    const running = runs.filter(r => r.status === "running").length
-
     return {
       job,
       jobInfo,
@@ -155,7 +156,7 @@ const panel: PanelModule = {
       triggerInfo,
       runRows,
       totalRuns,
-      stats: { succeeded, failed, running },
+      stats, // Use stats from API (accurate totals, not paginated subset)
       manualEnabled: job.triggers.manual?.enabled ?? false,
       hasError: false,
     }

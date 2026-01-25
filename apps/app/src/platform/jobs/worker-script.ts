@@ -5,7 +5,7 @@
  * It communicates with the main thread via parentPort messages.
  */
 
-import { parentPort, workerData } from "node:worker_threads";
+import { parentPort } from "node:worker_threads";
 import { pathToFileURL } from "node:url";
 import type {
   JobContext,
