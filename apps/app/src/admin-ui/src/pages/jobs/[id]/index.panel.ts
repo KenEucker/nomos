@@ -36,6 +36,12 @@ type JobDetail = {
   modulePath: string
 }
 
+type JobSummary = {
+  job?: JobDetail
+  runs?: JobRun[]
+  totalRuns?: number
+}
+
 const formatStatus = (status: string) => {
   return status.charAt(0).toUpperCase() + status.slice(1).replace("_", " ")
 }
@@ -76,7 +82,7 @@ const panel: PanelModule = {
     }
 
     const response = await panelApiFetch(ctx, `/_/jobs/${encodeURIComponent(jobId)}`)
-    const data = response?.data ?? response
+    const data = (response?.data ?? response) as JobSummary
 
     if (!data?.job) {
       return { error: "Job not found", job: null, runs: [] }
@@ -288,7 +294,14 @@ const panel: PanelModule = {
                   key: "status",
                   label: "Status",
                   render: "badge",
-                  badgeVariantKey: "statusVariant",
+                  badgeVariants: {
+                    Succeeded: "success",
+                    Failed: "destructive",
+                    Running: "default",
+                    Pending: "secondary",
+                    Cancelled: "warning",
+                    "Timed out": "destructive",
+                  },
                 },
                 { key: "trigger", label: "Trigger" },
                 { key: "startedAt", label: "Started" },
@@ -303,10 +316,10 @@ const panel: PanelModule = {
       ]),
     ]
   },
-  commandBar: (data) => {
+  commandBar: (_ctx, data) => {
     const commands = []
 
-    if (data.manualEnabled && data.job) {
+    if (data?.manualEnabled && data?.job) {
       commands.push({
         type: "method" as const,
         label: "Run Now",

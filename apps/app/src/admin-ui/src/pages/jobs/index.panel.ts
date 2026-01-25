@@ -2,12 +2,6 @@ import { Layouts } from "../../lib/layouts"
 import { panelApiFetch } from "../../lib/panel-api"
 import type { PanelModule } from "../../lib/types"
 
-type JobTriggers = {
-  cron: string[]
-  events: string[]
-  manualEnabled: boolean
-}
-
 type JobLastRun = {
   id: string
   status: string
@@ -63,7 +57,7 @@ const panel: PanelModule = {
   title: "Jobs",
   subtitle: "Manage background jobs and view run history.",
   query: async (ctx) => {
-    const response = await panelApiFetch(ctx, "/_/jobs")
+    const response = await panelApiFetch<any>(ctx, "/_/jobs")
     const jobs = ((response?.data ?? response)?.jobs ?? []) as JobSummary[]
 
     // Calculate stats
@@ -79,18 +73,11 @@ const panel: PanelModule = {
       namespace: job.namespace,
       description: job.description ?? "—",
       status: job.runningCount > 0 ? "Running" : (job.enabled ? "Idle" : "Disabled"),
-      statusVariant: job.runningCount > 0 ? "success" : (job.enabled ? "default" : "secondary"),
       lastStatus: formatStatus(job.lastRun?.status),
-      lastStatusVariant: job.lastRun?.status === "succeeded" ? "success" :
-                         job.lastRun?.status === "failed" ? "destructive" :
-                         job.lastRun?.status === "running" ? "default" :
-                         job.lastRun?.status === "cancelled" ? "warning" :
-                         job.lastRun?.status === "timed_out" ? "destructive" : "secondary",
       totalRuns: job.totalRuns,
       lastDuration: formatDuration(job.lastRun?.durationMs),
       triggers: formatTriggers(job),
       manualEnabled: job.manualEnabled,
-      _link: `/admin/jobs/${encodeURIComponent(job.id)}`,
     }))
 
     // Recent activity - get jobs sorted by last run
@@ -197,23 +184,35 @@ const panel: PanelModule = {
               rowsKey: "jobRows",
               columns: [
                 {
-                  key: "displayName",
+                  key: "id",
                   label: "Job",
                   render: "link",
-                  linkKey: "_link",
+                  linkTemplate: "/admin/jobs/{value}",
                 },
+                { key: "displayName", label: "Name" },
                 { key: "namespace", label: "Namespace" },
                 {
                   key: "status",
                   label: "Status",
                   render: "badge",
-                  badgeVariantKey: "statusVariant",
+                  badgeVariants: {
+                    Running: "success",
+                    Idle: "default",
+                    Disabled: "secondary",
+                  },
                 },
                 {
                   key: "lastStatus",
                   label: "Last Run",
                   render: "badge",
-                  badgeVariantKey: "lastStatusVariant",
+                  badgeVariants: {
+                    Succeeded: "success",
+                    Failed: "destructive",
+                    Running: "default",
+                    Cancelled: "warning",
+                    "Timed out": "destructive",
+                    Pending: "secondary",
+                  },
                 },
                 { key: "totalRuns", label: "Runs" },
                 { key: "triggers", label: "Triggers" },
@@ -236,7 +235,13 @@ const panel: PanelModule = {
                   key: "status",
                   label: "Status",
                   render: "badge",
-                  badgeVariantKey: "statusVariant",
+                  badgeVariants: {
+                    Succeeded: "success",
+                    Failed: "destructive",
+                    Running: "default",
+                    Cancelled: "warning",
+                    "Timed out": "destructive",
+                  },
                 },
                 { key: "trigger", label: "Trigger" },
                 { key: "duration", label: "Duration" },
@@ -249,6 +254,7 @@ const panel: PanelModule = {
       ]),
     ]
   },
+  commandBar: (_ctx, _data) => [],
 }
 
 export default panel
