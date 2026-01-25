@@ -17,7 +17,12 @@
   let unsubscribe: (() => void) | undefined
 
   onMount(() => {
-    mounted = true
+    // Defer mounting to ensure Svelte's effect context is fully initialized
+    // This prevents "effect_orphan" errors from bits-ui components
+    // that use $effect internally during their initialization
+    queueMicrotask(() => {
+      mounted = true
+    })
     unsubscribe = confirmDialogStore.subscribe((state) => {
       dialogOpen = state.open
       title = state.title
