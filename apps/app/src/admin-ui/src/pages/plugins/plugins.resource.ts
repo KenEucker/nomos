@@ -67,6 +67,7 @@ export const pluginsResource = createResourceDefinition({
           title: "Enable this plugin?",
         },
         toast: { success: "Plugin enabled" },
+        after: "refresh",
       },
       {
         id: "disable",
@@ -78,6 +79,7 @@ export const pluginsResource = createResourceDefinition({
           title: "Disable this plugin?",
         },
         toast: { success: "Plugin disabled" },
+        after: "refresh",
       },
       {
         id: "uninstall",

@@ -6,8 +6,10 @@
 <script lang="ts">
   import { onMount } from "svelte"
   import DataTable from "../components/DataTable.svelte"
-  import { apiGet } from "../lib/api"
-  import type { ResourceDefinition } from "../lib/types"
+  import { apiGet, apiFetch } from "../lib/api"
+  import { confirmDialog } from "../lib/confirm-dialog"
+  import { notify, toastError } from "../lib/toast"
+  import type { ResourceDefinition, RowAction } from "../lib/types"
 
   export let definition: ResourceDefinition
 
@@ -26,11 +28,15 @@
   }
   let loading = false
   let requestId = 0
+  
+  let dataKey: string | undefined
+  let rowIdKey: string | undefined
   $: dataKey = definition?.dataKey
   $: rowIdKey = definition?.singleDataKey
 
   $: listConfig = definition.list ?? {}
   $: columns = listConfig.columns ?? []
+  $: rowActions = listConfig.customRowActions ?? []
 
   const getLabelPlural = (resource: ResourceDefinition) => {
     if ("labels" in resource && resource.labels) return resource.labels.labelPlural
@@ -53,14 +59,15 @@
     return { items, total }
   }
 
-  const buildUrl = (nextQuery = query) => {
+  const buildUrl = (nextQuery = query): string => {
     const params = new URLSearchParams()
     params.set("page", String(nextQuery.page))
     params.set("pageSize", String(nextQuery.pageSize))
     if (nextQuery.search.trim()) params.set("search", nextQuery.search.trim())
     if (nextQuery.sortKey) params.set("sort", `${nextQuery.sortKey}:${nextQuery.sortDir}`)
-    const query = params.toString()
-    return query ? `${definition.endpoints.list}?${query}` : definition.endpoints.list
+    const queryString = params.toString()
+    const baseUrl = definition.endpoints.list ?? ""
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl
   }
 
   const fetchList = async (nextQuery = query) => {
@@ -70,7 +77,7 @@
       const queryUrl = buildUrl(nextQuery)
       const response = await apiGet<any>(queryUrl)
       if (currentRequest !== requestId) return
-      const { items: nextItems, total: nextTotal } = unwrapItems(response, definition.dataKey)
+      const { items: nextItems, total: nextTotal } = unwrapItems(response, dataKey)
       const resolvedItems = Array.isArray(nextItems) ? nextItems : []
       items = [...resolvedItems]
       total = typeof nextTotal === "number" ? nextTotal : resolvedItems.length
@@ -108,7 +115,55 @@
   showSearch={listConfig.searchable ?? false}
   searchPlaceholder={listConfig.searchPlaceholder ?? "Search..."}
   showSelection={false}
-  showActions={false}
+  showActions={rowActions.length > 0}
+  rowActions={rowActions}
   enableEdit={false}
   disableControlsWhileLoading={true}
+  onRowAction={async (action: RowAction, row: Row) => {
+    const interpolate = (template: string, row: Record<string, any>): string => {
+      return template.replace(/\{(\w+)\}/g, (_, key) => {
+        const value = row[key]
+        return value !== undefined ? encodeURIComponent(String(value)) : `{${key}}`
+      })
+    }
+
+    if (action.type === "link" && action.href) {
+      window.location.href = interpolate(action.href, row)
+      return
+    }
+
+    if (action.type === "method" && action.endpoint) {
+      const confirmed = action.confirm
+        ? await confirmDialog({
+            title: action.confirm.title,
+            body: action.confirm.body,
+            confirmLabel: "Yes",
+            cancelLabel: "No",
+            variant: action.method === "DELETE" ? "destructive" : "default",
+          })
+        : true
+      if (!confirmed) return
+
+      try {
+        const endpoint = interpolate(action.endpoint, row)
+        await apiFetch(endpoint, { method: action.method ?? "POST" })
+        if (action.toast?.success) {
+          notify(action.toast.success, "success")
+        }
+        if (action.after === "navigate" && action.href) {
+          window.location.href = interpolate(action.href, row)
+          return
+        }
+        if (action.after === "refresh") {
+          window.location.reload()
+          return
+        }
+        // Refresh the list
+        await fetchList(query)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Action failed"
+        toastError(action.toast?.error ?? action.label, message)
+      }
+    }
+  }}
 />

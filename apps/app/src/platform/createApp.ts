@@ -299,7 +299,7 @@ export async function createApp(config: ResolvedNomosConfig) {
   }
   corePlugins.push(path.join(platformDir, "sdk", "plugin.ts"));
 
-  const plugins = await loadPlugins(baseDir, corePlugins);
+  const plugins = await loadPlugins(baseDir, corePlugins, enabledPluginSlugs);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
 
   // Seed authorization database with permissions from plugins

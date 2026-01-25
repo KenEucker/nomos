@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
 import Toast from "../components/ui/toast.svelte";
+import ConfirmDialog from "../components/ConfirmDialog.svelte";
 import NomosNav from "../components/NomosNav.svelte";
 import ShellState from "../islands/ShellState.svelte";
 import SessionLoader from "../islands/SessionLoader.svelte";
@@ -38,7 +39,26 @@ if (sessionResult instanceof Response) {
   return sessionResult;
 }
 const user = sessionResult as SessionUser;
-const navItems = buildAdminNav({ basePath: import.meta.env.BASE_URL });
+
+// Fetch enabled plugins for navigation filtering
+let enabledPluginSlugs: Set<string> | undefined;
+try {
+  const { serverApiGet } = await import("../lib/server/api");
+  const pluginsResponse = await serverApiGet<{ plugins: Array<{ slug: string; enabled: boolean; status: string }> }>(
+    Astro.request,
+    "/plugins"
+  );
+  enabledPluginSlugs = new Set(
+    pluginsResponse.data?.plugins
+      ?.filter((p) => p.enabled && p.status === "enabled")
+      .map((p) => p.slug) ?? []
+  );
+} catch {
+  // If plugin API is unavailable, include all plugin pages
+  enabledPluginSlugs = undefined;
+}
+
+const navItems = buildAdminNav({ basePath: import.meta.env.BASE_URL, enabledPluginSlugs });
 
 const actionClass = (variant?: string) => {
   switch (variant) {
@@ -61,7 +81,7 @@ const actionClass = (variant?: string) => {
   <div class="min-h-screen bg-background text-foreground" style="--nomos-header-height: 0px;">
     <div class="admin-shell">
       <div class="admin-shell-nav">
-        <NomosNav menuName="Ken's Admin" client:load {navItems} />
+        <NomosNav menuName="Ken's Admin" client:only="svelte" {navItems} />
       </div>
 
       <main id="swup" class="overflow-x-hidden admin-shell-main">
@@ -110,5 +130,6 @@ const actionClass = (variant?: string) => {
       </main>
     </div>
     <Toast client:load />
+    <ConfirmDialog client:only="svelte" />
   </div>
 </BaseLayout>

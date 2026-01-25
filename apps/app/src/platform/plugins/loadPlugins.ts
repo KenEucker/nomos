@@ -40,7 +40,8 @@ async function importPlugin(entry: string): Promise<PluginManifest> {
 
 export async function loadPlugins(
   baseDir: string,
-  corePluginPaths: string[]
+  corePluginPaths: string[],
+  enabledPluginSlugs?: Set<string>
 ): Promise<LoadedPlugins> {
   const registry = createPluginRegistry();
   const pluginRoutes: PluginRoute[] = [];
@@ -66,6 +67,12 @@ export async function loadPlugins(
       const manifest = await importPlugin(indexPath);
       const name = manifest.name ?? entry.name;
       const slug = manifest.slug ?? entry.name;
+      
+      // Filter filesystem plugins based on enabled state if provided
+      if (enabledPluginSlugs !== undefined && !enabledPluginSlugs.has(slug)) {
+        continue;
+      }
+      
       discovered.push({ name, manifest: { ...manifest, name, slug } });
     }
   }

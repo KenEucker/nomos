@@ -6,6 +6,7 @@
   import { can } from "../lib/authz/authorize.client"
   import { apiFetch } from "../lib/api"
   import { notify, toastError } from "../lib/toast"
+  import { confirmDialog } from "../lib/confirm-dialog"
 
   export let nodes: LayoutNode[] = []
   export let data: Record<string, any> = {}
@@ -164,7 +165,13 @@
           }
           if (action.type === "method" && action.endpoint) {
             const confirmed = action.confirm
-              ? window.confirm(`${action.confirm.title}\n${action.confirm.body ?? ""}`)
+              ? await confirmDialog({
+                  title: action.confirm.title,
+                  body: action.confirm.body,
+                  confirmLabel: "Yes",
+                  cancelLabel: "No",
+                  variant: action.method === "DELETE" ? "destructive" : "default",
+                })
               : true
             if (!confirmed) return
             try {
@@ -175,6 +182,10 @@
               }
               if (action.after === "navigate" && action.href) {
                 window.location.href = interpolate(action.href, row)
+                return
+              }
+              if (action.after === "refresh") {
+                window.location.reload()
                 return
               }
               onStateChange(state)
@@ -193,7 +204,13 @@
             return
           }
           if (action.id === "delete" && node.props.rowActionDeleteEndpoint) {
-            const confirmed = window.confirm("Delete this item?")
+            const confirmed = await confirmDialog({
+              title: "Delete this item?",
+              body: "This action cannot be undone.",
+              confirmLabel: "Delete",
+              cancelLabel: "Cancel",
+              variant: "destructive",
+            })
             if (!confirmed) return
             const endpoint = interpolate(node.props.rowActionDeleteEndpoint, row)
             await apiFetch(endpoint, { method: "DELETE" })
