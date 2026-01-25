@@ -39,7 +39,7 @@ export const get = async (ctx: Ctx) => {
   return ctx.json({
     status: "ok",
     routes: ctx.services.routeRegistry.routes.length,
-    jobs: ctx.services.jobsRuntime.list().length,
+    jobs: ctx.services.jobsRuntime.listJobs().length,
     events: ctx.services.eventsRegistry.listEvents(),
     coreModules
   });

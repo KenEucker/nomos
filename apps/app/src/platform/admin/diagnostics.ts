@@ -11,6 +11,6 @@ export function buildDiagnostics(routeRegistry: RouteRegistry, bus: EventBus, jo
       owner: route.owner
     })),
     events: Array.from((bus as any).listeners?.keys?.() ?? []),
-    jobs: jobs.list()
+    jobs: jobs.listJobs()
   };
 }

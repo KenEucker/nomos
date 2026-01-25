@@ -36,6 +36,19 @@ export type ObservabilityConfig = {
   healthSignalIntervalMs?: number;
 };
 
+export type JobsConfig = {
+  /** Enable the jobs system */
+  enabled?: boolean;
+  /** Maximum concurrent job runs across all jobs */
+  maxConcurrentRuns?: number;
+  /** Default timeout for jobs that don't specify one (ms) */
+  defaultTimeoutMs?: number;
+  /** Default grace period for cancellation (ms) */
+  defaultCancelGraceMs?: number;
+  /** Poll interval for the worker to check for new runs (ms) */
+  pollIntervalMs?: number;
+};
+
 export type NomosConfig = {
   app?: {
     name?: string;
@@ -64,6 +77,7 @@ export type NomosConfig = {
     domains?: Record<string, boolean>;
   };
   observability?: ObservabilityConfig;
+  jobs?: JobsConfig;
   swagger?: {
     public?: boolean;
   };
@@ -130,6 +144,14 @@ export type ResolvedObservabilityConfig = {
   healthSignalIntervalMs: number;
 };
 
+export type ResolvedJobsConfig = {
+  enabled: boolean;
+  maxConcurrentRuns: number;
+  defaultTimeoutMs: number;
+  defaultCancelGraceMs: number;
+  pollIntervalMs: number;
+};
+
 export type ResolvedNomosConfig = {
   app: {
     name: string;
@@ -158,6 +180,7 @@ export type ResolvedNomosConfig = {
     domains?: Record<string, boolean>;
   };
   observability: ResolvedObservabilityConfig;
+  jobs: ResolvedJobsConfig;
   swagger: {
     public: boolean;
   };
@@ -359,6 +382,16 @@ export function resolveNomosConfig(
     healthSignalIntervalMs: obsRaw.healthSignalIntervalMs ?? 30000,
   };
 
+  // Jobs configuration
+  const jobsRaw = raw.jobs ?? {};
+  const jobs: ResolvedJobsConfig = {
+    enabled: jobsRaw.enabled ?? true,
+    maxConcurrentRuns: jobsRaw.maxConcurrentRuns ?? 4,
+    defaultTimeoutMs: jobsRaw.defaultTimeoutMs ?? 5 * 60 * 1000, // 5 minutes
+    defaultCancelGraceMs: jobsRaw.defaultCancelGraceMs ?? 5000, // 5 seconds
+    pollIntervalMs: jobsRaw.pollIntervalMs ?? 1000, // 1 second
+  };
+
   return {
     app: {
       name: appName,
@@ -387,6 +420,7 @@ export function resolveNomosConfig(
       domains: raw.logging?.domains
     },
     observability,
+    jobs,
     swagger: {
       public: Boolean(swaggerPublic)
     },

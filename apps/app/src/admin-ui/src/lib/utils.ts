@@ -3,7 +3,6 @@ import { twMerge } from "tailwind-merge";
 import type {
   ResourceDefinitionPartial,
   ResourceDefinition,
-  ResourceMenu,
   ResourceEndpointValue,
 } from "./types";
 
