@@ -40,17 +40,32 @@ const { title = "Nomos Admin" } = Astro.props;
       document.addEventListener("astro:page-load", applyThemeAndPrefs);
       document.addEventListener("astro:after-swap", applyThemeAndPrefs);
 
+      // Check if reduce motion is enabled
+      function isReduceMotionEnabled() {
+        var navPrefs = localStorage.getItem("nomos.nav.preferences.v1");
+        var prefs = navPrefs ? JSON.parse(navPrefs) : {};
+        return prefs.reduceMotion === true || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      }
+
       // Loading bar and immediate outgoing animation
-      document.addEventListener("astro:before-preparation", function() {
-        // Show loading bar
+      document.addEventListener("astro:before-preparation", function(e) {
+        var reduceMotion = isReduceMotionEnabled();
+
+        // Show loading bar (unless reduce motion, then it's static)
         var loadingBar = document.getElementById("nav-loading-bar");
         if (loadingBar) {
           loadingBar.classList.add("loading");
         }
-        // Start outgoing animation immediately
-        var mainContent = document.getElementById("swup");
-        if (mainContent) {
-          mainContent.classList.add("navigating-out");
+
+        // Skip view transition animations if reduce motion is enabled
+        if (reduceMotion) {
+          e.viewTransition.skipTransition();
+        } else {
+          // Start outgoing animation immediately
+          var mainContent = document.getElementById("swup");
+          if (mainContent) {
+            mainContent.classList.add("navigating-out");
+          }
         }
       });
 
