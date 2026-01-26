@@ -40,16 +40,31 @@ const { title = "Nomos Admin" } = Astro.props;
       document.addEventListener("astro:page-load", applyThemeAndPrefs);
       document.addEventListener("astro:after-swap", applyThemeAndPrefs);
 
-      // Loading bar for navigation feedback
-      var loadingBar = null;
+      // Loading bar and immediate outgoing animation
       document.addEventListener("astro:before-preparation", function() {
-        loadingBar = document.getElementById("nav-loading-bar");
+        // Show loading bar
+        var loadingBar = document.getElementById("nav-loading-bar");
         if (loadingBar) {
           loadingBar.classList.add("loading");
         }
+        // Start outgoing animation immediately
+        var mainContent = document.getElementById("swup");
+        if (mainContent) {
+          mainContent.classList.add("navigating-out");
+        }
       });
+
+      document.addEventListener("astro:after-swap", function() {
+        // Remove navigating class from new content
+        var mainContent = document.getElementById("swup");
+        if (mainContent) {
+          mainContent.classList.remove("navigating-out");
+        }
+      });
+
       document.addEventListener("astro:page-load", function() {
-        loadingBar = document.getElementById("nav-loading-bar");
+        // Hide loading bar
+        var loadingBar = document.getElementById("nav-loading-bar");
         if (loadingBar) {
           loadingBar.classList.remove("loading");
         }

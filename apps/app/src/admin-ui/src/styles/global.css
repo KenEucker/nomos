@@ -109,16 +109,26 @@
 /* Main content area gets slide + fade animation */
 #swup {
   view-transition-name: main-content;
+  /* Enable smooth transition for immediate outgoing animation */
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
 }
 
-/* Old content: fade out and slide left */
+/* Immediate outgoing animation (starts on click, before page loads) */
+#swup.navigating-out {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+/* View transition animations (for the swap) */
+/* Old content is already faded out, so minimal animation */
 ::view-transition-old(main-content) {
-  animation: 150ms ease-out both slide-out-left;
+  animation: none;
+  opacity: 0;
 }
 
 /* New content: fade in and slide from right */
 ::view-transition-new(main-content) {
-  animation: 150ms ease-out 50ms both slide-in-right;
+  animation: 150ms ease-out both slide-in-right;
 }
 
 @keyframes slide-out-left {
