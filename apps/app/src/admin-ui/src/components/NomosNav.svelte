@@ -130,12 +130,9 @@
   let savedTheme: ThemePreference = $state("system")
   let currentPath = $state("")
   let isMobile = $state(false)
-  // Use $effect to set mounted flag - this guarantees the effect context is ready
-  // before bits-ui components try to register their internal effects
+  // Defer mounting to next animation frame to ensure Svelte's effect context
+  // is fully initialized before bits-ui components try to register their effects
   let mounted = $state(false)
-  $effect(() => {
-    mounted = true
-  })
 
   const updateDocumentPrefs = (prefs: NavPreferences) => {
     if (typeof document === "undefined") return
@@ -205,6 +202,12 @@
   }
 
   onMount(() => {
+    // Use double requestAnimationFrame to ensure we're past the initial render
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        mounted = true
+      })
+    })
     loadPreferences()
     const initialTheme = loadThemePreference()
     themeDraft = initialTheme
