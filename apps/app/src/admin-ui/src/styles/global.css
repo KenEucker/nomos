@@ -109,13 +109,17 @@
 /* Main content area gets fade animation */
 #main-content {
   view-transition-name: main-content;
+}
+
+/* Page content fades out while skeleton remains visible */
+#main-content .page-content {
   /* Enable smooth transition for immediate outgoing animation */
   /* Delay gives a moment before content starts fading */
   transition: opacity 800ms ease-out 100ms;
 }
 
 /* Immediate outgoing animation (starts on click, before page loads) */
-#main-content.navigating-out {
+#main-content.navigating-out .page-content {
   opacity: 0;
 }
 
@@ -142,10 +146,10 @@
 
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
-  #main-content {
+  #main-content .page-content {
     transition: none;
   }
-  #main-content.navigating-out {
+  #main-content.navigating-out .page-content {
     opacity: 1;
   }
   ::view-transition-old(main-content),
@@ -186,11 +190,14 @@
 
 /* Reduce motion nav setting */
 [data-nav-reduce-motion="true"] #main-content {
-  transition: none !important;
   view-transition-name: none !important;
 }
 
-[data-nav-reduce-motion="true"] #main-content.navigating-out {
+[data-nav-reduce-motion="true"] #main-content .page-content {
+  transition: none !important;
+}
+
+[data-nav-reduce-motion="true"] #main-content.navigating-out .page-content {
   opacity: 1 !important;
 }
 
