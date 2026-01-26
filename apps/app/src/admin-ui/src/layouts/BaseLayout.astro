@@ -84,7 +84,7 @@ const { title = "Nomos Admin" } = Astro.props;
           e.viewTransition.skipTransition();
         } else if (!reduceMotion) {
           // Start outgoing animation immediately
-          var mainContent = document.getElementById("swup");
+          var mainContent = document.getElementById("main-content");
           if (mainContent) {
             mainContent.classList.add("navigating-out");
           }
@@ -98,7 +98,7 @@ const { title = "Nomos Admin" } = Astro.props;
 
       document.addEventListener("astro:after-swap", function() {
         // Remove navigating class from new content
-        var mainContent = document.getElementById("swup");
+        var mainContent = document.getElementById("main-content");
         if (mainContent) {
           mainContent.classList.remove("navigating-out");
         }

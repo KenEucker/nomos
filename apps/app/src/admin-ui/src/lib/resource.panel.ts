@@ -39,7 +39,7 @@ const getOrCreatePanel = (): PanelModule => {
 }
 
 // Create a dynamic panel that reads config on each method call
-// This is necessary because the module is cached but the config changes on Swup navigation
+// This is necessary because the module is cached but the config changes on View Transitions navigation
 const panel: PanelModule = {
   get id() {
     return getOrCreatePanel().id

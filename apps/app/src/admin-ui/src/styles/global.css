@@ -107,7 +107,7 @@
 }
 
 /* Main content area gets fade animation */
-#swup {
+#main-content {
   view-transition-name: main-content;
   /* Enable smooth transition for immediate outgoing animation */
   /* Delay gives a moment before content starts fading */
@@ -115,7 +115,7 @@
 }
 
 /* Immediate outgoing animation (starts on click, before page loads) */
-#swup.navigating-out {
+#main-content.navigating-out {
   opacity: 0;
 }
 
@@ -142,10 +142,10 @@
 
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
-  #swup {
+  #main-content {
     transition: none;
   }
-  #swup.navigating-out {
+  #main-content.navigating-out {
     opacity: 1;
   }
   ::view-transition-old(main-content),
@@ -155,12 +155,12 @@
 }
 
 /* Reduce motion nav setting */
-[data-nav-reduce-motion="true"] #swup {
+[data-nav-reduce-motion="true"] #main-content {
   transition: none !important;
   view-transition-name: none !important;
 }
 
-[data-nav-reduce-motion="true"] #swup.navigating-out {
+[data-nav-reduce-motion="true"] #main-content.navigating-out {
   opacity: 1 !important;
 }
 
