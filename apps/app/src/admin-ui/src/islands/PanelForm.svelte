@@ -11,19 +11,37 @@
   import { apiFetch } from "../lib/api"
   import type { FieldDef } from "../lib/types"
 
-  export let id: string
-  export let title: string | undefined = undefined
-  export let description: string | undefined = undefined
-  export let schema: JSONSchema7 | undefined = undefined
-  export let fields: FieldDef[] = []
-  export let submitLabel: string | undefined = undefined
-  export let submitEndpoint: string
-  export let submitMethod: "POST" | "PUT" | "PATCH" | undefined = undefined
-  export let initialValuesKey: string | undefined = undefined
-  export let after: "refresh" | "navigate" | undefined = undefined
-  export let redirectTo: string | undefined = undefined
-  export let data: Record<string, any> = {}
-  export let onRefresh: () => void
+  interface PanelFormProps {
+    id: string
+    title?: string | null
+    description?: string | null
+    schema?: JSONSchema7 | null
+    fields?: FieldDef[]
+    submitLabel?: string | null
+    submitEndpoint?: string | null
+    submitMethod?: "POST" | "PUT" | "PATCH" | null
+    initialValuesKey?: string | null
+    after?: "refresh" | "navigate" | null
+    redirectTo?: string | null
+    data?: Record<string, any> | null
+    onRefresh?: (() => void) | null
+  }
+
+  const props = $props<PanelFormProps>()
+  
+  const id = props.id
+  const title = props.title ?? undefined
+  const description = props.description ?? undefined
+  const schema = props.schema ?? undefined
+  const fields = props.fields ?? []
+  const submitLabel = props.submitLabel ?? undefined
+  const submitEndpoint = props.submitEndpoint ?? ""
+  const submitMethod = props.submitMethod ?? undefined
+  const initialValuesKey = props.initialValuesKey ?? undefined
+  const after = props.after ?? undefined
+  const redirectTo = props.redirectTo ?? undefined
+  const data = props.data ?? {}
+  const onRefresh = props.onRefresh ?? (() => {})
 
   const resolveRequiredFields = (formFields: FieldDef[], jsonSchema?: JSONSchema7) => {
     if (Array.isArray(jsonSchema?.required)) {
@@ -52,13 +70,14 @@
     return nextErrors
   }
 
-  let values: Record<string, any> = {}
-  let fieldErrors: Record<string, string> = {}
-  let formError: string | null = null
-  let submitting = false
-  let remoteOptions: Record<string, Array<{ value: string; label: string }>> = {}
-
-  $: values = { ...values, ...(initialValuesKey ? data?.[initialValuesKey] ?? {} : {}) }
+  // Initialize values with data if available
+  let values = $state<Record<string, any>>(
+    initialValuesKey && data?.[initialValuesKey] ? { ...data[initialValuesKey] } : {}
+  )
+  let fieldErrors = $state<Record<string, string>>({})
+  let formError = $state<string | null>(null)
+  let submitting = $state(false)
+  let remoteOptions = $state<Record<string, Array<{ value: string; label: string }>>>({})
 
   const resolveHelperText = (field: FieldDef) => field.helperText ?? field.help
 
@@ -107,9 +126,9 @@
         try {
           const payload = await apiFetch<Record<string, unknown>>(field.optionsEndpoint!)
           const options = normalizeOptionsPayload(field, payload)
-          remoteOptions = { ...remoteOptions, [field.name]: options }
+          remoteOptions[field.name] = options
         } catch {
-          remoteOptions = { ...remoteOptions, [field.name]: [] }
+          remoteOptions[field.name] = []
         }
       })
     )
@@ -140,6 +159,10 @@
 
   const submit = async () => {
     if (!validate()) return
+    if (!submitEndpoint) {
+      formError = "Submit endpoint is required"
+      return
+    }
     submitting = true
     formError = null
     try {
@@ -171,7 +194,7 @@
       }
 
       if (after === "refresh") {
-        onRefresh()
+        onRefresh?.()
       }
     } catch (err) {
       formError = err instanceof Error ? err.message : "Submission failed"

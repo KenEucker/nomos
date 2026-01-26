@@ -7,11 +7,12 @@ export const config = {
   tags: ["admin"],
   summary: "Update API key",
   validate: {
-    body: z
-      .object({
-        action: z.enum(["rotate", "revoke"]).optional()
-      })
-      .partial()
+    params: z.object({
+      id: z.string()
+    }),
+    body: z.object({
+      action: z.enum(["rotate", "revoke"]).optional()
+    })
   }
 };
 
