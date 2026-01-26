@@ -56,8 +56,7 @@ export const savePreferences = (next: NavPreferences) => {
 }
 
 export const createDraftFromSaved = (saved: NavPreferences): NavPreferences => {
-  if (typeof structuredClone === "function") {
-    return structuredClone(saved)
-  }
+  // Always use JSON parse/stringify to create a plain object copy
+  // structuredClone fails on Svelte's reactive proxy objects
   return JSON.parse(JSON.stringify(saved)) as NavPreferences
 }

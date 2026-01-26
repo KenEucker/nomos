@@ -80,11 +80,11 @@ const actionClass = (variant?: string) => {
   <SessionLoader client:load />
   <div class="min-h-screen bg-background text-foreground" style="--nomos-header-height: 0px;">
     <div class="admin-shell">
-      <div class="admin-shell-nav">
+      <div class="admin-shell-nav" transition:persist>
         <NomosNav menuName="Ken's Admin" client:only="svelte" {navItems} />
       </div>
 
-      <main id="swup" class="overflow-x-hidden admin-shell-main">
+      <main id="main-content" class="overflow-x-hidden admin-shell-main">
         <div class="p-4 sm:p-6 md:p-8">
           <div class="mb-6 space-y-2">
             {breadcrumbs.length > 0 ? (
@@ -129,7 +129,11 @@ const actionClass = (variant?: string) => {
         </div>
       </main>
     </div>
-    <Toast client:load />
-    <ConfirmDialog client:only="svelte" />
+    <div transition:persist="toast">
+      <Toast client:load />
+    </div>
+    <div transition:persist="confirm-dialog">
+      <ConfirmDialog client:only="svelte" />
+    </div>
   </div>
 </BaseLayout>

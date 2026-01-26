@@ -34,20 +34,16 @@
   onMount(() => {
     scheduleSync();
 
-    const swupHandler = () => {
+    const navigationHandler = () => {
       scheduleSync();
     };
 
     document.addEventListener("toggle", handleToggle, true);
-    document.addEventListener("swup:contentReplaced", swupHandler);
-    document.addEventListener("swup:pageView", swupHandler);
-    document.addEventListener("swup:animationInDone", swupHandler);
+    document.addEventListener("astro:page-load", navigationHandler);
 
     return () => {
       document.removeEventListener("toggle", handleToggle, true);
-      document.removeEventListener("swup:contentReplaced", swupHandler);
-      document.removeEventListener("swup:pageView", swupHandler);
-      document.removeEventListener("swup:animationInDone", swupHandler);
+      document.removeEventListener("astro:page-load", navigationHandler);
     };
   });
 </script>

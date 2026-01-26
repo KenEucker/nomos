@@ -13,11 +13,9 @@
   let cancelLabel = $state(initialState.cancelLabel ?? "No")
   let variant = $state<"default" | "destructive">(initialState.variant ?? "default")
 
-  let mounted = $state(false)
   let unsubscribe: (() => void) | undefined
 
   onMount(() => {
-    mounted = true
     unsubscribe = confirmDialogStore.subscribe((state) => {
       dialogOpen = state.open
       title = state.title
@@ -43,8 +41,7 @@
   }
 </script>
 
-{#if mounted}
-  <Dialog.Root bind:open={dialogOpen}>
+<Dialog.Root bind:open={dialogOpen}>
     <Dialog.Content>
       <Dialog.Header>
         <Dialog.Title>{title}</Dialog.Title>
@@ -62,4 +59,3 @@
       </Dialog.Footer>
     </Dialog.Content>
   </Dialog.Root>
-{/if}
