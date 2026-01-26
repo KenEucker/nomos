@@ -3,10 +3,11 @@
   import DataTable from "../components/DataTable.svelte"
   import PanelHeader from "../components/PanelHeader.svelte"
   import PanelForm from "./PanelForm.svelte"
-  import { can } from "../lib/authz/authorize.client"
+  import { can, isAuthReady } from "../lib/authz/authorize.client"
   import { apiFetch } from "../lib/api"
   import { notify, toastError } from "../lib/toast"
   import { confirmDialog } from "../lib/confirm-dialog"
+  import { onMount } from "svelte"
 
   export let nodes: LayoutNode[] = []
   export let data: Record<string, any> = {}
@@ -15,6 +16,15 @@
   export let onStateChange: (state: QueryState) => void
   export let commands: ActionDescriptor[] = []
   export let onCommand: (command: ActionDescriptor) => void
+
+  let authReady = false
+
+  onMount(() => {
+    // Check if auth is ready on mount (use microtask to ensure DOM is settled)
+    queueMicrotask(() => {
+      authReady = isAuthReady()
+    })
+  })
 
   const getValue = (source: Record<string, any>, path?: string) => {
     if (!path) return undefined
@@ -59,11 +69,20 @@
 
   const isDenied = (node: LayoutNode) =>
     Boolean(node?.props?.requiredIntent) && !can(node.props.requiredIntent as string)
+
+  const isLoading = (node: LayoutNode) =>
+    Boolean(node?.props?.requiredIntent) && !authReady
 </script>
 
 <div class="space-y-6">
   {#each nodes as node, index (index)}
-    {#if isDenied(node)}
+    {#if isLoading(node)}
+      <!-- Skeleton loader while auth is loading -->
+      <div class="rounded-xl border bg-muted/30 p-6 animate-pulse">
+        <div class="h-4 bg-muted rounded w-3/4 mb-3"></div>
+        <div class="h-4 bg-muted rounded w-1/2"></div>
+      </div>
+    {:else if isDenied(node)}
       <div class="rounded-xl border border-dashed bg-muted/30 p-6 text-sm text-muted-foreground">
         Access denied.
       </div>
