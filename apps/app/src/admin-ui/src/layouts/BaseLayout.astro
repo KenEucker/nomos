@@ -89,6 +89,19 @@ const { title = "Nomos Admin" } = Astro.props;
         0% { transform: translateX(-100%); }
         100% { transform: translateX(100%); }
       }
+      /* Disable loading bar animation when reduce motion is enabled */
+      @media (prefers-reduced-motion: reduce) {
+        .nav-loading-bar.loading {
+          animation: none;
+          background: var(--primary);
+          opacity: 0.5;
+        }
+      }
+      [data-nav-reduce-motion="true"] .nav-loading-bar.loading {
+        animation: none;
+        background: var(--primary);
+        opacity: 0.5;
+      }
     </style>
   </head>
   <body class="min-h-screen bg-background text-foreground mobile-menu-collapsed">

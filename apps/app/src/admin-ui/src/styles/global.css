@@ -156,10 +156,27 @@
 
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
+  #swup {
+    transition: none;
+  }
+  #swup.navigating-out {
+    opacity: 1;
+    transform: none;
+  }
   ::view-transition-old(main-content),
   ::view-transition-new(main-content) {
     animation: none;
   }
+}
+
+/* Reduce motion nav setting */
+[data-nav-reduce-motion="true"] #swup {
+  transition: none;
+}
+
+[data-nav-reduce-motion="true"] #swup.navigating-out {
+  opacity: 1;
+  transform: none;
 }
 
 [data-nav-reduce-motion="true"] ::view-transition-old(main-content),
