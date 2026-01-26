@@ -13,16 +13,16 @@
   let cancelLabel = $state(initialState.cancelLabel ?? "No")
   let variant = $state<"default" | "destructive">(initialState.variant ?? "default")
 
+  // Use $effect to set mounted flag - this guarantees the effect context is ready
+  // before bits-ui components try to register their internal effects
   let mounted = $state(false)
+  $effect(() => {
+    mounted = true
+  })
+
   let unsubscribe: (() => void) | undefined
 
   onMount(() => {
-    // Defer mounting to ensure Svelte's effect context is fully initialized
-    // This prevents "effect_orphan" errors from bits-ui components
-    // that use $effect internally during their initialization
-    queueMicrotask(() => {
-      mounted = true
-    })
     unsubscribe = confirmDialogStore.subscribe((state) => {
       dialogOpen = state.open
       title = state.title

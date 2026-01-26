@@ -121,7 +121,12 @@
   let currentPath = ""
   let isMobile = false
   let variant: "form" | "quick" = "form"
+  // Use $effect to set mounted flag - this guarantees the effect context is ready
+  // before bits-ui components try to register their internal effects
   let mounted = $state(false)
+  $effect(() => {
+    mounted = true
+  })
 
   const updateDocumentPrefs = (prefs: NavPreferences) => {
     if (typeof document === "undefined") return
@@ -191,12 +196,6 @@
   }
 
   onMount(() => {
-    // Defer mounting to ensure Svelte's effect context is fully initialized
-    // This prevents "effect_orphan" errors from bits-ui components
-    // that use $effect internally during their initialization
-    queueMicrotask(() => {
-      mounted = true
-    })
     loadPreferences()
     const initialTheme = loadThemePreference()
     themeDraft = initialTheme
