@@ -85,7 +85,35 @@ const actionClass = (variant?: string) => {
       </div>
 
       <main id="main-content" class="overflow-x-hidden admin-shell-main">
-        <div class="p-4 sm:p-6 md:p-8">
+        <!-- Page skeleton shown during page transitions -->
+        <div class="page-skeleton p-4 sm:p-6 md:p-8">
+          <div class="mb-6 space-y-4">
+            <!-- Header skeleton -->
+            <div class="h-8 bg-muted rounded w-1/3 animate-pulse"></div>
+            <div class="h-4 bg-muted/60 rounded w-1/4 animate-pulse"></div>
+          </div>
+          <div class="space-y-6">
+            <!-- Card skeleton 1 -->
+            <div class="rounded-xl border bg-card p-6 shadow-sm">
+              <div class="h-5 bg-muted rounded w-1/4 mb-4 animate-pulse"></div>
+              <div class="space-y-3">
+                <div class="h-4 bg-muted/60 rounded w-full animate-pulse"></div>
+                <div class="h-4 bg-muted/60 rounded w-5/6 animate-pulse"></div>
+                <div class="h-4 bg-muted/60 rounded w-4/6 animate-pulse"></div>
+              </div>
+            </div>
+            <!-- Card skeleton 2 -->
+            <div class="rounded-xl border bg-card p-6 shadow-sm">
+              <div class="h-5 bg-muted rounded w-1/3 mb-4 animate-pulse"></div>
+              <div class="grid grid-cols-3 gap-4">
+                <div class="h-20 bg-muted/60 rounded animate-pulse"></div>
+                <div class="h-20 bg-muted/60 rounded animate-pulse"></div>
+                <div class="h-20 bg-muted/60 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="page-content p-4 sm:p-6 md:p-8">
           <div class="mb-6 space-y-2">
             {breadcrumbs.length > 0 ? (
               <nav class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
