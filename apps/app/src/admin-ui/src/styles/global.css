@@ -106,51 +106,37 @@
   mix-blend-mode: normal;
 }
 
-/* Main content area gets slide + fade animation */
+/* Main content area gets fade animation */
 #swup {
   view-transition-name: main-content;
   /* Enable smooth transition for immediate outgoing animation */
-  /* Delay gives a moment before content starts sliding away */
-  transition: opacity 200ms ease-out 100ms, transform 200ms ease-out 100ms;
+  /* Delay gives a moment before content starts fading */
+  transition: opacity 200ms ease-out 100ms;
 }
 
 /* Immediate outgoing animation (starts on click, before page loads) */
 #swup.navigating-out {
   opacity: 0;
-  transform: translateX(-30px);
 }
 
 /* View transition animations (for the swap) */
-/* Old content is already faded out, so minimal animation */
+/* Old content is already faded out, so no animation needed */
 ::view-transition-old(main-content) {
   animation: none;
   opacity: 0;
 }
 
-/* New content: fade in and slide from right */
+/* New content: fade in */
 ::view-transition-new(main-content) {
-  animation: 150ms ease-out both slide-in-right;
+  animation: 150ms ease-out both fade-in;
 }
 
-@keyframes slide-out-left {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-}
-
-@keyframes slide-in-right {
+@keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateX(30px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
   }
 }
 
@@ -161,7 +147,6 @@
   }
   #swup.navigating-out {
     opacity: 1;
-    transform: none;
   }
   ::view-transition-old(main-content),
   ::view-transition-new(main-content) {
@@ -177,7 +162,6 @@
 
 [data-nav-reduce-motion="true"] #swup.navigating-out {
   opacity: 1 !important;
-  transform: none !important;
 }
 
 /* Disable all view transitions when reduce motion is enabled */
