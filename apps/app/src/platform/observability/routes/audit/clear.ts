@@ -12,8 +12,8 @@ export const config = {
   summary: "Clear audit log"
 };
 
-import type { Ctx } from "../../../../ctx";
-import { isObservabilityInitialized, getRuntime } from "../../../../observability";
+import type { Ctx } from "../../../ctx";
+import { isObservabilityInitialized, getRuntime } from "../../index";
 
 export const post = async (ctx: Ctx) => {
   if (!isObservabilityInitialized()) {

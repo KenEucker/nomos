@@ -15,14 +15,14 @@ export const config = {
   summary: "Observability management actions (cleanup, clear)"
 };
 
-import type { Ctx } from "../../../../ctx";
+import type { Ctx } from "../../../ctx";
 import {
   isObservabilityInitialized,
   getRuntime,
-} from "../../../../observability";
+} from "../../index";
 
 /**
- * POST /_/observability/actions - Execute management actions
+ * POST /observability/actions - Execute management actions
  * 
  * Body:
  * - action: "cleanup" | "clear"

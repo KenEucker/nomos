@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { Ctx } from "../../../../ctx";
-import { parseSort } from "../../../../validation";
+import type { Ctx } from "../../../ctx";
+import { parseSort } from "../../../validation";
 
 const querySchema = z.object({
   page: z.coerce.number().int().positive().default(1),

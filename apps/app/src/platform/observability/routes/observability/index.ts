@@ -22,7 +22,7 @@ import {
   isObservabilityInitialized,
   getRuntime,
   type NomosObservabilityHealth,
-} from "../../../observability";
+} from "../../index";
 
 interface ObservabilityStatus {
   enabled: boolean;
@@ -63,7 +63,7 @@ interface ObservabilityStatus {
 }
 
 /**
- * GET /_/observability - Get observability status and stats
+ * GET /observability - Get observability status and stats
  */
 export const get = async (ctx: Ctx) => {
   const status: ObservabilityStatus = {

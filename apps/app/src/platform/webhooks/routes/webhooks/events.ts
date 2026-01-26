@@ -1,4 +1,4 @@
-import type { Ctx } from "../../../../ctx";
+import type { Ctx } from "../../../ctx";
 
 export const config = {
   auth: "required",

@@ -12,7 +12,7 @@ export const config = {
 };
 
 import type { Ctx } from "../../../ctx";
-import { isObservabilityInitialized, getRuntime } from "../../../observability";
+import { isObservabilityInitialized, getRuntime } from "../../index";
 
 export const get = async (ctx: Ctx) => {
   const search = typeof ctx.query.search === "string" ? ctx.query.search.trim().toLowerCase() : "";

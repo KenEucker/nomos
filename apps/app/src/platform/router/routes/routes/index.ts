@@ -6,7 +6,7 @@ export const config = {
 };
 
 import type { Ctx } from "../../../ctx";
-import { RouteDefinition } from "../../../router/routeTypes";
+import { RouteDefinition } from "../../routeTypes";
 
 export const get = async (ctx: Ctx) => {
   const search = typeof ctx.query.search === "string" ? ctx.query.search.trim().toLowerCase() : "";

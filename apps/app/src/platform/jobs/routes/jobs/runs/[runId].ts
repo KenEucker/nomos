@@ -1,8 +1,8 @@
 /**
  * Admin API route for individual job run
  *
- * GET /_/jobs/runs/:runId - Get run details
- * POST /_/jobs/runs/:runId - Cancel a run (with action=cancel query param)
+ * GET /jobs/runs/:runId - Get run details
+ * POST /jobs/runs/:runId - Cancel a run (with action=cancel query param)
  */
 
 export const config = {
@@ -12,12 +12,12 @@ export const config = {
   summary: "Job Run Details",
 };
 
-import type { Ctx } from "../../../../../ctx";
-import type { JobsRuntime } from "../../../../../jobs/runtime";
-import { HttpError } from "../../../../../errors";
+import type { Ctx } from "../../../../ctx";
+import type { JobsRuntime } from "../../../runtime";
+import { HttpError } from "../../../../errors";
 
 /**
- * GET /_/jobs/runs/:runId - Get run details
+ * GET /jobs/runs/:runId - Get run details
  */
 export const get = async (ctx: Ctx) => {
   const jobsRuntime = ctx.services.jobsRuntime as JobsRuntime;
@@ -52,7 +52,7 @@ export const get = async (ctx: Ctx) => {
 };
 
 /**
- * POST /_/jobs/runs/:runId - Cancel a run (with action=cancel query param)
+ * POST /jobs/runs/:runId - Cancel a run (with action=cancel query param)
  */
 export const post = async (ctx: Ctx) => {
   const jobsRuntime = ctx.services.jobsRuntime as JobsRuntime;

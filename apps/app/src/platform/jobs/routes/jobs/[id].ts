@@ -1,8 +1,8 @@
 /**
  * Admin API route for individual job
  *
- * GET /_/jobs/:id - Get job details with run history
- * POST /_/jobs/:id - Trigger a manual job run
+ * GET /jobs/:id - Get job details with run history
+ * POST /jobs/:id - Trigger a manual job run
  */
 
 export const config = {
@@ -12,13 +12,13 @@ export const config = {
   summary: "Job Details",
 };
 
-import type { Ctx } from "../../../../ctx";
-import type { JobsRuntime } from "../../../../jobs/runtime";
-import { humanizeJobName } from "../../../../jobs/discovery";
-import { HttpError } from "../../../../errors";
+import type { Ctx } from "../../../ctx";
+import type { JobsRuntime } from "../../runtime";
+import { humanizeJobName } from "../../discovery";
+import { HttpError } from "../../../errors";
 
 /**
- * GET /_/jobs/:id - Get job details with run history
+ * GET /jobs/:id - Get job details with run history
  */
 export const get = async (ctx: Ctx) => {
   const jobsRuntime = ctx.services.jobsRuntime as JobsRuntime;
@@ -91,7 +91,7 @@ export const get = async (ctx: Ctx) => {
       triggers: {
         cron: job.triggers.cron ?? [],
         events: job.triggers.events ?? [],
-        manual: job.triggers.manual ?? { enabled: false },
+        manual: job.triggers.manual?.enabled ?? false,
       },
       execution: {
         timeoutMs: job.execution.timeoutMs,
@@ -112,7 +112,7 @@ export const get = async (ctx: Ctx) => {
 };
 
 /**
- * POST /_/jobs/:id - Trigger a manual run
+ * POST /jobs/:id - Trigger a manual run
  * Body: { payload?: object }
  */
 export const post = async (ctx: Ctx) => {

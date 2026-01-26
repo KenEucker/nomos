@@ -12,7 +12,7 @@ export const config = {
 };
 
 import type { Ctx } from "../../../ctx";
-import { isObservabilityInitialized, getRuntime } from "../../../observability";
+import { isObservabilityInitialized, getRuntime } from "../../index";
 
 export const get = async (ctx: Ctx) => {
   // Clamp limit to valid range: minimum 1, maximum 500, default 200

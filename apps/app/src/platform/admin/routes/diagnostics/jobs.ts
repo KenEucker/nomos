@@ -5,7 +5,7 @@ export const config = {
   summary: "Diagnostics jobs"
 };
 
-import type { Ctx } from "../../../../ctx";
+import type { Ctx } from "../../../ctx";
 
 export const get = async (ctx: Ctx) => {
   if (!ctx.services.config.dev.diagnostics) {

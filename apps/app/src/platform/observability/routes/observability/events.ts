@@ -11,16 +11,16 @@ export const config = {
   summary: "Query observability events"
 };
 
-import type { Ctx } from "../../../../ctx";
+import type { Ctx } from "../../../ctx";
 import {
   isObservabilityInitialized,
   getRuntime,
   type NomosEventKind,
   type NomosLevel,
-} from "../../../../observability";
+} from "../../index";
 
 /**
- * GET /_/observability/events - Query recent events
+ * GET /observability/events - Query recent events
  * 
  * Query params:
  * - kind: filter by event kind (log, decision, audit, security, metric, trace)

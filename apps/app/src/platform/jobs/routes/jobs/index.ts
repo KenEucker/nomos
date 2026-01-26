@@ -2,12 +2,12 @@
  * Admin API routes for Jobs
  *
  * Endpoints:
- * GET /_/jobs - List registered jobs
- * GET /_/jobs/:id - Get job details
- * POST /_/jobs/:id/run - Trigger a manual job run
- * GET /_/jobs/:id/runs - List runs for a job
- * GET /_/jobs/runs/:runId - Get run details
- * POST /_/jobs/runs/:runId/cancel - Cancel a run
+ * GET /jobs - List registered jobs
+ * GET /jobs/:id - Get job details
+ * POST /jobs/:id/run - Trigger a manual job run
+ * GET /jobs/:id/runs - List runs for a job
+ * GET /jobs/runs/:runId - Get run details
+ * POST /jobs/runs/:runId/cancel - Cancel a run
  */
 
 export const config = {
@@ -18,11 +18,11 @@ export const config = {
 };
 
 import type { Ctx } from "../../../ctx";
-import type { JobsRuntime } from "../../../jobs/runtime";
-import { humanizeJobName } from "../../../jobs/discovery";
+import type { JobsRuntime } from "../../runtime";
+import { humanizeJobName } from "../../discovery";
 
 /**
- * GET /_/jobs - List all registered jobs
+ * GET /jobs - List all registered jobs
  */
 export const get = async (ctx: Ctx) => {
   const jobsRuntime = ctx.services.jobsRuntime as JobsRuntime;
