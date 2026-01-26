@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import { ViewTransitions } from "astro:transitions";
+import { ClientRouter } from "astro:transitions/client";
 const { title = "Nomos Admin" } = Astro.props;
 ---
 <html lang="en">
@@ -149,6 +150,7 @@ const { title = "Nomos Admin" } = Astro.props;
   <body class="min-h-screen bg-background text-foreground mobile-menu-collapsed">
     <!-- Loading indicator for page transitions -->
     <div id="nav-loading-bar" class="nav-loading-bar"></div>
+    <ClientRouter />
     <slot />
   </body>
 </html>

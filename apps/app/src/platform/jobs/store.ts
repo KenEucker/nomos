@@ -256,21 +256,24 @@ export class PrismaJobsStore implements JobsStore {
       },
     });
 
-    // Get most recent run for each job
-    // We'll fetch recent runs for all jobs and then group by jobId
-    const recentRuns = await this.prisma.jobRun.findMany({
-      where: {
-        jobId: { in: jobIds },
-      },
-      orderBy: { createdAt: "desc" },
-      take: jobIds.length * recentRunsLimit, // Get enough to cover all jobs
+    // Get most recent run for each job using per-job queries
+    // This ensures every jobId gets a guaranteed lastRun, even if some jobs are noisy
+    const lastRunPromises = jobIds.map(async (jobId) => {
+      const latestRun = await this.prisma.jobRun.findFirst({
+        where: {
+          jobId,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      });
+      return { jobId, run: latestRun ? this.toJobRun(latestRun) : null };
     });
 
-    // Group recent runs by jobId and take the most recent for each
-    const lastRunsByJobId = new Map<string, JobRun>();
-    for (const run of recentRuns) {
-      if (!lastRunsByJobId.has(run.jobId)) {
-        lastRunsByJobId.set(run.jobId, this.toJobRun(run));
+    const lastRunResults = await Promise.all(lastRunPromises);
+    const lastRunsByJobId = new Map<string, JobRun | null>();
+    for (const { jobId, run } of lastRunResults) {
+      if (run) {
+        lastRunsByJobId.set(jobId, run);
       }
     }
 
@@ -286,6 +289,7 @@ export class PrismaJobsStore implements JobsStore {
     }
 
     // Build result array matching the order of input jobIds
+    // Every jobId is guaranteed to have a lastRun entry (or null if no runs exist)
     return jobIds.map((jobId) => ({
       jobId,
       totalRuns: totalCountsMap.get(jobId) ?? 0,
@@ -353,37 +357,56 @@ export class PrismaJobsStore implements JobsStore {
   /**
    * Convert Prisma record to JobRun type
    */
+  /**
+   * Coerce a value to a Date object if it's not already one.
+   * Handles ISO date strings from $queryRaw results.
+   */
+  private coerceDate(value: Date | string | null | undefined): Date | undefined {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+    return value instanceof Date ? value : new Date(value);
+  }
+
   private toJobRun(record: {
     id: string;
     jobId: string;
     status: string;
     trigger: string;
-    scheduledFor: Date;
-    startedAt: Date | null;
-    finishedAt: Date | null;
+    scheduledFor: Date | string;
+    startedAt: Date | string | null;
+    finishedAt: Date | string | null;
     attempt: number;
     error: unknown;
     triggerPayload: unknown;
     correlationId: string | null;
-    lastHeartbeatAt: Date | null;
-    cancellationRequestedAt?: Date | null;
-    createdAt: Date;
+    lastHeartbeatAt: Date | string | null;
+    cancellationRequestedAt?: Date | string | null;
+    createdAt: Date | string;
   }): JobRun {
+    // Normalize date fields from $queryRaw (which returns ISO strings) to Date objects
+    const scheduledFor = this.coerceDate(record.scheduledFor)!;
+    const startedAt = this.coerceDate(record.startedAt);
+    const finishedAt = this.coerceDate(record.finishedAt);
+    const lastHeartbeatAt = this.coerceDate(record.lastHeartbeatAt);
+    const cancellationRequestedAt = this.coerceDate(record.cancellationRequestedAt);
+    const createdAt = this.coerceDate(record.createdAt)!;
+
     const run: JobRun = {
       id: record.id,
       jobId: record.jobId,
       status: record.status as JobRunStatus,
       trigger: record.trigger as JobRun["trigger"],
-      scheduledFor: record.scheduledFor,
-      startedAt: record.startedAt ?? undefined,
-      finishedAt: record.finishedAt ?? undefined,
+      scheduledFor,
+      startedAt,
+      finishedAt,
       attempt: record.attempt,
       error: record.error as JobRunError | undefined,
       triggerPayload: record.triggerPayload ?? undefined,
       correlationId: record.correlationId ?? undefined,
-      lastHeartbeatAt: record.lastHeartbeatAt ?? undefined,
-      cancellationRequestedAt: record.cancellationRequestedAt ?? undefined,
-      createdAt: record.createdAt,
+      lastHeartbeatAt,
+      cancellationRequestedAt,
+      createdAt,
     };
 
     // Compute duration if we have both timestamps

@@ -187,7 +187,7 @@ const panel: PanelModule = {
                   key: "id",
                   label: "Job",
                   render: "link",
-                  linkTemplate: "/admin/jobs/{value}",
+                  linkTemplate: "/jobs/{value}",
                 },
                 { key: "displayName", label: "Name" },
                 { key: "namespace", label: "Namespace" },

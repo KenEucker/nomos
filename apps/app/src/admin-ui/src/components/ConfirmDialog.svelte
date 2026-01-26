@@ -39,9 +39,20 @@
   function handleCancel() {
     confirmDialogStore.close(false)
   }
+
+  function handleOpenChange(open: boolean) {
+    // When dialog is closed (open becomes false) via escape/backdrop,
+    // resolve the promise with false. This ensures all dismissal paths
+    // (escape, backdrop, cancel button) resolve the promise.
+    // The store's close() function is idempotent - it only resolves if
+    // there's a pending promise, so calling handleCancel() multiple times is safe.
+    if (!open) {
+      handleCancel()
+    }
+  }
 </script>
 
-<Dialog.Root bind:open={dialogOpen}>
+<Dialog.Root bind:open={dialogOpen} onOpenChange={handleOpenChange}>
     <Dialog.Content>
       <Dialog.Header>
         <Dialog.Title>{title}</Dialog.Title>

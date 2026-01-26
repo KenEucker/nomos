@@ -335,7 +335,7 @@ const panel: PanelModule = {
     commands.push({
       type: "link" as const,
       label: "Back to Jobs",
-      href: "/admin/jobs",
+      href: "/jobs",
     })
 
     return commands

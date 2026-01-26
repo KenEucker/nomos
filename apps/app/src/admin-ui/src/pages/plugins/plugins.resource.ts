@@ -47,7 +47,7 @@ export const pluginsResource = createResourceDefinition({
         id: "viewPreview",
         label: "Preview",
         type: "link",
-        href: "/admin/plugins/{slug}/preview",
+        href: "/plugins/{slug}/preview",
       },
       {
         id: "preview",

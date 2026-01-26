@@ -72,6 +72,8 @@ export class JobsRuntime {
   private running = false;
   private pollInterval: NodeJS.Timeout | null = null;
   private cancellationPollInterval: NodeJS.Timeout | null = null;
+  private isPolling = false;
+  private isCancellationPolling = false;
 
   constructor(options: JobsRuntimeConfig) {
     this.store = options.store;
@@ -513,11 +515,17 @@ export class JobsRuntime {
   private startPollLoop(): void {
     const poll = async () => {
       if (!this.running) return;
-
+      
+      // Guard against overlapping poll invocations
+      if (this.isPolling) return;
+      
+      this.isPolling = true;
       try {
         await this.processNextRun();
       } catch (error) {
         this.log.error({ err: error }, "Error in poll loop");
+      } finally {
+        this.isPolling = false;
       }
     };
 
@@ -533,11 +541,17 @@ export class JobsRuntime {
   private startCancellationPollLoop(): void {
     const poll = async () => {
       if (!this.running) return;
-
+      
+      // Guard against overlapping poll invocations
+      if (this.isCancellationPolling) return;
+      
+      this.isCancellationPolling = true;
       try {
         await this.processCancellationRequests();
       } catch (error) {
         this.log.error({ err: error }, "Error in cancellation poll loop");
+      } finally {
+        this.isCancellationPolling = false;
       }
     };
 

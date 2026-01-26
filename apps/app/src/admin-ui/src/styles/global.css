@@ -100,7 +100,9 @@
    ============================================================ */
 
 /* Disable root-level transitions to prevent full-page flash */
+/* biome-ignore lint/css/unknownTypeSelector: view-transition pseudo-elements are valid CSS */
 ::view-transition-old(root),
+/* biome-ignore lint/css/unknownTypeSelector: view-transition pseudo-elements are valid CSS */
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;

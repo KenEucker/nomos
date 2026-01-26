@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte"
+  import { navigate } from "astro:transitions/client"
   import DataTable from "../components/DataTable.svelte"
   import { apiGet, apiFetch } from "../lib/api"
   import { confirmDialog } from "../lib/confirm-dialog"
@@ -128,7 +129,7 @@
     }
 
     if (action.type === "link" && action.href) {
-      window.location.href = interpolate(action.href, row)
+      navigate(interpolate(action.href, row))
       return
     }
 
@@ -151,7 +152,7 @@
           notify(action.toast.success, "success")
         }
         if (action.after === "navigate" && action.href) {
-          window.location.href = interpolate(action.href, row)
+          navigate(interpolate(action.href, row))
           return
         }
         if (action.after === "refresh") {

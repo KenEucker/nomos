@@ -85,11 +85,6 @@ const job: JobDefinition = {
           status: result.status,
           error: result.error,
         });
-        ctx.emitEvent("webhooks.failed", {
-          deliveryId: delivery.id,
-          destinationId: destination.id,
-          error: result.error,
-        });
         throw new Error(result.error ?? "Webhook delivery failed");
       }
     } catch (error) {
