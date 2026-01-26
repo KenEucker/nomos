@@ -171,17 +171,22 @@
 
 /* Reduce motion nav setting */
 [data-nav-reduce-motion="true"] #swup {
-  transition: none;
+  transition: none !important;
+  view-transition-name: none !important;
 }
 
 [data-nav-reduce-motion="true"] #swup.navigating-out {
-  opacity: 1;
-  transform: none;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
-[data-nav-reduce-motion="true"] ::view-transition-old(main-content),
-[data-nav-reduce-motion="true"] ::view-transition-new(main-content) {
-  animation: none;
+/* Disable all view transitions when reduce motion is enabled */
+[data-nav-reduce-motion="true"] *,
+[data-nav-reduce-motion="true"] *::before,
+[data-nav-reduce-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
 }
 
 /* ============================================================
