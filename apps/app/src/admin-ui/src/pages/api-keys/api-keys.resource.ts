@@ -84,7 +84,7 @@ export const apiKeysResource = createResourceDefinition({
         name: "permissions",
         label: "Permissions",
         type: "multiselect",
-        optionsEndpoint: "/_/permissions",
+        optionsEndpoint: "/permissions",
         optionsKey: "permissions",
         helperText: "Select which permissions this API key should have.",
       },

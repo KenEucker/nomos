@@ -57,7 +57,7 @@ const panel: PanelModule = {
   title: "Jobs",
   subtitle: "Manage background jobs and view run history.",
   query: async (ctx) => {
-    const response = await panelApiFetch<any>(ctx, "/_/jobs")
+    const response = await panelApiFetch<any>(ctx, "/jobs")
     const jobs = ((response?.data ?? response)?.jobs ?? []) as JobSummary[]
 
     // Calculate stats

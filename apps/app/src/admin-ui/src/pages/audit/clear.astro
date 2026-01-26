@@ -9,7 +9,7 @@ if (sessionResult instanceof Response) {
 }
 
 if (Astro.request.method === "POST") {
-  await serverApiFetch(Astro.request, "/_/audit/clear", { method: "POST" });
+  await serverApiFetch(Astro.request, "/audit/clear", { method: "POST" });
   return Astro.redirect("/admin/audit");
 }
 ---

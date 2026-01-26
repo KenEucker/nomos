@@ -124,7 +124,7 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 **How the platform discovers/uses it**
 - `loadPlugins` collects `adminResources`, `adminPages`, and `nav` into the registry. (`apps/app/src/platform/plugins/loadPlugins.ts`)
-- The admin manifest endpoint returns these via `buildManifest`. (`apps/app/src/platform/admin/manifest.ts`, `apps/app/src/platform/admin/routes/_/manifest.ts`)
+- The admin manifest endpoint returns these via `buildManifest`. (`apps/app/src/platform/admin/manifest.ts`, `apps/app/src/platform/admin/routes/manifest/index.ts`)
 
 **Common pitfalls**
 - Adding resource definitions but not exporting them via `manifest.adminResources`.

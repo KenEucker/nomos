@@ -86,7 +86,7 @@ const panel: PanelModule = {
       return { error: "Job ID is required", job: null, runs: [] }
     }
 
-    const response = await panelApiFetch(ctx, `/_/jobs/${encodeURIComponent(jobId)}`)
+    const response = await panelApiFetch(ctx, `/jobs/${encodeURIComponent(jobId)}`)
     const data = (response?.data ?? response) as JobSummary
 
     if (!data?.job) {
@@ -324,7 +324,7 @@ const panel: PanelModule = {
       commands.push({
         type: "method" as const,
         label: "Run Now",
-        endpoint: `/_/jobs/${encodeURIComponent((data.job as JobDetail).id)}`,
+        endpoint: `/jobs/${encodeURIComponent((data.job as JobDetail).id)}`,
         method: "POST" as const,
         payload: () => ({}),
         confirm: { title: "Run this job now?" },

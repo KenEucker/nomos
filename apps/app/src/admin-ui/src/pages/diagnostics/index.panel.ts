@@ -40,10 +40,10 @@ const panel: PanelModule = {
   },
   query: async (ctx) => {
     const [overviewResponse, routesResponse, jobsResponse, eventsResponse] = await Promise.all([
-      panelApiFetch(ctx, "/_/diagnostics"),
-      panelApiFetch(ctx, "/_/diagnostics/routes"),
-      panelApiFetch(ctx, "/_/diagnostics/jobs"),
-      panelApiFetch(ctx, "/_/diagnostics/events"),
+      panelApiFetch(ctx, "/diagnostics"),
+      panelApiFetch(ctx, "/diagnostics/routes"),
+      panelApiFetch(ctx, "/diagnostics/jobs"),
+      panelApiFetch(ctx, "/diagnostics/events"),
     ])
 
     const overview = (overviewResponse?.data ?? overviewResponse) as DiagnosticsOverview

@@ -298,6 +298,12 @@ export async function createApp(config: ResolvedNomosConfig) {
     }
   }
   corePlugins.push(path.join(platformDir, "sdk", "plugin.ts"));
+  if (config.observability.enabled) {
+    corePlugins.push(path.join(platformDir, "observability", "plugin.ts"));
+  }
+  corePlugins.push(path.join(platformDir, "jobs", "plugin.ts"));
+  corePlugins.push(path.join(platformDir, "webhooks", "plugin.ts"));
+  corePlugins.push(path.join(platformDir, "router", "plugin.ts"));
 
   const plugins = await loadPlugins(baseDir, corePlugins, enabledPluginSlugs);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
@@ -443,7 +449,7 @@ export async function createApp(config: ResolvedNomosConfig) {
   const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
   services.routeRegistry = routeRegistry;
 
-  const coreRouteOwners = new Set(["core", "admin", "auth", "pluginManager"]);
+  const coreRouteOwners = new Set(["core", "admin", "auth", "pluginManager", "observability", "jobs", "webhooks", "router"]);
   const filterRoutes = () =>
     enabledPluginSlugs
       ? routeRegistry.routes.filter(

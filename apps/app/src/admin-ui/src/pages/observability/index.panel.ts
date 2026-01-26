@@ -65,8 +65,8 @@ const panel: PanelModule = {
   },
   query: async (ctx) => {
     const [statusResponse, eventsResponse] = await Promise.all([
-      panelApiFetch(ctx, "/_/observability"),
-      panelApiFetch(ctx, "/_/observability/events?limit=50"),
+      panelApiFetch(ctx, "/observability"),
+      panelApiFetch(ctx, "/observability/events?limit=50"),
     ])
 
     const status = (statusResponse?.data ?? statusResponse) as ObservabilityStatus
@@ -324,7 +324,7 @@ const panel: PanelModule = {
     {
       type: "method",
       label: "Clear Events",
-      endpoint: "/_/observability/actions",
+      endpoint: "/observability/actions",
       method: "POST",
       payload: () => ({ action: "clear" }),
       confirm: { title: "Are you sure you want to clear all stored events?" },
@@ -333,7 +333,7 @@ const panel: PanelModule = {
     {
       type: "method",
       label: "Cleanup Spool",
-      endpoint: "/_/observability/actions",
+      endpoint: "/observability/actions",
       method: "POST",
       payload: () => ({ action: "cleanup" }),
       toast: { success: "Spool cleaned up" },
