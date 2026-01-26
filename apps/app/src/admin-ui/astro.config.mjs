@@ -14,8 +14,6 @@ export default defineConfig({
   integrations: [
     svelte(),
     tailwind({ applyBaseStyles: false }),
-    // Using Astro's native View Transitions instead of Swup
-    // View Transitions work better with Astro's island hydration and Svelte 5 runes
     pluginPages()
   ],
   output: "server",
