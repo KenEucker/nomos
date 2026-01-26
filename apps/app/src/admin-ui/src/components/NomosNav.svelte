@@ -211,18 +211,16 @@
     const stopThemeWatch = watchSystemTheme()
     media.addEventListener("change", update)
 
-    // Listen for Swup navigation events to update current path
-    const handleSwupNavigation = () => {
+    // Listen for Astro View Transitions navigation events to update current path
+    const handleNavigation = () => {
       currentPath = window.location.pathname
     }
-    document.addEventListener("swup:contentReplaced", handleSwupNavigation)
-    document.addEventListener("swup:pageView", handleSwupNavigation)
+    document.addEventListener("astro:page-load", handleNavigation)
 
     return () => {
       media.removeEventListener("change", update)
       stopThemeWatch()
-      document.removeEventListener("swup:contentReplaced", handleSwupNavigation)
-      document.removeEventListener("swup:pageView", handleSwupNavigation)
+      document.removeEventListener("astro:page-load", handleNavigation)
     }
   })
 
