@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Accordion as AccordionPrimitive } from "bits-ui";
-	import { onMount } from "svelte";
+	import { tick } from "svelte";
 
 	let {
 		ref = $bindable(null),
@@ -9,15 +9,12 @@
 		...restProps
 	}: AccordionPrimitive.RootProps = $props();
 
-	// Defer rendering to avoid effect_orphan errors from bits-ui
-	// when component is hydrated via Astro islands
-	let mounted = $state(false);
-	onMount(() => {
-		mounted = true;
-	});
+	// Use tick() to defer rendering until Svelte's effect context is ready
+	// This fixes effect_orphan errors from bits-ui when hydrated via Astro islands
+	const ready = tick();
 </script>
 
-{#if mounted}
+{#await ready then}
 	<AccordionPrimitive.Root
 		bind:ref
 		bind:value={value as never}
@@ -26,4 +23,4 @@
 	>
 		{@render children?.()}
 	</AccordionPrimitive.Root>
-{/if}
+{/await}
