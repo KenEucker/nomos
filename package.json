@@ -1,7 +1,11 @@
 {
   "name": "nomos-root",
   "private": true,
-  "workspaces": ["apps/app", "apps/app/src/admin-ui", "packages/create-nomos"],
+  "workspaces": [
+    "apps/app",
+    "apps/app/src/admin-ui",
+    "packages/create-nomos"
+  ],
   "scripts": {
     "dev": "npm --prefix apps/app run dev",
     "build": "npm --prefix apps/app run build",
@@ -12,5 +16,8 @@
   },
   "dependencies": {
     "mode-watcher": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/json-schema": "^7.0.15"
   }
 }
