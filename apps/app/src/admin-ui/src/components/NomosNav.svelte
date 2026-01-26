@@ -130,9 +130,6 @@
   let savedTheme: ThemePreference = $state("system")
   let currentPath = $state("")
   let isMobile = $state(false)
-  // Defer mounting to next animation frame to ensure Svelte's effect context
-  // is fully initialized before bits-ui components try to register their effects
-  let mounted = $state(false)
 
   const updateDocumentPrefs = (prefs: NavPreferences) => {
     if (typeof document === "undefined") return
@@ -202,12 +199,6 @@
   }
 
   onMount(() => {
-    // Use double requestAnimationFrame to ensure we're past the initial render
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        mounted = true
-      })
-    })
     loadPreferences()
     const initialTheme = loadThemePreference()
     themeDraft = initialTheme
@@ -403,60 +394,59 @@
       </div>
 
         <div class="flex-1 px-2 py-4 overflow-y-auto">
-          {#if mounted}
-            <Accordion
-              type="multiple"
-              value={expandedGroups}
-              onValueChange={handleGroupChange}
-              class="space-y-2"
-            >
-              {#each navGroups as group}
-                <AccordionItem value={group.id} class="border-0">
-                  {#if $navPreferences.showGroupHeadings && !$navPreferences.sidebarCollapsed}
-                    <AccordionTrigger
-                      class="px-2 py-2 text-xs font-semibold tracking-wide uppercase text-muted-foreground hover:no-underline"
-                    >
-                      <span>{group.label}</span>
-                    </AccordionTrigger>
-                  {/if}
-                  <AccordionContent class={$navPreferences.showGroupHeadings ? "pb-2" : "pb-0"}>
-                    <ul class="space-y-1">
-                      {#each group.items as item}
-                        <li>
-                          <a
-                            href={item.path}
-                            class={cn(
-                              "flex items-center gap-3 rounded-md text-sm font-medium text-foreground transition",
-                              $navPreferences.sidebarCollapsed ? "justify-center px-2 py-3" : "px-3",
-                              $navPreferences.denseMode ? "py-1.5" : "py-2",
-                              currentPath.startsWith(item.path)
-                                ? "bg-accent text-foreground"
-                                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                            )}
-                            aria-current={currentPath.startsWith(item.path) ? "page" : undefined}
-                            aria-label={item.label}
-                            title={
-                              $navPreferences.sidebarCollapsed && $navPreferences.enableTooltips
-                                ? item.label
-                                : undefined
-                            }
+          <Accordion
+            type="multiple"
+            value={expandedGroups}
+            onValueChange={handleGroupChange}
+            class="space-y-2"
+          >
+            {#each navGroups as group}
+              <AccordionItem value={group.id} class="border-0">
+                {#if $navPreferences.showGroupHeadings && !$navPreferences.sidebarCollapsed}
+                  <AccordionTrigger
+                    class="px-2 py-2 text-xs font-semibold tracking-wide uppercase text-muted-foreground hover:no-underline"
+                  >
+                    <span>{group.label}</span>
+                  </AccordionTrigger>
+                {/if}
+                <AccordionContent class={$navPreferences.showGroupHeadings ? "pb-2" : "pb-0"}>
+                  <ul class="space-y-1">
+                    {#each group.items as item}
+                      <li>
+                        <a
+                          href={item.path}
+                          class={cn(
+                            "flex items-center gap-3 rounded-md text-sm font-medium text-foreground transition",
+                            $navPreferences.sidebarCollapsed ? "justify-center px-2 py-3" : "px-3",
+                            $navPreferences.denseMode ? "py-1.5" : "py-2",
+                            currentPath.startsWith(item.path)
+                              ? "bg-accent text-foreground"
+                              : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                          )}
+                          aria-current={currentPath.startsWith(item.path) ? "page" : undefined}
+                          aria-label={item.label}
+                          title={
+                            $navPreferences.sidebarCollapsed && $navPreferences.enableTooltips
+                              ? item.label
+                              : undefined
+                          }
+                        >
+                          {#if item.iconComponent}
+                            <svelte:component this={item.iconComponent} class={$navPreferences.sidebarCollapsed ? "size-6" : "size-4"} />
+                          {:else}
+                            <span class={cn($navPreferences.sidebarCollapsed ? "size-6" : "size-4", "text-foreground")} aria-hidden="true">{@html item.icon}</span>
+                          {/if}
+                          <span class={$navPreferences.sidebarCollapsed ? "sr-only" : "truncate"}
+                            >{item.label}</span
                           >
-                            {#if item.iconComponent}
-                              <svelte:component this={item.iconComponent} class={$navPreferences.sidebarCollapsed ? "size-6" : "size-4"} />
-                            {:else}
-                              <span class={cn($navPreferences.sidebarCollapsed ? "size-6" : "size-4", "text-foreground")} aria-hidden="true">{@html item.icon}</span>
-                            {/if}                          <span class={$navPreferences.sidebarCollapsed ? "sr-only" : "truncate"}
-                              >{item.label}</span
-                            >
-                          </a>
-                        </li>
-                      {/each}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              {/each}
-            </Accordion>
-          {/if}
+                        </a>
+                      </li>
+                    {/each}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            {/each}
+          </Accordion>
         </div>
 
       <div class="py-3 border-t border-border">
