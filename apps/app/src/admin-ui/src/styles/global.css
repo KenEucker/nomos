@@ -99,38 +99,48 @@
    View Transitions Animations
    ============================================================ */
 
-/* Simple crossfade - old content fades out while new fades in */
-::view-transition-old(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-
+/* Disable root-level transitions to prevent full-page flash */
+::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
 
-/* Main content area gets a quick fade */
+/* Main content area gets slide + fade animation */
 #swup {
   view-transition-name: main-content;
 }
 
+/* Old content: fade out and slide left */
 ::view-transition-old(main-content) {
-  animation: 100ms ease-out both fade-out;
+  animation: 150ms ease-out both slide-out-left;
 }
 
+/* New content: fade in and slide from right */
 ::view-transition-new(main-content) {
-  animation: 100ms ease-in 50ms both fade-in;
+  animation: 150ms ease-out 50ms both slide-in-right;
 }
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes slide-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
 }
 
-@keyframes fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Reduce motion for users who prefer it */
