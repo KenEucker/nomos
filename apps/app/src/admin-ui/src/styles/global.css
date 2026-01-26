@@ -110,7 +110,8 @@
 #swup {
   view-transition-name: main-content;
   /* Enable smooth transition for immediate outgoing animation */
-  transition: opacity 150ms ease-out, transform 150ms ease-out;
+  /* Delay gives a moment before content starts sliding away */
+  transition: opacity 200ms ease-out 100ms, transform 200ms ease-out 100ms;
 }
 
 /* Immediate outgoing animation (starts on click, before page loads) */
