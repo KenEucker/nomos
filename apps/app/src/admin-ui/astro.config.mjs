@@ -15,12 +15,17 @@ export default defineConfig({
   integrations: [
     svelte(),
     tailwind({ applyBaseStyles: false }),
-    swup({
-      globalInstance: true,
-      containers: ["#swup"],
-      animationSelector: "#swup",
-      linkSelector: 'a[href^="/admin"]'
-    }),
+    // Swup temporarily disabled due to compatibility issues with Svelte 5's effect system
+    // When Astro hydrates islands after Swup navigation, bits-ui and svelte-sonner
+    // components fail with "effect_orphan" errors because their internal $effect
+    // calls happen outside of Svelte's effect context.
+    // TODO: Re-enable once @astrojs/svelte properly supports Svelte 5 runes in hydration
+    // swup({
+    //   globalInstance: true,
+    //   containers: ["#swup"],
+    //   animationSelector: "#swup",
+    //   linkSelector: 'a[href^="/admin"]'
+    // }),
     pluginPages()
   ],
   output: "server",
