@@ -70,10 +70,13 @@
     return nextErrors
   }
 
-  // Initialize values with data if available
-  let values = $state<Record<string, any>>(
-    initialValuesKey && data?.[initialValuesKey] ? { ...data[initialValuesKey] } : {}
-  )
+  // Initialize values with data if available (only spread when it's a non-null object)
+  const rawInitial = initialValuesKey && data?.[initialValuesKey]
+  const safeInitial =
+    rawInitial != null && typeof rawInitial === "object" && !Array.isArray(rawInitial)
+      ? { ...rawInitial }
+      : {}
+  let values = $state<Record<string, any>>(safeInitial)
   let fieldErrors = $state<Record<string, string>>({})
   let formError = $state<string | null>(null)
   let submitting = $state(false)
