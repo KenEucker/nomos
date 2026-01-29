@@ -33,23 +33,23 @@ import { qualifyTableName, generateIndexName } from "./validate";
 // Column Type Mapping
 // ---------------------------------------------------------------------------
 
-/** Map our logical types to SQLite storage types. */
+/** Map our logical types to SQLite storage types (TEXT for JSON affinity; SQLite has no JSONB). */
 const SQL_TYPE_MAP: Record<ColumnType, string> = {
   text: "TEXT",
   integer: "INTEGER",
   real: "REAL",
   boolean: "BOOLEAN",
   datetime: "DATETIME",
-  json: "JSONB",
+  json: "TEXT",
 };
 
-/** Normalize an introspected type string for comparison. */
+/** Normalize an introspected type string for comparison (JSON/JSONB → TEXT for SQLite affinity). */
 function normalizeType(type: string): string {
   const upper = type.toUpperCase().trim();
   // SQLite is flexible with types; normalize common variants
   if (upper === "INT") return "INTEGER";
   if (upper === "BOOL") return "BOOLEAN";
-  if (upper === "JSON") return "JSONB";
+  if (upper === "JSON" || upper === "JSONB") return "TEXT";
   if (upper === "DOUBLE" || upper === "FLOAT") return "REAL";
   if (upper.startsWith("VARCHAR") || upper.startsWith("CHAR") || upper === "CLOB") return "TEXT";
   return upper;
@@ -318,6 +318,14 @@ function diffColumns(
       const sql = addColumnSql(qualifiedName, colName, colDef, pluginSlug);
       actions.push({ kind: "add_column", table: qualifiedName, column: colName, sql });
       summary.push(`Add column "${colName}" to "${qualifiedName}".`);
+
+      // Enforce UNIQUE via a separate index (SQLite ADD COLUMN cannot add UNIQUE inline)
+      if (colDef.unique && !colDef.primaryKey) {
+        const indexName = generateIndexName(pluginSlug, shortName, [colName], true);
+        const indexSql = createIndexSql(qualifiedName, indexName, { columns: [colName], unique: true });
+        actions.push({ kind: "create_index", table: qualifiedName, index: indexName, sql: indexSql });
+        summary.push(`Create unique index "${indexName}" on "${qualifiedName}" (${colName}).`);
+      }
 
       // Warn about NOT NULL columns without SQLite-expressible defaults
       if (!colDef.nullable && !colDef.primaryKey) {

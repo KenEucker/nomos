@@ -83,16 +83,28 @@ export async function listPluginTables(
 }
 
 /**
+ * Escape SQL LIKE wildcards in a string so they are matched literally.
+ * Order: backslashes first, then '%', then '_'. Use with ESCAPE '\'.
+ */
+function escapeLikeWildcards(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_");
+}
+
+/**
  * List all plugin tables belonging to a specific plugin slug.
  */
 export async function listPluginTablesForSlug(
   prisma: PrismaClient,
   pluginSlug: string
 ): Promise<string[]> {
-  const prefix = `plugin_${pluginSlug}_%`;
+  const escapedSlug = escapeLikeWildcards(pluginSlug);
+  const pattern = `plugin_${escapedSlug}_%`;
   const rows = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
-    `SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ? ORDER BY name`,
-    prefix
+    `SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ? ESCAPE '\\' ORDER BY name`,
+    pattern
   );
   return rows.map((r) => r.name);
 }

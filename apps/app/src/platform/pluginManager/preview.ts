@@ -140,34 +140,30 @@ export const runPreview = async (
   const merged = normalizePlan(mergePlans(normalized, collected));
   merged.warnings = [...(merged.warnings ?? []), ...warnings];
 
-  // Database schema preview: validate and compute diff
-  if (manifest.database && prisma) {
+  // Database schema: validate unconditionally when manifest.database exists
+  if (manifest.database) {
     const pluginSlug = manifest.slug ?? manifest.name;
     const validation = validateSchema(pluginSlug, manifest.database);
 
+    merged.database = {
+      validationIssues: validation.issues.map((i) => ({
+        severity: i.severity,
+        message: i.message,
+        code: i.code,
+      })),
+    };
     if (!validation.valid) {
-      merged.database = {
-        validationIssues: validation.issues.map((i) => ({
-          severity: i.severity,
-          message: i.message,
-          code: i.code,
-        })),
-      };
       merged.warnings?.push(
         `Database schema has ${validation.issues.filter((i) => i.severity === "error").length} validation error(s). ` +
           `Fix these before enabling the plugin.`
       );
-    } else {
+    }
+
+    // Compute diff only when prisma is available
+    if (prisma) {
       try {
         const diff = await previewSchema(prisma, pluginSlug, manifest.database);
-        merged.database = {
-          diff,
-          validationIssues: validation.issues.map((i) => ({
-            severity: i.severity,
-            message: i.message,
-            code: i.code,
-          })),
-        };
+        merged.database = { ...merged.database, diff };
         if (diff.hasChanges) {
           merged.warnings?.push(
             `Database changes: ${diff.summary.join(" ")}`

@@ -60,29 +60,15 @@ export async function applyMigration(
   const applied: SchemaAction[] = [];
 
   try {
-    // Enable foreign key enforcement for this connection
-    await prisma.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
+    await prisma.$transaction(async (tx) => {
+      // Enable foreign key enforcement on the same connection as the transaction
+      await tx.$executeRawUnsafe(`PRAGMA foreign_keys = ON`);
 
-    // Execute all actions in a transaction
-    await prisma.$executeRawUnsafe(`BEGIN EXCLUSIVE TRANSACTION`);
-
-    try {
       for (const action of diff.actions) {
-        await prisma.$executeRawUnsafe(action.sql);
+        await tx.$executeRawUnsafe(action.sql);
         applied.push(action);
       }
-
-      await prisma.$executeRawUnsafe(`COMMIT`);
-    } catch (innerError) {
-      // Roll back on any failure
-      try {
-        await prisma.$executeRawUnsafe(`ROLLBACK`);
-      } catch (_rollbackError) {
-        // Rollback itself failed - connection may be in a bad state
-        // but we still want to report the original error
-      }
-      throw innerError;
-    }
+    });
 
     return {
       success: true,

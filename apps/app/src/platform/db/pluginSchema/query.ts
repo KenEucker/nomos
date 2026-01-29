@@ -28,6 +28,19 @@ import type {
 } from "./types";
 import { qualifyTableName } from "./validate";
 
+/** Core platform tables allowed in raw() SQL (same set as in validate). */
+const CORE_TABLE_WHITELIST = new Set([
+  "User",
+  "Role",
+  "Permission",
+  "RolePermission",
+  "UserRole",
+  "SubjectRole",
+  "Session",
+  "ApiKey",
+  "PluginState",
+]);
+
 // ---------------------------------------------------------------------------
 // CUID generation (lightweight alternative to the nanoid/cuid packages)
 // ---------------------------------------------------------------------------
@@ -209,6 +222,13 @@ export function createPluginDbClient(
       }
     }
 
+    if (dataKeys.length === 0) {
+      throw new Error(
+        `update("${qualified}"): options.data has no columns to set; ` +
+          "at least one field is required to avoid invalid UPDATE ... SET WHERE ..."
+      );
+    }
+
     const setParts = dataKeys.map((col) => `"${col}" = ?`);
     const setValues = dataKeys.map((c) => serializeValue(options.data[c], columns.get(c)));
 
@@ -239,9 +259,18 @@ export function createPluginDbClient(
   // raw
   // -------------------------------------------------------------------------
   async function raw(sql: string, params?: unknown[]): Promise<unknown[]> {
-    // Validate that the SQL only references this plugin's tables
-    // by checking that any table-like identifier either starts with
-    // the plugin prefix or is a core table
+    const tableNames = extractTableLikeIdentifiers(sql);
+    const pluginPrefix = new RegExp(`^plugin_${escapeRegex(pluginSlug)}_`);
+    for (const name of tableNames) {
+      const allowed =
+        pluginPrefix.test(name) || CORE_TABLE_WHITELIST.has(name);
+      if (!allowed) {
+        throw new Error(
+          `Plugin "${pluginSlug}" raw(): SQL may only reference plugin tables (plugin_${pluginSlug}_*) or core tables (${[...CORE_TABLE_WHITELIST].join(", ")}). ` +
+            `Disallowed table identifier: "${name}".`
+        );
+      }
+    }
     const result = await prisma.$queryRawUnsafe(sql, ...(params ?? []));
     return Array.isArray(result) ? result : [];
   }
@@ -337,4 +366,29 @@ function coerceRow(
   }
 
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// raw() table validation
+// ---------------------------------------------------------------------------
+
+/** Escape special regex characters in a string for use in RegExp. */
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Extract table-like identifiers from SQL (FROM, JOIN, INTO, UPDATE, DELETE FROM).
+ * Used to enforce plugin isolation in raw().
+ */
+function extractTableLikeIdentifiers(sql: string): Set<string> {
+  const tableNames = new Set<string>();
+  const regex =
+    /\b(?:FROM|JOIN|INNER\s+JOIN|LEFT\s+JOIN|RIGHT\s+JOIN|CROSS\s+JOIN|INSERT\s+INTO|REPLACE\s+INTO|UPDATE|DELETE\s+FROM)\s+(?:"([^"]+)"|([a-zA-Z_][a-zA-Z0-9_]*))/gi;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(sql)) !== null) {
+    const name = match[1] ?? match[2];
+    if (name) tableNames.add(name);
+  }
+  return tableNames;
 }
