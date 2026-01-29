@@ -47,7 +47,7 @@ export const post = async (ctx: Ctx) => {
   }
 
   try {
-    const result = await runPreview(match.manifest, config);
+    const result = await runPreview(match.manifest, config, ctx.prisma);
     const updated = await pluginState.update({
       where: { slug },
       data: {

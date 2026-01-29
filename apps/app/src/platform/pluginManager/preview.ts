@@ -1,5 +1,7 @@
+import type { PrismaClient } from "@prisma/client";
 import type { ResolvedNomosConfig } from "../config/nomos-config";
 import type { PluginManifest, PluginPlan, PreviewContext } from "./types";
+import { validateSchema, previewSchema } from "../db/pluginSchema";
 
 type PreviewResult = {
   plan: PluginPlan;
@@ -20,7 +22,8 @@ const normalizePlan = (plan: PluginPlan): PluginPlan => ({
     pagesAdd: plan.admin?.pagesAdd ?? [],
     menuAdd: plan.admin?.menuAdd ?? []
   },
-  configKeys: plan.configKeys ?? []
+  configKeys: plan.configKeys ?? [],
+  database: plan.database
 });
 
 const mergePlans = (base: PluginPlan, additions: PluginPlan): PluginPlan => ({
@@ -39,7 +42,8 @@ const mergePlans = (base: PluginPlan, additions: PluginPlan): PluginPlan => ({
     pagesAdd: [...(base.admin?.pagesAdd ?? []), ...(additions.admin?.pagesAdd ?? [])],
     menuAdd: [...(base.admin?.menuAdd ?? []), ...(additions.admin?.menuAdd ?? [])]
   },
-  configKeys: [...(base.configKeys ?? []), ...(additions.configKeys ?? [])]
+  configKeys: [...(base.configKeys ?? []), ...(additions.configKeys ?? [])],
+  database: additions.database ?? base.database
 });
 
 const createPlanCollector = (slug: string, version: string) => {
@@ -53,6 +57,8 @@ const createPlanCollector = (slug: string, version: string) => {
     configKeys: []
   };
 
+  const declaredTables: Array<{ name: string; description?: string }> = [];
+
   const declare: PreviewContext["declare"] = {
     route: (entry) => collected.routes?.add?.push(entry),
     removeRoute: (entry) => collected.routes?.remove?.push(entry),
@@ -60,10 +66,11 @@ const createPlanCollector = (slug: string, version: string) => {
     adminMenu: (entry) => collected.admin?.menuAdd?.push(entry),
     configKey: (entry) => collected.configKeys?.push(entry),
     permission: (permission) => collected.permissionsRequested?.push(permission),
-    warning: (warning) => collected.warnings?.push(warning)
+    warning: (warning) => collected.warnings?.push(warning),
+    table: (entry) => declaredTables.push(entry)
   };
 
-  return { collected, declare };
+  return { collected, declare, declaredTables };
 };
 
 const freeze = <T>(value: T): T => {
@@ -71,9 +78,19 @@ const freeze = <T>(value: T): T => {
   return value;
 };
 
+/**
+ * Run a plugin's preview function and optionally compute the database
+ * schema diff if the plugin declares a `database` property.
+ *
+ * @param manifest  The plugin manifest.
+ * @param config    Resolved nomos config.
+ * @param prisma    Optional Prisma client — required for database preview.
+ *                  If omitted, database preview is skipped.
+ */
 export const runPreview = async (
   manifest: PluginManifest,
-  config: ResolvedNomosConfig
+  config: ResolvedNomosConfig,
+  prisma?: PrismaClient
 ): Promise<PreviewResult> => {
   if (!manifest.preview) {
     throw new Error("Plugin does not export a preview() function.");
@@ -122,6 +139,52 @@ export const runPreview = async (
 
   const merged = normalizePlan(mergePlans(normalized, collected));
   merged.warnings = [...(merged.warnings ?? []), ...warnings];
+
+  // Database schema preview: validate and compute diff
+  if (manifest.database && prisma) {
+    const pluginSlug = manifest.slug ?? manifest.name;
+    const validation = validateSchema(pluginSlug, manifest.database);
+
+    if (!validation.valid) {
+      merged.database = {
+        validationIssues: validation.issues.map((i) => ({
+          severity: i.severity,
+          message: i.message,
+          code: i.code,
+        })),
+      };
+      merged.warnings?.push(
+        `Database schema has ${validation.issues.filter((i) => i.severity === "error").length} validation error(s). ` +
+          `Fix these before enabling the plugin.`
+      );
+    } else {
+      try {
+        const diff = await previewSchema(prisma, pluginSlug, manifest.database);
+        merged.database = {
+          diff,
+          validationIssues: validation.issues.map((i) => ({
+            severity: i.severity,
+            message: i.message,
+            code: i.code,
+          })),
+        };
+        if (diff.hasChanges) {
+          merged.warnings?.push(
+            `Database changes: ${diff.summary.join(" ")}`
+          );
+        }
+        if (diff.warnings.length > 0) {
+          merged.warnings?.push(...diff.warnings);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        merged.warnings?.push(
+          `Database schema preview failed: ${message}. ` +
+            `The plugin's schema definition may reference tables that don't exist yet.`
+        );
+      }
+    }
+  }
 
   return { plan: merged, warnings };
 };

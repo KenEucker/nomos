@@ -61,6 +61,7 @@ import {
   type NomosObserver,
   type NomosEnv,
 } from "./observability";
+import { createDbClient, type PluginDbClient } from "./db/pluginSchema";
 
 export async function createApp(config: ResolvedNomosConfig) {
   // Initialize observability runtime first (before anything else logs)
@@ -311,6 +312,16 @@ export async function createApp(config: ResolvedNomosConfig) {
     seedDefaultRoles: true,
   });
   authzLog.info("Authorization database seeded.")
+
+  // Build plugin database client registry for plugins that declare database schemas.
+  // Each plugin gets a scoped PluginDbClient that auto-prefixes table names.
+  const pluginDbClients = new Map<string, PluginDbClient>();
+  for (const { name, manifest } of plugins.manifests) {
+    const slug = manifest.slug ?? name;
+    if (manifest.database) {
+      pluginDbClients.set(slug, createDbClient(prisma, slug, manifest.database));
+    }
+  }
 
   // When auth is disabled, create a bypass subject with admin role
   const authBypassSubject: Subject | null = config.modules.auth.enabled
