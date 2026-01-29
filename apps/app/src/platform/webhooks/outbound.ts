@@ -7,7 +7,7 @@ import type { AppLogger } from "../logging/logger";
 
 export class WebhookRuntime {
   constructor(
-    private jobs: JobsRuntime,
+    private jobs: JobsRuntime | null,
     private events: EventBus,
     private store: { destinations: Map<string, WebhookDestination>; deliveries: WebhookDelivery[] },
     private log: AppLogger
@@ -36,10 +36,27 @@ export class WebhookRuntime {
       };
       this.log.debug({ deliveryId: delivery.id, destinationId: destination.id, event }, "Webhook queued.");
       this.store.deliveries.push(delivery);
-      this.jobs.dispatch("platform.webhook.delivery", delivery, {
-        attempts: destination.retryPolicy?.attempts ?? 3,
-        delayMs: destination.retryPolicy?.delayMs ?? 0
-      });
+
+      // Webhook delivery is now handled via the new jobs system
+      // The job is discovered from platform/webhooks/jobs/deliver-webhook.ts
+      // Job ID will be: webhooks.deliver-webhook (namespace + filename)
+      if (this.jobs) {
+        this.jobs.enqueue("webhooks.deliver-webhook", "event", {
+          triggerPayload: {
+            delivery,
+            destination, // Pass destination so job can deliver without accessing runtime
+          },
+        }).catch((err) => {
+          this.log.error({ err, deliveryId: delivery.id }, "Failed to enqueue webhook delivery job");
+          // Remove the delivery from the in-memory store since enqueue failed
+          // This prevents leaving a queued-but-unprocessable delivery
+          const index = this.store.deliveries.findIndex((d) => d.id === delivery.id);
+          if (index !== -1) {
+            this.store.deliveries.splice(index, 1);
+            this.log.debug({ deliveryId: delivery.id }, "Removed delivery from store after enqueue failure");
+          }
+        });
+      }
     }
   }
 

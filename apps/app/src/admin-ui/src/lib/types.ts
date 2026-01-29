@@ -228,6 +228,12 @@ export type PanelModule = {
   id: string
   title: string
   subtitle?: string
+  menu?: {
+    label?: string
+    icon?: string
+    order?: number
+    group?: string
+  }
   query: (ctx: PanelCtx) => Promise<Record<string, any>> | Record<string, any>
   layout: (data: Record<string, any>, ctx: PanelCtx) => LayoutNode[]
   commandBar: (ctx: PanelCtx, data: Record<string, any>) => ActionDescriptor[]

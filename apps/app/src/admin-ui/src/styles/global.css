@@ -95,15 +95,132 @@
   }
 }
 
-#swup {
-  transition: opacity 160ms ease;
+/* ============================================================
+   View Transitions Animations
+   ============================================================ */
+
+/* Disable root-level transitions to prevent full-page flash */
+/* biome-ignore lint/css/unknownTypeSelector: view-transition pseudo-elements are valid CSS */
+::view-transition-old(root),
+/* biome-ignore lint/css/unknownTypeSelector: view-transition pseudo-elements are valid CSS */
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
-html.is-animating #swup,
-body.is-animating #swup,
-html.is-changing #swup,
-body.is-changing #swup {
+/* Main content area gets fade animation */
+#main-content {
+  view-transition-name: main-content;
+}
+
+/* Page content fades out while skeleton remains visible */
+#main-content .page-content {
+  /* Enable smooth transition for immediate outgoing animation */
+  /* Delay gives a moment before content starts fading */
+  transition: opacity 800ms ease-out 100ms;
+}
+
+/* Immediate outgoing animation (starts on click, before page loads) */
+#main-content.navigating-out .page-content {
   opacity: 0;
+}
+
+/* View transition animations (for the swap) */
+/* Old content is already faded out, so no animation needed */
+::view-transition-old(main-content) {
+  animation: none;
+  opacity: 0;
+}
+
+/* New content: fade in */
+::view-transition-new(main-content) {
+  animation: 150ms ease-out both fade-in;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  #main-content .page-content {
+    transition: none;
+  }
+  #main-content.navigating-out .page-content {
+    opacity: 1;
+  }
+  ::view-transition-old(main-content),
+  ::view-transition-new(main-content) {
+    animation: none;
+  }
+}
+
+/* ============================================================
+   Page Skeleton Loading State
+   ============================================================ */
+
+/* Position main-content as relative for absolute skeleton positioning */
+#main-content {
+  position: relative;
+}
+
+/* Skeleton is hidden by default, positioned behind content */
+.page-skeleton {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Page content sits above skeleton */
+.page-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* When navigating out, fade in the skeleton as content fades out */
+#main-content.navigating-out .page-skeleton {
+  opacity: 1;
+  transition: opacity 200ms ease-in 400ms; /* Delay so it fades in as content fades out */
+}
+
+/* Reduce motion nav setting */
+[data-nav-reduce-motion="true"] #main-content {
+  view-transition-name: none !important;
+}
+
+[data-nav-reduce-motion="true"] #main-content .page-content {
+  transition: none !important;
+}
+
+[data-nav-reduce-motion="true"] #main-content.navigating-out .page-content {
+  opacity: 1 !important;
+}
+
+/* Hide skeleton when reduce motion is enabled */
+[data-nav-reduce-motion="true"] .page-skeleton {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-skeleton {
+    display: none !important;
+  }
+}
+
+/* Disable all view transitions when reduce motion is enabled */
+[data-nav-reduce-motion="true"] *,
+[data-nav-reduce-motion="true"] *::before,
+[data-nav-reduce-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
 }
 
 /* ============================================================

@@ -9,8 +9,8 @@ if (sessionResult instanceof Response) {
 }
 
 if (Astro.request.method === "POST") {
-  await serverApiFetch(Astro.request, "/_/audit/clear", { method: "POST" });
-  return Astro.redirect("/admin/audit");
+  await serverApiFetch(Astro.request, "/audit/clear", { method: "POST" });
+  return Astro.redirect("/audit");
 }
 ---
 <BaseLayout title="Clear Audit Log">
@@ -23,7 +23,7 @@ if (Astro.request.method === "POST") {
         </p>
         <form method="post" class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <a
-            href="/admin/audit"
+            href="/audit"
             class="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm text-foreground hover:bg-accent"
           >
             Cancel

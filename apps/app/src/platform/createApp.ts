@@ -33,7 +33,8 @@ import {
 import { buildSwaggerUiHtml } from "./openapi/swaggerUi";
 import { EventBus } from "./events/bus";
 import { createHookRegistry } from "./events/hooks";
-import { JobsRuntime } from "./jobs/runtime";
+import { createJobsStore } from "./jobs/store";
+import { createJobsRuntime, type JobsRuntime } from "./jobs/runtime";
 import { WebhookRuntime } from "./webhooks/outbound";
 import { LocalStorageProvider } from "./storage/local";
 import { getSession } from "./auth/sessions";
@@ -297,8 +298,14 @@ export async function createApp(config: ResolvedNomosConfig) {
     }
   }
   corePlugins.push(path.join(platformDir, "sdk", "plugin.ts"));
+  if (config.observability.enabled) {
+    corePlugins.push(path.join(platformDir, "observability", "plugin.ts"));
+  }
+  corePlugins.push(path.join(platformDir, "jobs", "plugin.ts"));
+  corePlugins.push(path.join(platformDir, "webhooks", "plugin.ts"));
+  corePlugins.push(path.join(platformDir, "router", "plugin.ts"));
 
-  const plugins = await loadPlugins(baseDir, corePlugins);
+  const plugins = await loadPlugins(baseDir, corePlugins, enabledPluginSlugs);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
 
   // Seed authorization database with permissions from plugins
@@ -349,44 +356,29 @@ export async function createApp(config: ResolvedNomosConfig) {
 
   app.decorate("services", services);
 
-  let jobsRuntime: JobsRuntime;
+  // Create jobs store and runtime
+  // Note: The server only provides API access to jobs; actual execution happens in `nomos worker`
+  const jobsStore = createJobsStore(prisma);
+  const jobsRuntime = createJobsRuntime({
+    store: jobsStore,
+    events,
+    log: jobsLog,
+    observer,
+    config: {
+      enabled: config.jobs.enabled,
+      maxConcurrentRuns: config.jobs.maxConcurrentRuns,
+      defaultTimeoutMs: config.jobs.defaultTimeoutMs,
+      defaultCancelGraceMs: config.jobs.defaultCancelGraceMs,
+      pollIntervalMs: config.jobs.pollIntervalMs,
+      jobPaths: [],
+    },
+  });
+
   let webhooksRuntime: WebhookRuntime;
-
-  const ctxFactory = () => {
-    const reqId = nanoid();
-    const ctxBase = {
-      reqId,
-      method: "JOB",
-      path: "job",
-      params: {},
-      query: {},
-      body: {},
-      headers: {},
-      user: null,
-      apiClient: null,
-      subject: null,
-      db,
-      prisma,
-      services,
-      events,
-      jobs: jobsRuntime!,
-      webhooks: webhooksRuntime!,
-      observer,
-      log: jobsLog.child({ reqId, method: "JOB", path: "job" }),
-      json: async () => undefined,
-      error: errorResponse,
-      req: undefined as any,
-      reply: undefined as any
-    };
-    return {
-      ...ctxBase,
-      auth: createAuthHelpers(ctxBase)
-    };
-  };
-
-  jobsRuntime = new JobsRuntime(events, () => ctxFactory(), jobsLog);
+  // WebhookRuntime uses the jobs system to enqueue webhook deliveries
+  // The actual delivery job is discovered from platform/webhooks/jobs/deliver-webhook.ts
   webhooksRuntime = new WebhookRuntime(
-    jobsRuntime,
+    jobsRuntime, // Pass jobsRuntime so webhooks can be enqueued
     events,
     {
       destinations: db.webhookDestinations,
@@ -402,19 +394,24 @@ export async function createApp(config: ResolvedNomosConfig) {
   };
 
   services.jobsRuntime = jobsRuntime;
+  services.jobsStore = jobsStore;
   services.webhooksRuntime = webhooksRuntime;
 
-  for (const job of plugins.jobs) {
-    jobsRuntime.register(job);
+  // Discover and register jobs from filesystem
+  // This allows the API to know about available jobs without starting the worker
+  const srcDir = path.join(baseDir);
+  try {
+    const discovery = await jobsRuntime.discoverAndRegister({ baseDir: srcDir });
+    jobsLog.info(
+      { registered: discovery.registered, errors: discovery.errors.length },
+      "Jobs discovered for API access"
+    );
+  } catch (error) {
+    jobsLog.error({ err: error }, "Failed to discover jobs");
   }
-  jobsRuntime.register({
-    id: "platform.webhook.delivery",
-    run: async (_ctx, payload) => {
-      await webhooksRuntime.deliver(payload);
-    }
-  });
 
-  jobsRuntime.start();
+  // Note: We do NOT call jobsRuntime.start() here
+  // Jobs are executed by `nomos worker`, not by the server
 
   // Call plugin setup functions with observer context
   for (const plugin of plugins.manifests) {
@@ -452,7 +449,7 @@ export async function createApp(config: ResolvedNomosConfig) {
   const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
   services.routeRegistry = routeRegistry;
 
-  const coreRouteOwners = new Set(["core", "admin", "auth", "pluginManager"]);
+  const coreRouteOwners = new Set(["core", "admin", "auth", "pluginManager", "observability", "jobs", "webhooks", "router"]);
   const filterRoutes = () =>
     enabledPluginSlugs
       ? routeRegistry.routes.filter(

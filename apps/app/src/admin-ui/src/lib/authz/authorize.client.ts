@@ -3,6 +3,7 @@ import type { Subject } from "../auth/subject"
 import { toastError } from "../toast"
 
 let cachedPayload: ClientAuthPayload | null | undefined
+let authAttempted = false
 
 const readPayload = (): ClientAuthPayload | null => {
   if (cachedPayload !== undefined) return cachedPayload
@@ -10,6 +11,8 @@ const readPayload = (): ClientAuthPayload | null => {
     cachedPayload = null
     return cachedPayload
   }
+
+  authAttempted = true
 
   const fromWindow = (window as Window & { __NOMOS_AUTH__?: ClientAuthPayload }).__NOMOS_AUTH__
   if (fromWindow) {
@@ -30,6 +33,15 @@ const readPayload = (): ClientAuthPayload | null => {
     cachedPayload = null
     return cachedPayload
   }
+}
+
+/** Check if auth data has been loaded (may still be null if no auth available) */
+export const isAuthReady = (): boolean => {
+  // Try to read payload if not attempted yet
+  if (!authAttempted) {
+    readPayload()
+  }
+  return authAttempted
 }
 
 export const getSubject = (): Subject | null => readPayload()?.subject ?? null

@@ -69,7 +69,7 @@ Jobs are never executed in the server runtime loop.
 
 ## 4. Filesystem Discovery
 
-Jobs are auto-discovered via filesystem structure, similar to routing.
+Jobs are auto-discovered via filesystem structure, similar to routing. **No explicit manifest registration is required** — the plugin manifest does not list jobs; discovery is the only registration path.
 
 ### Plugin jobs
 

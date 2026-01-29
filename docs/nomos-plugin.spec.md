@@ -139,7 +139,7 @@ A plugin may contribute any subset of the following capabilities.
 
 ### 4.1 API Routes
 
-Plugins may contribute API routes through platform routing conventions.
+Plugins may contribute API routes through platform routing conventions. Plugin API route directories are **discovered by convention** (`plugins/<slug>/routes/` for app plugins; `platform/<module>/routes/` for core). No manifest entry is required. Route existence is defined by the API routing spec (filesystem as single source of truth).
 
 Routes must:
 
@@ -255,7 +255,7 @@ Hooks must:
 
 ### 4.8 Jobs / Scheduling
 
-Plugins may register scheduled jobs.
+Plugins may contribute scheduled jobs. Jobs are **discovered from the filesystem** per the Jobs spec (`plugins/<slug>/jobs/`, `platform/<module>/jobs/`). Plugins do not register jobs via the manifest.
 
 Jobs must:
 

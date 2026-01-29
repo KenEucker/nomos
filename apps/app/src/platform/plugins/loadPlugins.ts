@@ -7,7 +7,6 @@ import { createPluginRegistry } from "./registry";
 export type LoadedPlugins = {
   registry: ReturnType<typeof createPluginRegistry>;
   pluginRoutes: PluginRoute[];
-  jobs: any[];
   listeners: Array<{ event: string; handler: any; mode?: "bestEffort" | "failFast" }>;
   manifests: Array<{ name: string; manifest: PluginManifest }>;
 };
@@ -40,11 +39,11 @@ async function importPlugin(entry: string): Promise<PluginManifest> {
 
 export async function loadPlugins(
   baseDir: string,
-  corePluginPaths: string[]
+  corePluginPaths: string[],
+  enabledPluginSlugs?: Set<string>
 ): Promise<LoadedPlugins> {
   const registry = createPluginRegistry();
   const pluginRoutes: PluginRoute[] = [];
-  const jobs: any[] = [];
   const listeners: Array<{ event: string; handler: any; mode?: "bestEffort" | "failFast" }> = [];
 
   const discovered: Array<{ name: string; manifest: PluginManifest }> = [];
@@ -54,6 +53,11 @@ export async function loadPlugins(
     const name = manifest.name ?? path.basename(path.dirname(corePath));
     console.log(`Discovered core plugin: ${name} (${corePath})`);
     discovered.push({ name, manifest: { ...manifest, name } });
+    const corePluginDir = path.dirname(corePath);
+    pluginRoutes.push({
+      baseDir: path.join(corePluginDir, "routes"),
+      owner: name,
+    });
   }
 
   const pluginDir = path.join(baseDir, "plugins");
@@ -66,7 +70,18 @@ export async function loadPlugins(
       const manifest = await importPlugin(indexPath);
       const name = manifest.name ?? entry.name;
       const slug = manifest.slug ?? entry.name;
+      
+      // Filter filesystem plugins based on enabled state if provided
+      if (enabledPluginSlugs !== undefined && !enabledPluginSlugs.has(slug)) {
+        continue;
+      }
+      
       discovered.push({ name, manifest: { ...manifest, name, slug } });
+      const pluginRoot = path.join(pluginDir, entry.name);
+      pluginRoutes.push({
+        baseDir: path.join(pluginRoot, "routes"),
+        owner: manifest.slug ?? manifest.name ?? entry.name,
+      });
     }
   }
 
@@ -84,10 +99,6 @@ export async function loadPlugins(
     if (manifest.services) {
       Object.assign(registry.services, manifest.services);
     }
-    if (manifest.routes) {
-      const owner = manifest.slug ?? name;
-      manifest.routes.forEach((route) => pluginRoutes.push({ ...route, owner }));
-    }
     if (manifest.adminResources) {
       registry.adminResources.push(...manifest.adminResources);
     }
@@ -96,12 +107,6 @@ export async function loadPlugins(
     }
     if (manifest.nav) {
       registry.nav.push(...manifest.nav);
-    }
-    if (manifest.jobs) {
-      for (const job of manifest.jobs) {
-        const loaded = typeof job === "function" ? await job() : job;
-        jobs.push(loaded);
-      }
     }
     if (manifest.listeners) {
       listeners.push(...manifest.listeners);
@@ -113,5 +118,5 @@ export async function loadPlugins(
     }
   }
 
-  return { registry, pluginRoutes, jobs, listeners, manifests: sorted };
+  return { registry, pluginRoutes, listeners, manifests: sorted };
 }
