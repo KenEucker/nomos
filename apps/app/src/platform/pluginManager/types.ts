@@ -36,10 +36,16 @@ export type PluginPlan = {
     add?: Array<{ method: string; path: string; description?: string }>;
     remove?: Array<{ method: string; path: string }>;
   };
+  jobs?: {
+    add?: Array<{ id: string; name?: string; description?: string }>;
+  };
   admin?: {
     pagesAdd?: Array<{ path: string; title: string; description?: string }>;
     menuAdd?: Array<{ label: string; path: string; icon?: string }>;
   };
+  services?: string[];
+  listeners?: Array<{ event: string }>;
+  adminResources?: Array<{ name: string; label?: string }>;
   configKeys?: Array<{ key: string; required?: boolean; description?: string }>;
   /** Database schema changes this plugin would make if enabled. */
   database?: {
@@ -64,8 +70,12 @@ export type PreviewContext = {
   declare: {
     route: (entry: { method: string; path: string; description?: string }) => void;
     removeRoute: (entry: { method: string; path: string }) => void;
+    job: (entry: { id: string; name?: string; description?: string }) => void;
     adminPage: (entry: { path: string; title: string; description?: string }) => void;
     adminMenu: (entry: { label: string; path: string; icon?: string }) => void;
+    service: (name: string) => void;
+    listener: (entry: { event: string }) => void;
+    adminResource: (entry: { name: string; label?: string }) => void;
     configKey: (entry: { key: string; required?: boolean; description?: string }) => void;
     permission: (permission: PluginPermission) => void;
     warning: (warning: string) => void;

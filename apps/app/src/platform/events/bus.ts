@@ -13,6 +13,18 @@ export class EventBus {
     this.listeners.set(event, existing);
   }
 
+  off(event: string, handler: EventHandler) {
+    const existing = this.listeners.get(event);
+    if (!existing) return;
+
+    const filtered = existing.filter((entry) => entry.handler !== handler);
+    if (filtered.length === 0) {
+      this.listeners.delete(event);
+    } else {
+      this.listeners.set(event, filtered);
+    }
+  }
+
   async emit(event: string, payload: any) {
     const entries = this.listeners.get(event) ?? [];
     const meta = { event, timestamp: new Date().toISOString(), log: this.log };

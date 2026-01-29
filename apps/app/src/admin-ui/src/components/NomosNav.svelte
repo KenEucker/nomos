@@ -39,10 +39,19 @@
 
   type NavMode = "nav" | "settings"
 
-  export let navItems: NavItem[] | null = null
-  export let menuName: string = "Nomos Admin"
-  export let menuLogo: string | null = null
-  export let hideHomeMenuItem: boolean = true
+  interface Props {
+    navItems?: NavItem[] | null
+    menuName?: string
+    menuLogo?: string | null
+    hideHomeMenuItem?: boolean
+  }
+
+  let {
+    navItems = null,
+    menuName = "Nomos Admin",
+    menuLogo = null,
+    hideHomeMenuItem = true,
+  }: Props = $props()
 
   type LocalNavItem = {
     label: string
@@ -102,25 +111,25 @@
     return groups
   }
 
-  $: resolvedNavItems = ((navItems ?? []) as LocalNavItem[]).filter((item) => {
+  let resolvedNavItems = $derived(((navItems ?? []) as LocalNavItem[]).filter((item) => {
     if (!hideHomeMenuItem) return true
     // Filter out root/home routes (path is "/", "/admin", or any single-segment base path)
     const normalized = item.path.replace(/\/$/, '') // Remove trailing slash
     const segments = normalized.split('/').filter(Boolean)
     // Keep items with more than 1 segment (e.g., "/admin/users"), filter out single segment or empty (e.g., "/" or "/admin")
     return segments.length > 1
-  })
-  $: navGroups =
+  }))
+  let navGroups = $derived(
     resolvedNavItems.length > 0 ? normalizeNavItems(resolvedNavItems) : defaultNavGroups
-  $: mobileItems = navGroups.flatMap((group) => group.items)
+  )
+  let mobileItems = $derived(navGroups.flatMap((group) => group.items))
 
-  let mode: NavMode = "nav"
-  let draft: NavPreferences = createDraftFromSaved(defaultNavPreferences)
-  let themeDraft: ThemePreference = "system"
-  let savedTheme: ThemePreference = "system"
-  let currentPath = ""
-  let isMobile = false
-  let variant: "form" | "quick" = "form"
+  let mode: NavMode = $state("nav")
+  let draft: NavPreferences = $state(createDraftFromSaved(defaultNavPreferences))
+  let themeDraft: ThemePreference = $state("system")
+  let savedTheme: ThemePreference = $state("system")
+  let currentPath = $state("")
+  let isMobile = $state(false)
 
   const updateDocumentPrefs = (prefs: NavPreferences) => {
     if (typeof document === "undefined") return
@@ -202,35 +211,33 @@
     const stopThemeWatch = watchSystemTheme()
     media.addEventListener("change", update)
 
-    // Listen for Swup navigation events to update current path
-    const handleSwupNavigation = () => {
+    // Listen for Astro View Transitions navigation events to update current path
+    const handleNavigation = () => {
       currentPath = window.location.pathname
     }
-    document.addEventListener("swup:contentReplaced", handleSwupNavigation)
-    document.addEventListener("swup:pageView", handleSwupNavigation)
+    document.addEventListener("astro:page-load", handleNavigation)
 
     return () => {
       media.removeEventListener("change", update)
       stopThemeWatch()
-      document.removeEventListener("swup:contentReplaced", handleSwupNavigation)
-      document.removeEventListener("swup:pageView", handleSwupNavigation)
+      document.removeEventListener("astro:page-load", handleNavigation)
     }
   })
 
-  let appliedPrefs: NavPreferences = defaultNavPreferences
-
-  $: appliedPrefs = mode === "settings" ? draft : $navPreferences
-  $: updateDocumentPrefs(appliedPrefs)
-  $: variant = (mode === "settings" && (isMobile || appliedPrefs.sidebarCollapsed)) ? "quick" : (isMobile ? "quick" : "form")
-  $: expandedGroups = navGroups
+  let appliedPrefs = $derived(mode === "settings" ? draft : $navPreferences)
+  $effect(() => {
+    updateDocumentPrefs(appliedPrefs)
+  })
+  let variant = $derived((mode === "settings" && (isMobile || appliedPrefs.sidebarCollapsed)) ? "quick" : (isMobile ? "quick" : "form"))
+  let expandedGroups = $derived(navGroups
     .filter((group) => {
       if (appliedPrefs.sidebarCollapsed || !appliedPrefs.showGroupHeadings) return true
       return !(appliedPrefs.collapsedGroups[group.id] ?? false)
     })
-    .map((group) => group.id)
-  $: useCompactMobileNav = isMobile
-  $: isRightDock = appliedPrefs.desktopDock === "right" && !isMobile
-  $: logoInitial = menuName.charAt(0).toUpperCase()
+    .map((group) => group.id))
+  let useCompactMobileNav = $derived(isMobile)
+  let isRightDock = $derived(appliedPrefs.desktopDock === "right" && !isMobile)
+  let logoInitial = $derived(menuName.charAt(0).toUpperCase())
 </script>
 
   <nav
@@ -426,7 +433,8 @@
                             <svelte:component this={item.iconComponent} class={$navPreferences.sidebarCollapsed ? "size-6" : "size-4"} />
                           {:else}
                             <span class={cn($navPreferences.sidebarCollapsed ? "size-6" : "size-4", "text-foreground")} aria-hidden="true">{@html item.icon}</span>
-                          {/if}                          <span class={$navPreferences.sidebarCollapsed ? "sr-only" : "truncate"}
+                          {/if}
+                          <span class={$navPreferences.sidebarCollapsed ? "sr-only" : "truncate"}
                             >{item.label}</span
                           >
                         </a>

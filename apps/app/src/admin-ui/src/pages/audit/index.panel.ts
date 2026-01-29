@@ -15,7 +15,7 @@ const panel: PanelModule = {
     {
       type: "link",
       label: "Clear Log",
-      href: "/admin/audit/clear",
+      href: "/audit/clear",
       intent: "admin.access",
     },
   ],

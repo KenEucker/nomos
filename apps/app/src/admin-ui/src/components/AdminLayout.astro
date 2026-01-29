@@ -29,7 +29,7 @@ const { subject } = Astro.props as {
   </header>
   <div class="admin-shell flex-1">
     <div class="admin-shell-nav">
-      <NomosNav client:load />
+      <NomosNav client:only="svelte" />
     </div>
     <main class="admin-shell-main mx-auto w-full max-w-6xl px-6 py-10">
       <slot />

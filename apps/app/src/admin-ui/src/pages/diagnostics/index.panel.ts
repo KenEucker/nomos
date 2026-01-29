@@ -33,12 +33,17 @@ const panel: PanelModule = {
   id: "diagnostics",
   title: "Diagnostics",
   subtitle: "Inspect runtime health and system status.",
+  menu: {
+    group: "System",
+    icon:
+      '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+  },
   query: async (ctx) => {
     const [overviewResponse, routesResponse, jobsResponse, eventsResponse] = await Promise.all([
-      panelApiFetch(ctx, "/_/diagnostics"),
-      panelApiFetch(ctx, "/_/diagnostics/routes"),
-      panelApiFetch(ctx, "/_/diagnostics/jobs"),
-      panelApiFetch(ctx, "/_/diagnostics/events"),
+      panelApiFetch(ctx, "/diagnostics"),
+      panelApiFetch(ctx, "/diagnostics/routes"),
+      panelApiFetch(ctx, "/diagnostics/jobs"),
+      panelApiFetch(ctx, "/diagnostics/events"),
     ])
 
     const overview = (overviewResponse?.data ?? overviewResponse) as DiagnosticsOverview

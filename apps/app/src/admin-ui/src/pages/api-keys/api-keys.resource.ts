@@ -10,11 +10,11 @@ export const apiKeysResource = createResourceDefinition({
       '<svg class="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>',
   },
   endpoints: {
-    list: "/_/api-keys",
-    get: "/_/api-keys/{id}",
-    create: "/_/api-keys",
-    update: "/_/api-keys/{id}",
-    delete: "/_/api-keys/{id}",
+    list: "/api-keys",
+    get: "/api-keys/{id}",
+    create: "/api-keys",
+    update: "/api-keys/{id}",
+    delete: "/api-keys/{id}",
   },
   list: {
     columns: [
@@ -60,7 +60,7 @@ export const apiKeysResource = createResourceDefinition({
         label: "Rotate",
         variant: "secondary",
         type: "method",
-        endpoint: "/_/api-keys/{id}/rotate",
+        endpoint: "/api-keys/{id}/rotate",
         method: "POST",
         confirm: {
           title: "Rotate API key?",
@@ -84,7 +84,7 @@ export const apiKeysResource = createResourceDefinition({
         name: "permissions",
         label: "Permissions",
         type: "multiselect",
-        optionsEndpoint: "/_/permissions",
+        optionsEndpoint: "/permissions",
         optionsKey: "permissions",
         helperText: "Select which permissions this API key should have.",
       },

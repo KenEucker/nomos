@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { ResourceDefinition } from "./types";
+import type { ResourceDefinition, PanelModule } from "./types";
 
 export type NavItem = {
   label: string;
@@ -11,6 +11,7 @@ export type NavItem = {
 
 type BuildNavOptions = {
   basePath: string;
+  enabledPluginSlugs?: Set<string>;
 };
 
 type ResourceMeta = {
@@ -45,12 +46,13 @@ const getTopLevelRoute = (route: string) => {
 const EXCLUDED_ROUTES = new Set(["/login"]);
 
 const buildResourceMetadata = () => {
-  const resourceModules = import.meta.glob("../pages/**/*.resource.ts", { eager: true });
+  const coreResourceModules = import.meta.glob("../pages/**/*.resource.ts", { eager: true });
+  const pluginResourceModules = import.meta.glob("../../../plugins/**/pages/**/*.resource.ts", { eager: true });
   const resourceMetadata = new Map<string, ResourceMeta>();
 
-  for (const modulePath of Object.keys(resourceModules)) {
-    const mod = resourceModules[modulePath] as Record<string, unknown>;
-    const resourceExport = Object.values(mod).find(
+  for (const modulePath of Object.keys({ ...coreResourceModules, ...pluginResourceModules })) {
+    const mod = coreResourceModules[modulePath] || pluginResourceModules[modulePath];
+    const resourceExport = Object.values(mod as Record<string, unknown>).find(
       (value) =>
         typeof value === "object" &&
         value !== null &&
@@ -83,6 +85,61 @@ const buildResourceMetadata = () => {
   return resourceMetadata;
 };
 
+const routeFromPanelFilePath = (filePath: string) => {
+  const normalized = normalizePath(filePath);
+  const markerIndex = normalized.lastIndexOf("/pages/");
+
+  if (markerIndex === -1) return null;
+
+  const relativePath = normalized.slice(markerIndex + "/pages/".length);
+  if (!relativePath.endsWith(".panel.ts")) return null;
+
+  const withoutExtension = relativePath.slice(0, -".panel.ts".length);
+  const segments = withoutExtension.split("/").filter(Boolean);
+
+  if (segments[segments.length - 1] === "index") {
+    segments.pop();
+  }
+
+  return segments.length === 0 ? "/" : `/${segments.join("/")}`;
+};
+
+const buildPanelMetadata = () => {
+  const corePanelModules = import.meta.glob("../pages/**/*.panel.ts", { eager: true });
+  const pluginPanelModules = import.meta.glob("../../../plugins/**/pages/**/*.panel.ts", { eager: true });
+  const panelMetadata = new Map<string, ResourceMeta>();
+
+  for (const modulePath of Object.keys({ ...corePanelModules, ...pluginPanelModules })) {
+    const mod = corePanelModules[modulePath] || pluginPanelModules[modulePath];
+    const panelExport = Object.values(mod as Record<string, unknown>).find(
+      (value) =>
+        typeof value === "object" &&
+        value !== null &&
+        "id" in (value as PanelModule) &&
+        "title" in (value as PanelModule)
+    ) as PanelModule | undefined;
+
+    if (!panelExport || !panelExport.menu) continue;
+
+    const route = routeFromPanelFilePath(modulePath);
+    if (!route) continue;
+
+    const label = panelExport.menu.label ?? panelExport.title;
+    const icon = panelExport.menu.icon;
+    const order = panelExport.menu.order;
+    const group = panelExport.menu.group;
+
+    panelMetadata.set(route, {
+      label,
+      icon,
+      order,
+      group
+    });
+  }
+
+  return panelMetadata;
+};
+
 const getResourceMetaForRoute = (
   resourceMetadata: Map<string, ResourceMeta>,
   route: string,
@@ -107,6 +164,45 @@ const getResourceMetaForRoute = (
   return undefined;
 };
 
+const getPanelMetaForRoute = (
+  panelMetadata: Map<string, ResourceMeta>,
+  route: string,
+  basePath: string
+) => {
+  if (panelMetadata.has(route)) {
+    return panelMetadata.get(route);
+  }
+
+  const baseNormalized = stripTrailingSlash(basePath);
+  const routeWithBase = route === "/" ? baseNormalized : `${baseNormalized}${route}`;
+
+  if (panelMetadata.has(routeWithBase)) {
+    return panelMetadata.get(routeWithBase);
+  }
+
+  const baseSegment = route.split("/").filter(Boolean)[0];
+  if (baseSegment && panelMetadata.has(baseSegment)) {
+    return panelMetadata.get(baseSegment);
+  }
+
+  return undefined;
+};
+
+const getMetaForRoute = (
+  resourceMetadata: Map<string, ResourceMeta>,
+  panelMetadata: Map<string, ResourceMeta>,
+  route: string,
+  basePath: string
+) => {
+  // Priority: ResourceDefinition menu metadata > PanelModule menu metadata
+  const resourceMeta = getResourceMetaForRoute(resourceMetadata, route, basePath);
+  if (resourceMeta) {
+    return resourceMeta;
+  }
+
+  return getPanelMetaForRoute(panelMetadata, route, basePath);
+};
+
 const routeFromFilePath = (filePath: string) => {
   const normalized = normalizePath(filePath);
   const markerIndex = normalized.lastIndexOf("/pages/");
@@ -126,11 +222,27 @@ const routeFromFilePath = (filePath: string) => {
   return segments.length === 0 ? "/" : `/${segments.join("/")}`;
 };
 
-const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
+const getPluginSlugFromPath = (filePath: string): string | null => {
+  const normalized = normalizePath(filePath);
+  const match = normalized.match(/\/plugins\/([^/]+)\/pages\//);
+  return match ? match[1] : null;
+};
+
+const buildAdminNavOnce = ({ basePath, enabledPluginSlugs }: BuildNavOptions): NavItem[] => {
   const resourceMetadata = buildResourceMetadata();
+  const panelMetadata = buildPanelMetadata();
   const corePages = import.meta.glob("../pages/**/*.astro", { eager: true });
   const pluginPages = import.meta.glob("../../../plugins/**/pages/**/*.astro", { eager: true });
-  const entries = Object.keys({ ...corePages, ...pluginPages });
+  
+  // Filter plugin pages to only include enabled plugins
+  const pluginPageEntries = enabledPluginSlugs
+    ? Object.keys(pluginPages).filter((filePath) => {
+        const slug = getPluginSlugFromPath(filePath);
+        return slug ? enabledPluginSlugs.has(slug) : false;
+      })
+    : Object.keys(pluginPages);
+  
+  const entries = Object.keys(corePages).concat(pluginPageEntries);
 
   const indexRoutes = new Set(
     entries
@@ -153,11 +265,11 @@ const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
 
     seen.add(topRoute);
 
-    const resourceMeta = getResourceMetaForRoute(resourceMetadata, topRoute, basePath);
-    const label = resourceMeta?.label ?? (topRoute === "/" ? "Dashboard" : toTitleCase(topRoute.slice(1)));
-    const icon = resourceMeta?.icon ?? DEFAULT_ICON;
-    const order = resourceMeta?.order ?? (topRoute === "/" ? -1 : undefined);
-    const group = resourceMeta?.group;
+    const meta = getMetaForRoute(resourceMetadata, panelMetadata, topRoute, basePath);
+    const label = meta?.label ?? (topRoute === "/" ? "Dashboard" : toTitleCase(topRoute.slice(1)));
+    const icon = meta?.icon ?? DEFAULT_ICON;
+    const order = meta?.order ?? (topRoute === "/" ? -1 : undefined);
+    const group = meta?.group;
     const normalizedBase = stripTrailingSlash(basePath);
     const path = topRoute === "/" ? normalizedBase || "/" : `${normalizedBase}${topRoute}`;
 
@@ -183,13 +295,16 @@ const buildAdminNavOnce = ({ basePath }: BuildNavOptions): NavItem[] => {
 let cachedNav: NavItem[] | null = null;
 
 export const buildAdminNav = (options: BuildNavOptions): NavItem[] => {
-  if (!import.meta.env.DEV && cachedNav) {
+  // Don't cache if enabledPluginSlugs is provided (plugin state may change)
+  const shouldCache = !import.meta.env.DEV && !options.enabledPluginSlugs;
+  
+  if (shouldCache && cachedNav) {
     return cachedNav;
   }
 
   const nav = buildAdminNavOnce(options);
 
-  if (!import.meta.env.DEV) {
+  if (shouldCache) {
     cachedNav = nav;
   }
 

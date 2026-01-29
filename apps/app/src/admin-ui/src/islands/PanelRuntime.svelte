@@ -6,6 +6,7 @@
   import { apiFetch } from "../lib/api"
   import { notify, toastError } from "../lib/toast"
   import { uiState } from "../lib/state"
+  import { confirmDialog } from "../lib/confirm-dialog"
   import LayoutRenderer from "./LayoutRenderer.svelte"
 
   export let panelModuleKey: string
@@ -78,7 +79,13 @@
 
   const executeMethodAction = async (action: MethodAction, payloadOverride?: Record<string, any>) => {
     if (action.confirm) {
-      const confirmed = window.confirm(`${action.confirm.title}\n${action.confirm.body ?? ""}`)
+      const confirmed = await confirmDialog({
+        title: action.confirm.title,
+        body: action.confirm.body,
+        confirmLabel: "Yes",
+        cancelLabel: "No",
+        variant: action.method === "DELETE" ? "destructive" : "default",
+      })
       if (!confirmed) return
     }
 

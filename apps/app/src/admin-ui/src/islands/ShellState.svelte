@@ -43,7 +43,7 @@
     initState(SIDEBAR_KEY, "sidebar-collapsed", false);
     initState(MOBILE_KEY, "mobile-menu-collapsed", true);
 
-    const swupHandler = () => {
+    const navigationHandler = () => {
       scheduleSync();
     };
 
@@ -62,15 +62,11 @@
     });
 
     document.addEventListener("click", handler);
-    document.addEventListener("swup:contentReplaced", swupHandler);
-    document.addEventListener("swup:pageView", swupHandler);
-    document.addEventListener("swup:animationInDone", swupHandler);
+    document.addEventListener("astro:page-load", navigationHandler);
     observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
     return () => {
       document.removeEventListener("click", handler);
-      document.removeEventListener("swup:contentReplaced", swupHandler);
-      document.removeEventListener("swup:pageView", swupHandler);
-      document.removeEventListener("swup:animationInDone", swupHandler);
+      document.removeEventListener("astro:page-load", navigationHandler);
       observer.disconnect();
     };
   });

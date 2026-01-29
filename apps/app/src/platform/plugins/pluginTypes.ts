@@ -67,11 +67,9 @@ export type PluginManifest = {
    * for runtime behavior. Use `context.observer` or `context.createPluginObserver`.
    */
   setup?: (hooks: any, events: any, context?: PluginSetupContext) => void | Promise<void>;
-  routes?: PluginRoute[];
   adminResources?: PluginResource[];
   adminPages?: Array<{ path: string; label: string }>;
   nav?: Array<{ path: string; label: string }>;
-  jobs?: Array<() => Promise<any>> | Array<any>;
   events?: string[];
   listeners?: Array<{
     event: string;
