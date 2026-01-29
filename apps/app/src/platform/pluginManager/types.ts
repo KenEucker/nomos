@@ -1,3 +1,5 @@
+import type { SchemaDiffResult, PluginDatabaseDefinition } from "../db/pluginSchema";
+
 export type PluginPermission =
   | "routes:read"
   | "routes:write"
@@ -20,6 +22,8 @@ export type PluginManifest = {
     maxVersion?: string;
   };
   preview?: (ctx: PreviewContext) => Promise<PluginPlan> | PluginPlan;
+  /** Database tables and columns this plugin requires. */
+  database?: PluginDatabaseDefinition;
 };
 
 export type PluginPlan = {
@@ -43,6 +47,13 @@ export type PluginPlan = {
   listeners?: Array<{ event: string }>;
   adminResources?: Array<{ name: string; label?: string }>;
   configKeys?: Array<{ key: string; required?: boolean; description?: string }>;
+  /** Database schema changes this plugin would make if enabled. */
+  database?: {
+    /** Schema diff result from comparing desired vs. actual state. */
+    diff?: SchemaDiffResult;
+    /** Validation issues found in the schema definition. */
+    validationIssues?: Array<{ severity: string; message: string; code: string }>;
+  };
 };
 
 export type PreviewContext = {
@@ -68,6 +79,8 @@ export type PreviewContext = {
     configKey: (entry: { key: string; required?: boolean; description?: string }) => void;
     permission: (permission: PluginPermission) => void;
     warning: (warning: string) => void;
+    /** Declare a database table this plugin contributes. */
+    table: (entry: { name: string; description?: string }) => void;
   };
 };
 

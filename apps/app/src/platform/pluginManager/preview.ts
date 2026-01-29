@@ -1,3 +1,4 @@
+import type { PrismaClient } from "@prisma/client";
 import type { ResolvedNomosConfig } from "../config/nomos-config";
 import type { PluginManifest, PluginPlan, PreviewContext } from "./types";
 import { discoverPlanFromPlugin } from "./discoverPlan";
@@ -112,6 +113,8 @@ const createPlanCollector = (slug: string, version: string) => {
   collected.slug = slug;
   collected.version = version;
 
+  const declaredTables: Array<{ name: string; description?: string }> = [];
+
   const declare: PreviewContext["declare"] = {
     route: (entry) => collected.routes?.add?.push(entry),
     removeRoute: (entry) => collected.routes?.remove?.push(entry),
@@ -128,7 +131,7 @@ const createPlanCollector = (slug: string, version: string) => {
     warning: (warning) => collected.warnings?.push(warning),
   };
 
-  return { collected, declare };
+  return { collected, declare, declaredTables };
 };
 
 const freeze = <T>(value: T): T => {

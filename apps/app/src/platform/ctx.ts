@@ -8,6 +8,7 @@ import { HttpError } from "./errors";
 import type { AppLogger } from "./logging/logger";
 import type { Subject, Decision } from "./authz";
 import type { NomosObserver } from "./observability";
+import type { PluginDbClient } from "./db/pluginSchema";
 
 /**
  * @deprecated Use Subject from authz module instead
@@ -69,6 +70,23 @@ export type Ctx = {
     /** Require a subject to be authenticated */
     requireSubject: () => Subject;
   };
+  /**
+   * Scoped database client for plugin tables.
+   *
+   * Available when the route belongs to a plugin that declares a `database`
+   * property in its manifest. The client automatically prefixes table names
+   * with the plugin's namespace and validates column references.
+   *
+   * Returns null for core platform routes or plugins without database tables.
+   *
+   * @example
+   * const posts = await ctx.pluginDb?.findMany("posts", {
+   *   where: { status: "published" },
+   *   orderBy: { createdAt: "desc" },
+   *   limit: 10,
+   * });
+   */
+  pluginDb: PluginDbClient | null;
   log: AppLogger;
   json: (payload: any, statusCode?: number, meta?: Record<string, any>) => Promise<void>;
   error: (statusCode: number, code: string, message: string, details?: unknown) => never;

@@ -62,6 +62,7 @@ import {
   type NomosObserver,
   type NomosEnv,
 } from "./observability";
+import { createDbClient, type PluginDbClient } from "./db/pluginSchema";
 
 export async function createApp(config: ResolvedNomosConfig) {
   // Initialize observability runtime first (before anything else logs)
@@ -318,6 +319,16 @@ export async function createApp(config: ResolvedNomosConfig) {
     seedDefaultRoles: true,
   });
   authzLog.info("Authorization database seeded.")
+
+  // Build plugin database client registry for plugins that declare database schemas.
+  // Each plugin gets a scoped PluginDbClient that auto-prefixes table names.
+  const pluginDbClients = new Map<string, PluginDbClient>();
+  for (const { name, manifest } of plugins.manifests) {
+    const slug = manifest.slug ?? name;
+    if (manifest.database) {
+      pluginDbClients.set(slug, createDbClient(prisma, slug, manifest.database));
+    }
+  }
 
   // When auth is disabled, create a bypass subject with admin role
   const authBypassSubject: Subject | null = config.modules.auth.enabled
@@ -645,6 +656,8 @@ export async function createApp(config: ResolvedNomosConfig) {
             permissions: [] as string[], // Permissions now resolved via authz engine
           } : null;
 
+          // Per-request plugin DB: only set when route has a plugin slug with a scoped client; otherwise null.
+          const pluginSlug = route.owner && pluginDbClients.has(route.owner) ? route.owner : null;
           const ctxBase = {
           reqId,
           method: req.method,
@@ -658,6 +671,7 @@ export async function createApp(config: ResolvedNomosConfig) {
           apiClient,
           db,
           prisma,
+          pluginDb: pluginSlug ? pluginDbClients.get(pluginSlug) ?? null : null,
           services,
           events,
           jobs: jobsRuntime,
@@ -872,6 +886,7 @@ export async function createApp(config: ResolvedNomosConfig) {
       subject: null,
       db,
       prisma,
+      pluginDb: null as PluginDbClient | null,
       services,
       events,
       jobs: jobsRuntime,

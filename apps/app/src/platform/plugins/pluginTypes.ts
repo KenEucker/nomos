@@ -1,5 +1,6 @@
 import type { Handler } from "../ctx";
 import type { NomosObserver } from "../observability";
+import type { PluginDatabaseDefinition } from "../db/pluginSchema";
 
 export type PluginRoute = {
   baseDir: string;
@@ -76,4 +77,31 @@ export type PluginManifest = {
     mode?: "bestEffort" | "failFast";
   }>;
   inboundWebhooks?: Record<string, Handler>;
+  /**
+   * Database tables and columns this plugin requires.
+   *
+   * Tables are automatically prefixed with `plugin_{slug}_` to prevent
+   * collisions. The platform validates, diffs, and applies schema changes
+   * at runtime during the enable step — no Prisma codegen or server
+   * restart is needed.
+   *
+   * @example
+   * database: {
+   *   tables: {
+   *     posts: {
+   *       columns: {
+   *         id:        { type: "text", primaryKey: true, default: "cuid" },
+   *         title:     { type: "text" },
+   *         body:      { type: "text", nullable: true },
+   *         authorId:  { type: "text", references: { table: "User", column: "id" } },
+   *         createdAt: { type: "datetime", default: "now" },
+   *       },
+   *       indexes: [
+   *         { columns: ["authorId"] },
+   *       ],
+   *     },
+   *   },
+   * }
+   */
+  database?: PluginDatabaseDefinition;
 };
