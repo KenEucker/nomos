@@ -13,7 +13,7 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 **Expected exports / entry points**
 - Default export (object) matching the `PluginManifest` shape.
-- Common fields: `name`, `dependsOn`, `permissions`, `roles`, `middleware`, `services`, `setup`, `routes`, `adminResources`, `adminPages`, `nav`, `jobs`, `events`, `listeners`, `inboundWebhooks`.
+- Common fields: `name`, `dependsOn`, `permissions`, `roles`, `middleware`, `services`, `setup`, `adminResources`, `adminPages`, `nav`, `events`, `listeners`, `inboundWebhooks`.
 
 **How the platform discovers/uses it**
 - `loadPlugins` imports `index.ts` via dynamic import and uses `mod.default ?? mod`. (`apps/app/src/platform/plugins/loadPlugins.ts`)
@@ -37,11 +37,10 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 - Method-specific configs use `<method>Config` (e.g., `postConfig`).
 
 **How the platform discovers/uses it**
-- The manifest must include `routes: [{ baseDir, owner }]`.
-- `loadRoutes` scans `baseDir` for `.ts` files, maps file paths to routes, and registers handlers. (`apps/app/src/platform/router/loadRoutes.ts`)
+- The route directory is discovered by convention: `plugins/<slug>/routes/`. No manifest entry is required.
+- `loadPlugins` derives `pluginRoutes` from the discovered plugin path; `loadRoutes` scans each `baseDir` for `.ts` files, maps file paths to routes, and registers handlers. (`apps/app/src/platform/plugins/loadPlugins.ts`, `apps/app/src/platform/router/loadRoutes.ts`)
 
 **Common pitfalls**
-- Forgetting to add the `routes` entry in `index.ts` (folder not loaded).
 - Exporting a handler without matching `config` (defaults to auth required).
 
 ---
@@ -105,12 +104,10 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 - Job objects with `{ id, run }`, or functions that return a job object.
 
 **How the platform discovers/uses it**
-- `loadPlugins` loads `manifest.jobs` (executing functions if provided). (`apps/app/src/platform/plugins/loadPlugins.ts`)
-- `createApp` registers jobs with `JobsRuntime.register(...)`. (`apps/app/src/platform/createApp.ts`)
+- Jobs are discovered from `plugins/<slug>/jobs/` by the jobs runtime (filesystem discovery). No manifest entry is required. (`apps/app/src/platform/jobs/discovery.ts`, `apps/app/src/platform/jobs/runtime.ts`)
 
 **Common pitfalls**
-- Forgetting to export the job from `manifest.jobs`.
-- Using a duplicate job `id`.
+- Using a duplicate job `id` (collisions are namespaced by plugin).
 
 ---
 
@@ -171,11 +168,11 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 ## Practical checklist: extend Nomos via a plugin
 - Define plugin manifest in `index.ts` with required fields.
-- Add API routes under `routes/` and register `manifest.routes`.
+- Add API routes under `routes/` (discovered by convention; no manifest wiring).
 - Add service factories in `services/` and wire `manifest.services`.
 - Register hooks/events via `manifest.setup` (using `events/`).
 - Add EventBus listeners under `listeners/` and wire `manifest.listeners`.
-- Add jobs under `jobs/` and wire `manifest.jobs`.
+- Add jobs under `jobs/` (discovered by convention; no manifest wiring).
 - Add admin resources in `admin/` and wire `manifest.adminResources` (plus `adminPages`/`nav` if needed).
 - Add template overrides under `templates/` only when needed.
 

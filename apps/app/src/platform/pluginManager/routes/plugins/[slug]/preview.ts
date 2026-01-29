@@ -3,6 +3,7 @@ import type { Ctx } from "../../../../ctx";
 import { HttpError } from "../../../../errors";
 import { discoverPlugins } from "../../../discovery";
 import { runPreview } from "../../../preview";
+import type { ManifestForPlan } from "../../../discoverPlan";
 import { getPluginStateStore } from "../../../store";
 import { syncDiscoveredPlugins } from "../../../state";
 
@@ -34,9 +35,6 @@ export const post = async (ctx: Ctx) => {
   if (!match || !match.manifest) {
     throw new HttpError(404, "not_found", "Plugin not found.");
   }
-  if (!match.manifest.preview) {
-    throw new HttpError(400, "preview_missing", "Plugin does not provide a preview.");
-  }
 
   await syncDiscoveredPlugins(ctx.prisma, discovered);
 
@@ -47,7 +45,11 @@ export const post = async (ctx: Ctx) => {
   }
 
   try {
-    const result = await runPreview(match.manifest, config);
+    const result = await runPreview(match.manifest, config, {
+      pluginPath: match.folderPath,
+      slug: match.slug,
+      platformManifest: match.manifest as ManifestForPlan,
+    });
     const updated = await pluginState.update({
       where: { slug },
       data: {

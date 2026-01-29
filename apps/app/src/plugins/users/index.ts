@@ -1,12 +1,8 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import type { PluginPlan, PreviewContext } from "../../platform/pluginManager/types";
 import { createUsersService } from "./services/users.service";
 import { resources } from "./admin/resources";
 import auditListener from "./listeners/audit.listener";
 import { registerUserHooks } from "./events/users.events";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default {
   slug: "users",
@@ -21,7 +17,6 @@ export default {
     "roles.manage",
     "auth.manage"
   ],
-  routes: [{ baseDir: path.join(__dirname, "routes"), owner: "users" }],
   services: {
     users: (db: any, hooks: any, events: any) => createUsersService(db, hooks, events)
   },

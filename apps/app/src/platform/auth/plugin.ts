@@ -1,18 +1,8 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { createApiKey, rotateApiKey, revokeApiKey, findApiKey } from "./apiKeys";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default {
   name: "auth",
   intents: ["auth.manage"],
-  routes: [
-    {
-      baseDir: path.join(__dirname, "routes"),
-      owner: "auth"
-    }
-  ],
   services: {
     auth: (db: any) => ({
       createApiKey(payload: any) {

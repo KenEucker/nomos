@@ -351,3 +351,38 @@ export async function discoverJobs(options: DiscoveryOptions): Promise<Discovery
 
   return { jobs: validJobs, errors };
 }
+
+/**
+ * Lightweight result for plugin preview (id, name, description only).
+ */
+export interface JobPlanEntry {
+  id: string;
+  name?: string;
+  description?: string;
+}
+
+/**
+ * Discover jobs from a single directory (e.g. plugins/<slug>/jobs).
+ * Used by plugin preview to list jobs a plugin will add without full runtime registration.
+ */
+export async function discoverJobsInDirectory(
+  jobsDir: string,
+  namespace: string
+): Promise<{ jobs: JobPlanEntry[]; errors: DiscoveryError[] }> {
+  const errors: DiscoveryError[] = [];
+  const jobFiles = await findJobFiles(jobsDir);
+  const jobs: JobPlanEntry[] = [];
+
+  for (const filePath of jobFiles) {
+    const job = await loadJobModule(filePath, namespace, errors);
+    if (job) {
+      jobs.push({
+        id: job.id,
+        name: job.name,
+        description: job.description,
+      });
+    }
+  }
+
+  return { jobs, errors };
+}
