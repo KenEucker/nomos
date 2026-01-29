@@ -44,18 +44,27 @@ export const post = async (ctx: Ctx) => {
   const dropTables = (ctx.body as { dropTables?: boolean } | undefined)?.dropTables === true;
 
   if (dropTables) {
-    const result = await removeSchema(ctx.prisma, slug);
-    if (!result.migration.success) {
+    try {
+      const result = await removeSchema(ctx.prisma, slug);
+      if (!result.migration.success) {
+        dbResult = {
+          dropped: false,
+          error: result.migration.error ?? "Failed to drop plugin tables.",
+          summary: result.diff.summary,
+        };
+      } else {
+        dbResult = {
+          dropped: true,
+          summary: result.diff.summary,
+        };
+      }
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : String(caughtError);
+      ctx.log.error({ err: caughtError, slug }, "removeSchema failed during uninstall; continuing.");
       dbResult = {
         dropped: false,
-        error: result.migration.error ?? "Failed to drop plugin tables.",
-        summary: result.diff.summary,
-      };
-      // Don't block uninstall — log the error but continue
-    } else {
-      dbResult = {
-        dropped: true,
-        summary: result.diff.summary,
+        error: message,
+        summary: [],
       };
     }
   }

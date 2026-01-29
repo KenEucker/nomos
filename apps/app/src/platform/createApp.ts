@@ -656,6 +656,8 @@ export async function createApp(config: ResolvedNomosConfig) {
             permissions: [] as string[], // Permissions now resolved via authz engine
           } : null;
 
+          // Per-request plugin DB: only set when route has a plugin slug with a scoped client; otherwise null.
+          const pluginSlug = route.owner && pluginDbClients.has(route.owner) ? route.owner : null;
           const ctxBase = {
           reqId,
           method: req.method,
@@ -669,7 +671,7 @@ export async function createApp(config: ResolvedNomosConfig) {
           apiClient,
           db,
           prisma,
-          pluginDb: route.owner ? (pluginDbClients.get(route.owner) ?? null) : null,
+          pluginDb: pluginSlug ? pluginDbClients.get(pluginSlug) ?? null : null,
           services,
           events,
           jobs: jobsRuntime,
