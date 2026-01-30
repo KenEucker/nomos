@@ -71,12 +71,20 @@
   }
 
   // Initialize values with data if available (only spread when it's a non-null object)
-  const rawInitial = initialValuesKey && data?.[initialValuesKey]
-  const safeInitial =
-    rawInitial != null && typeof rawInitial === "object" && !Array.isArray(rawInitial)
-      ? { ...rawInitial }
+  const rawInitial = $derived.by(() => initialValuesKey && data?.[initialValuesKey])
+  const safeInitial = $derived.by(() => {
+    const raw = rawInitial
+    return raw != null && typeof raw === "object" && !Array.isArray(raw)
+      ? { ...raw }
       : {}
-  let values = $state<Record<string, any>>(safeInitial)
+  })
+  let values = $state<Record<string, any>>({})
+  $effect(() => {
+    const initial = safeInitial
+    if (Object.keys(values).length === 0) {
+      values = { ...initial }
+    }
+  })
   let fieldErrors = $state<Record<string, string>>({})
   let formError = $state<string | null>(null)
   let submitting = $state(false)

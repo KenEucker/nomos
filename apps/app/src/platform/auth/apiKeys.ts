@@ -8,6 +8,14 @@ function isPrisma(store: ApiKeyStore): store is PrismaClient {
   return typeof (store as PrismaClient).apiKey !== "undefined";
 }
 
+/**
+ * Extract a prefix from the token for indexed lookups.
+ * Uses the first 8 characters to balance selectivity and index size.
+ */
+function extractKeyPrefix(token: string): string {
+  return token.substring(0, 8);
+}
+
 function sanitizeApiKeyRecord(record: {
   id: string;
   name: string;
@@ -18,15 +26,34 @@ function sanitizeApiKeyRecord(record: {
   createdAt: Date;
   lastUsedAt?: Date | null;
 }) {
-  const permissions = Array.isArray(record.permissions)
-    ? record.permissions
-    : record.permissions
-      ? JSON.parse(String(record.permissions))
-      : [];
-  const allowedHosts =
-    typeof record.allowedHosts === "string" && record.allowedHosts
-      ? (JSON.parse(record.allowedHosts) as string[])
-      : [];
+  let permissions: string[] = [];
+  if (Array.isArray(record.permissions)) {
+    permissions = record.permissions;
+  } else if (record.permissions) {
+    try {
+      permissions = JSON.parse(String(record.permissions));
+    } catch (err) {
+      console.error(
+        `[apiKeys] Failed to parse permissions for API key ${record.id}:`,
+        err instanceof Error ? err.message : String(err)
+      );
+      permissions = [];
+    }
+  }
+
+  let allowedHosts: string[] = [];
+  if (typeof record.allowedHosts === "string" && record.allowedHosts) {
+    try {
+      allowedHosts = JSON.parse(record.allowedHosts) as string[];
+    } catch (err) {
+      console.error(
+        `[apiKeys] Failed to parse allowedHosts for API key ${record.id}:`,
+        err instanceof Error ? err.message : String(err)
+      );
+      allowedHosts = [];
+    }
+  }
+
   return {
     id: record.id,
     name: record.name,
@@ -44,6 +71,7 @@ function sanitizeApiKeyRecord(record: {
 export function createApiKey(store: ApiKeyStore, payload: any) {
   const token = nanoid(32);
   const keyHash = hashValue(token);
+  const keyPrefix = extractKeyPrefix(token);
   const name = payload.name ?? "API Key";
   const permissions = payload.permissions ?? [];
   const allowedHosts = payload.allowedHosts ?? [];
@@ -52,6 +80,7 @@ export function createApiKey(store: ApiKeyStore, payload: any) {
     const created = store.apiKey.create({
       data: {
         keyHash,
+        keyPrefix,
         name,
         permissions: permissions as any,
         allowedHosts: allowedHosts.length ? JSON.stringify(allowedHosts) : null,
@@ -87,12 +116,13 @@ export function createApiKey(store: ApiKeyStore, payload: any) {
 export function rotateApiKey(store: ApiKeyStore, id: string) {
   const token = nanoid(32);
   const keyHash = hashValue(token);
+  const keyPrefix = extractKeyPrefix(token);
 
   if (isPrisma(store)) {
     return store.apiKey
       .update({
         where: { id },
-        data: { keyHash, revokedAt: null },
+        data: { keyHash, keyPrefix, revokedAt: null },
       })
       .then((record) => ({
         ...sanitizeApiKeyRecord({
@@ -137,10 +167,17 @@ export function revokeApiKey(store: ApiKeyStore, id: string) {
 }
 
 export async function findApiKey(store: ApiKeyStore, token: string) {
+  const keyPrefix = extractKeyPrefix(token);
+
   if (isPrisma(store)) {
+    // Use indexed lookup by keyPrefix to avoid full table scan
     const keys = await store.apiKey.findMany({
-      where: { revokedAt: null },
+      where: {
+        keyPrefix,
+        revokedAt: null,
+      },
     });
+    // Verify hash on the filtered candidates
     for (const record of keys) {
       if (compareHash(token, record.keyHash)) {
         return sanitizeApiKeyRecord({
