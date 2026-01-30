@@ -208,7 +208,7 @@
     <LayoutRenderer
       {nodes}
       data={data ?? {}}
-      state={currentState}
+      queryState={currentState}
       tableIdPrefix={panelModuleKey}
       onStateChange={handleStateChange}
       {commands}

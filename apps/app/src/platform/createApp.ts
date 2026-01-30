@@ -362,7 +362,8 @@ export async function createApp(config: ResolvedNomosConfig) {
   };
 
   for (const [name, service] of Object.entries(plugins.registry.services)) {
-    services[name] = typeof service === "function" ? service(db, hooks, events) : service;
+    const deps = name === "auth" ? { ...db, prisma } : db;
+    services[name] = typeof service === "function" ? service(deps, hooks, events) : service;
   }
 
   app.decorate("services", services);
@@ -591,7 +592,7 @@ export async function createApp(config: ResolvedNomosConfig) {
           if (!subject) {
             const apiKeyHeader = req.headers["x-api-key"] as string | undefined;
             if (apiKeyHeader) {
-              const foundKey = findApiKey(db.apiKeys, apiKeyHeader);
+              const foundKey = await findApiKey(prisma, apiKeyHeader);
               if (foundKey) {
                 subject = {
                   type: "apiKey",
@@ -599,6 +600,7 @@ export async function createApp(config: ResolvedNomosConfig) {
                   claims: {
                     name: foundKey.name,
                     allowedHosts: foundKey.allowedHosts,
+                    permissions: foundKey.permissions ?? [],
                   }
                 };
                 // Keep apiClient for backward compatibility in context

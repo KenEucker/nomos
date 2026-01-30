@@ -29,6 +29,12 @@ export const rolesResource = createResourceDefinition({
         sortable: true,
       },
       {
+        key: "permissionCount",
+        label: "Permissions",
+        render: "text",
+        hideOnMobile: true,
+      },
+      {
         key: "userCount",
         label: "Users",
         render: "text",
@@ -60,6 +66,15 @@ export const rolesResource = createResourceDefinition({
         type: "text",
         required: true,
         placeholder: "e.g., Administrator",
+      },
+      {
+        name: "permissions",
+        label: "Permissions",
+        type: "multiselect",
+        optionsEndpoint: "/permissions",
+        optionsKey: "permissions",
+        valueKey: "key",
+        helperText: "Select which permissions this role grants.",
       },
     ],
   },

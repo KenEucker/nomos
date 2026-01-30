@@ -123,6 +123,7 @@ export function createAuthHelpers(ctx: Omit<Ctx, "auth">): Ctx["auth"] {
       }
       return ctx.user;
     },
+    /** @deprecated Prefer intent-based route config and authzEngine.decide; authorization is enforced by the authz engine. */
     requirePermission: (permission: string) => {
       const has = hasPermission(permission, ctx.user?.permissions) ||
         hasPermission(permission, ctx.apiClient?.permissions);
@@ -130,6 +131,7 @@ export function createAuthHelpers(ctx: Omit<Ctx, "auth">): Ctx["auth"] {
         throw new HttpError(403, "forbidden", "Missing permission", { permission });
       }
     },
+    /** @deprecated Prefer intent-based route config and authzEngine.decide; authorization is enforced by the authz engine. */
     hasPermission: (permission: string) => {
       return (
         hasPermission(permission, ctx.user?.permissions) ||

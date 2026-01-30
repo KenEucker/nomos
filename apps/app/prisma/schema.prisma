@@ -64,12 +64,13 @@ model ApiKey {
   keyHash      String    @unique
   name         String
   description  String?
+  permissions  Json?     // string[] stored as JSON
   lastUsedAt   DateTime?
   expiresAt    DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   revokedAt    DateTime?
-  allowedHosts String?
+  allowedHosts String?   // JSON array of strings
 }
 
 model UserRole {

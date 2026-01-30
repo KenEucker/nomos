@@ -12,19 +12,25 @@ export default defineRoute(rolesContract, {
       handler: async (ctx: Ctx) => {
         const role = await ctx.prisma.role.findUnique({
           where: { id: ctx.params.id },
-          include: { users: true },
+          include: {
+            users: true,
+            permissions: { include: { permission: true } },
+          },
         });
 
         if (!role) {
           throw new HttpError(404, "not_found", "Role not found", { resource: "Role" });
         }
 
+        const permissionKeys = role.permissions.map((rp) => rp.permission.key);
         return ctx.json({
           role: {
             id: role.id,
             key: role.key,
             name: role.name,
             userCount: role.users.length,
+            permissionKeys,
+            permissions: permissionKeys,
           },
         });
       },
@@ -37,24 +43,65 @@ export default defineRoute(rolesContract, {
       },
       summary: "Update role",
       handler: async (ctx: Ctx) => {
-        const { name } = ctx.body;
+        const { name, permissions: permissionKeys } = ctx.body;
+        const roleId = ctx.params.id;
 
         const existing = await ctx.prisma.role.findUnique({
-          where: { id: ctx.params.id },
+          where: { id: roleId },
+          include: { permissions: { include: { permission: true } } },
         });
 
         if (!existing) {
           throw new HttpError(404, "not_found", "Role not found", { resource: "Role" });
         }
 
-        const updated = await ctx.prisma.role.update({
-          where: { id: ctx.params.id },
+        await ctx.prisma.role.update({
+          where: { id: roleId },
           data: {
             ...(name ? { name } : {}),
           },
         });
 
-        return ctx.json({ role: updated });
+        if (permissionKeys !== undefined) {
+          await ctx.prisma.rolePermission.deleteMany({
+            where: { roleId },
+          });
+          if (permissionKeys.length > 0) {
+            const permissions = await ctx.prisma.permission.findMany({
+              where: { key: { in: permissionKeys } },
+            });
+            await ctx.prisma.rolePermission.createMany({
+              data: permissions.map((p) => ({
+                roleId,
+                permissionId: p.id,
+              })),
+            });
+          }
+        }
+
+        const updated = await ctx.prisma.role.findUnique({
+          where: { id: roleId },
+          include: { permissions: { include: { permission: true } } },
+        });
+        const keys = updated
+          ? updated.permissions.map((rp) => rp.permission.key)
+          : existing.permissions.map((rp) => rp.permission.key);
+        const role = updated
+          ? {
+              id: updated.id,
+              key: updated.key,
+              name: updated.name,
+              permissionKeys: keys,
+              permissions: keys,
+            }
+          : {
+              id: existing.id,
+              key: existing.key,
+              name: existing.name,
+              permissionKeys: keys,
+              permissions: keys,
+            };
+        return ctx.json({ role });
       },
     },
     delete: {

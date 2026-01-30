@@ -376,9 +376,7 @@ export async function seedAuthzDatabase(options: SeederOptions): Promise<void> {
   if (seedDefaultRoles) {
     await ensureDefaultRoles(prisma, DEFAULT_ROLES)
     console.log("[authz] Default roles seeded:", DEFAULT_ROLES.map((r) => r.key).join(", "))
-
-    // Ensure admin users have SubjectRole entries
-    await ensureAdminSubjectRoles(prisma)
+    // SubjectRole is not used for authz; user grants come from UserRole. ensureAdminSubjectRoles omitted.
   }
 
   console.log("[authz] Authorization database seeding complete")

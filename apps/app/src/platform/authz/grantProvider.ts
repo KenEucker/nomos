@@ -64,44 +64,39 @@ export function createGrantProvider(prisma: PrismaClient): GrantProvider {
 /**
  * Resolve grants for a subject from the database.
  *
- * Query path:
- *   SubjectRole → Role → RolePermission → Permission
+ * - For subject.type === "user": UserRole → Role → RolePermission → Permission (single source of truth; no SubjectRole).
+ * - For other types (e.g. apiKey): direct permissions from subject.claims?.permissions only.
  *
  * Returns empty grants on error (deny-by-default).
  */
 async function resolveGrants(prisma: PrismaClient, subject: Subject): Promise<Grants> {
+  const permissions = new Set<string>()
+  let roles: string[] = []
+
   try {
-    // Query all roles assigned to this subject, including their permissions
-    const subjectRoles = await prisma.subjectRole.findMany({
-      where: {
-        subjectType: subject.type,
-        subjectId: subject.id,
-      },
-      include: {
-        role: {
-          include: {
-            permissions: {
-              include: {
-                permission: true,
+    if (subject.type === "user") {
+      // Resolve user grants from UserRole (no SubjectRole)
+      const userRoles = await prisma.userRole.findMany({
+        where: { userId: subject.id },
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: { permission: true },
               },
             },
           },
         },
-      },
-    })
-
-    // Collect roles
-    const roles = subjectRoles.map((sr) => sr.role.key)
-
-    // Collect permissions from all roles
-    const permissions = new Set<string>()
-    for (const sr of subjectRoles) {
-      for (const rp of sr.role.permissions) {
-        permissions.add(rp.permission.key)
+      })
+      roles = userRoles.map((ur) => ur.role.key)
+      for (const ur of userRoles) {
+        for (const rp of ur.role.permissions) {
+          permissions.add(rp.permission.key)
+        }
       }
     }
 
-    // Check for wildcard permission in claims (for service accounts, etc.)
+    // Merge direct permissions from claims (e.g. API keys, or extra grants)
     if (subject.claims?.permissions) {
       const claimsPermissions = subject.claims.permissions as string[]
       for (const perm of claimsPermissions) {
@@ -111,7 +106,6 @@ async function resolveGrants(prisma: PrismaClient, subject: Subject): Promise<Gr
 
     return { permissions, roles }
   } catch (error) {
-    // Log error but return empty grants (deny-by-default)
     console.error("[authz] GrantProvider error:", error)
     return { permissions: new Set(), roles: [] }
   }
