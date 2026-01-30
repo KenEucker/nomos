@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte"
-  import { Button, buttonVariants } from "$ui/button"
+  import { buttonVariants } from "$ui/button"
   import { Switch } from "$ui/switch"
   import type { NavPreferences } from "$lib/navPreferences"
   import { getEffectiveTheme, type ThemePreference } from "$lib/theme"

@@ -38,7 +38,7 @@
       {error}
     </div>
   {/if}
-  <Button className="w-full" type="submit" disabled={loading}>
+  <Button class="w-full" type="submit" disabled={loading}>
     {loading ? "Signing in..." : "Sign in"}
   </Button>
 </form>

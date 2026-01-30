@@ -124,10 +124,10 @@
   )
   let mobileItems = $derived(navGroups.flatMap((group) => group.items))
 
-  let mode: NavMode = $state("nav")
+  let mode = $state<NavMode>("nav")
   let draft: NavPreferences = $state(createDraftFromSaved(defaultNavPreferences))
-  let themeDraft: ThemePreference = $state("system")
-  let savedTheme: ThemePreference = $state("system")
+  let themeDraft = $state<ThemePreference>("system")
+  let savedTheme = $state<ThemePreference>("system")
   let currentPath = $state("")
   let isMobile = $state(false)
 
@@ -228,7 +228,7 @@
   $effect(() => {
     updateDocumentPrefs(appliedPrefs)
   })
-  let variant = $derived((mode === "settings" && (isMobile || appliedPrefs.sidebarCollapsed)) ? "quick" : (isMobile ? "quick" : "form"))
+  let variant: "form" | "quick" = $derived((mode === "settings" && (isMobile || appliedPrefs.sidebarCollapsed)) ? "quick" : (isMobile ? "quick" : "form"))
   let expandedGroups = $derived(navGroups
     .filter((group) => {
       if (appliedPrefs.sidebarCollapsed || !appliedPrefs.showGroupHeadings) return true

@@ -79,7 +79,7 @@
   $: actionColumnVisible = showActions && (enableEdit || (rowActions?.length ?? 0) > 0)
   $: columnCount = columns.length + (showSelection ? 1 : 0) + (actionColumnVisible ? 1 : 0)
 
-  const isDenied = (intent?: string) => Boolean(intent) && !can(intent)
+  const isDenied = (intent?: string) => Boolean(intent) && !can(intent!)
   const denyIfNeeded = (intent?: string) => {
     if (!intent) return false
     if (can(intent)) return false
@@ -105,8 +105,14 @@
     return String(a ?? "").localeCompare(String(b ?? ""))
   }
 
-  const getNestedValue = (obj: Record<string, any>, path: string) =>
-    path.split(".").reduce((acc, key) => (acc ? acc[key] : undefined), obj)
+  const getNestedValue = (obj: Record<string, any>, path: string): unknown =>
+    path.split(".").reduce<unknown>(
+      (acc, key) =>
+        acc != null && typeof acc === "object" && !Array.isArray(acc)
+          ? (acc as Record<string, any>)[key]
+          : undefined,
+      obj as unknown
+    )
 
   const formatDate = (value: string) => {
     const date = new Date(value)
@@ -128,10 +134,10 @@
     return String(value)
   }
 
-  const resolveBadgeVariant = (column: ColumnDef, value: unknown) => {
+  const resolveBadgeVariant = (column: ColumnDef, value: unknown): "secondary" | "default" | "destructive" | "outline" | undefined => {
     if (!column.badgeVariants) return "secondary"
     const key = String(value)
-    return column.badgeVariants[key] ?? "secondary"
+    return (column.badgeVariants[key] as "secondary" | "default" | "destructive" | "outline" | undefined) ?? "secondary"
   }
 
   const actionVisible = (action: RowAction, row: Row) => {

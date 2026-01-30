@@ -6,6 +6,7 @@ import NomosNav from "../components/NomosNav.svelte";
 import ShellState from "../islands/ShellState.svelte";
 import SessionLoader from "../islands/SessionLoader.svelte";
 import type { SessionUser } from "../lib/session";
+import type { Subject } from "../lib/auth/subject";
 import { requireAdminSession } from "../lib/server/session";
 import { buildAdminNav } from "../lib/navigation";
 
@@ -25,13 +26,15 @@ type Props = {
   subtitle?: string;
   breadcrumbs?: PageBreadcrumb[];
   actions?: PageAction[];
+  subject?: Subject | null;
 };
 
 const {
   title = "Dashboard",
   subtitle,
   breadcrumbs = [],
-  actions = []
+  actions = [],
+  subject
 }: Props = Astro.props;
 
 const sessionResult = await requireAdminSession(Astro);

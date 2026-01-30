@@ -27,21 +27,21 @@
     onRefresh?: (() => void) | null
   }
 
-  const props = $props<PanelFormProps>()
-  
-  const id = props.id
-  const title = props.title ?? undefined
-  const description = props.description ?? undefined
-  const schema = props.schema ?? undefined
-  const fields = props.fields ?? []
-  const submitLabel = props.submitLabel ?? undefined
-  const submitEndpoint = props.submitEndpoint ?? ""
-  const submitMethod = props.submitMethod ?? undefined
-  const initialValuesKey = props.initialValuesKey ?? undefined
-  const after = props.after ?? undefined
-  const redirectTo = props.redirectTo ?? undefined
-  const data = props.data ?? {}
-  const onRefresh = props.onRefresh ?? (() => {})
+  let {
+    id,
+    title = undefined,
+    description = undefined,
+    schema = undefined,
+    fields = [],
+    submitLabel = undefined,
+    submitEndpoint = "",
+    submitMethod = undefined,
+    initialValuesKey = undefined,
+    after = undefined,
+    redirectTo = undefined,
+    data = {},
+    onRefresh = () => {},
+  }: PanelFormProps = $props()
 
   const resolveRequiredFields = (formFields: FieldDef[], jsonSchema?: JSONSchema7) => {
     if (Array.isArray(jsonSchema?.required)) {
@@ -164,7 +164,7 @@
   })
 
   const validate = () => {
-    const requiredErrors = validateRequiredFields(fields, schema, values)
+    const requiredErrors = validateRequiredFields(fields, schema!, values)
 
     if (Object.keys(requiredErrors).length) {
       fieldErrors = requiredErrors

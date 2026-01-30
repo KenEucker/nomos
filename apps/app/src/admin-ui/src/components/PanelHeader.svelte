@@ -7,9 +7,9 @@
   export let commands: ActionDescriptor[] = []
   export let onCommand: (command: ActionDescriptor) => void
 
-  const isDenied = (intent?: string) => Boolean(intent) && !can(intent)
+  const isDenied = (intent: string) => Boolean(intent) && !can(intent)
   const handleCommand = (command: ActionDescriptor) => {
-    if (isDenied(command.intent)) {
+    if (isDenied(command.intent!)) {
       notifyDeny(command.intent as string)
       return
     }
@@ -28,7 +28,7 @@
     {#if commands.length}
       <div class="flex flex-wrap gap-2">
         {#each commands as command (command.label)}
-          {@const commandDenied = isDenied(command.intent)}
+          {@const commandDenied = isDenied(command.intent!)}
           {#if command.type === "link"}
             <button
               type="button"
