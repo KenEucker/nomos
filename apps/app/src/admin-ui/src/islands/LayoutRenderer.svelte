@@ -1,23 +1,40 @@
 <script lang="ts">
-  import type { ActionDescriptor, LayoutNode, QueryState } from "../lib/types"
+  import type { ActionDescriptor, LayoutNode, QueryState, RowAction } from "../lib/types"
   import DataTable from "../components/DataTable.svelte"
   import PanelHeader from "../components/PanelHeader.svelte"
   import PanelForm from "./PanelForm.svelte"
+  import * as Dialog from "$ui/dialog"
+  import { Button } from "$ui/button"
   import { can, isAuthReady } from "../lib/authz/authorize.client"
   import { apiFetch } from "../lib/api"
   import { notify, toastError } from "../lib/toast"
   import { confirmDialog } from "../lib/confirm-dialog"
   import { onMount } from "svelte"
 
-  export let nodes: LayoutNode[] = []
-  export let data: Record<string, any> = {}
-  export let state: QueryState
-  export let tableIdPrefix: string
-  export let onStateChange: (state: QueryState) => void
-  export let commands: ActionDescriptor[] = []
-  export let onCommand: (command: ActionDescriptor) => void
+  let {
+    nodes = [],
+    data = {},
+    queryState,
+    tableIdPrefix,
+    onStateChange,
+    commands = [],
+    onCommand,
+  }: {
+    nodes?: LayoutNode[]
+    data?: Record<string, any>
+    queryState: QueryState
+    tableIdPrefix: string
+    onStateChange: (next: QueryState) => void
+    commands?: ActionDescriptor[]
+    onCommand: (command: ActionDescriptor) => void
+  } = $props()
 
   let authReady = false
+  /** After rotate (or other action that returns a one-time token), show it so the user can copy */
+  let revealedToken = $state<string | null>(null)
+  let revealedTokenCopied = $state(false)
+  /** Inline confirm for rotate so the dialog is guaranteed to show (same island as the table) */
+  let pendingRotate = $state<{ action: RowAction; row: Record<string, any> } | null>(null)
 
   onMount(() => {
     // Check if auth is ready on mount (use microtask to ensure DOM is settled)
@@ -74,6 +91,7 @@
     Boolean(node?.props?.requiredIntent) && !authReady
 </script>
 
+<div>
 <div class="space-y-6">
   {#each nodes as node, index (index)}
     {#if isLoading(node)}
@@ -91,7 +109,7 @@
         <svelte:self
           nodes={node.props.nodes}
           {data}
-          {state}
+          {queryState}
           {tableIdPrefix}
           {onStateChange}
           {commands}
@@ -105,7 +123,7 @@
             <svelte:self
               nodes={column.nodes}
               {data}
-              {state}
+              {queryState}
               {tableIdPrefix}
               {onStateChange}
               {commands}
@@ -126,7 +144,7 @@
           <svelte:self
             nodes={node.props.nodes}
             {data}
-            {state}
+            {queryState}
             {tableIdPrefix}
             {onStateChange}
             {commands}
@@ -182,23 +200,45 @@
             window.location.href = interpolate(action.href, row)
             return
           }
-          if (action.type === "method" && action.endpoint) {
+          const isMethodAction = action.type === "method" && action.endpoint
+          const isRotateAction = action.id === "rotate" && id
+          // Use inline dialog for rotate so confirm + token reveal are in the same island
+          if (isRotateAction) {
+            pendingRotate = { action, row }
+            return
+          }
+          if (isMethodAction) {
+            const endpoint = interpolate(action.endpoint!, row)
+            const method = action.method ?? "POST"
+            const body =
+              action.payload === undefined
+                ? undefined
+                : typeof action.payload === "function"
+                  ? action.payload(row)
+                  : action.payload
             const confirmed = action.confirm
               ? await confirmDialog({
                   title: action.confirm.title,
                   body: action.confirm.body,
                   confirmLabel: "Yes",
                   cancelLabel: "No",
-                  variant: action.method === "DELETE" ? "destructive" : "default",
+                  variant: method === "DELETE" ? "destructive" : "default",
                 })
               : true
             if (!confirmed) return
             try {
-              const endpoint = interpolate(action.endpoint, row)
-              await apiFetch(endpoint, { method: action.method ?? "POST" })
-              if (action.toast?.success) {
-                notify(action.toast.success, "success")
+              const response = await apiFetch<{ token?: string }>(endpoint, {
+                method,
+                body: body ? JSON.stringify(body) : undefined,
+              })
+              const token = response?.data?.token
+              if (typeof token === "string" && token.length > 0) {
+                revealedToken = token
+                revealedTokenCopied = false
+                if (action.toast?.success) notify(action.toast.success, "success")
+                return
               }
+              if (action.toast?.success) notify(action.toast.success, "success")
               if (action.after === "navigate" && action.href) {
                 window.location.href = interpolate(action.href, row)
                 return
@@ -207,7 +247,7 @@
                 window.location.reload()
                 return
               }
-              onStateChange(state)
+              onStateChange(queryState)
             } catch (err) {
               const message = err instanceof Error ? err.message : "Action failed"
               toastError(action.toast?.error ?? action.label, message)
@@ -233,7 +273,7 @@
             if (!confirmed) return
             const endpoint = interpolate(node.props.rowActionDeleteEndpoint, row)
             await apiFetch(endpoint, { method: "DELETE" })
-            onStateChange(state)
+            onStateChange(queryState)
           }
         }}
         onSave={
@@ -244,7 +284,7 @@
                   method: node.props.saveMethod ?? "PATCH",
                   body: JSON.stringify({ id: row.id, patch }),
                 })
-                onStateChange(state)
+                onStateChange(queryState)
               }
             : undefined
         }
@@ -263,7 +303,7 @@
         after={node.props.after}
         redirectTo={node.props.redirectTo}
         {data}
-        onRefresh={() => onStateChange(state)}
+        onRefresh={() => onStateChange(queryState)}
       />
     {:else if node.type === "fieldset"}
       <fieldset class="space-y-4 rounded-xl border bg-card p-6">
@@ -273,7 +313,7 @@
         <svelte:self
           nodes={node.props.nodes}
           {data}
-          {state}
+          {queryState}
           {tableIdPrefix}
           {onStateChange}
           {commands}
@@ -283,10 +323,22 @@
     {:else if node.type === "text"}
       <p class="text-sm text-foreground">{node.props.value ?? getValue(data, node.props.valueKey)}</p>
     {:else if node.type === "stat"}
-      <div class="rounded-lg border bg-background p-4">
+      {@const rawValue = getValue(data, node.props.valueKey)}
+      {@const isArray = Array.isArray(rawValue)}
+      <div class="rounded-lg border bg-background p-4 min-w-0">
         <div class="text-xs uppercase tracking-wide text-muted-foreground">{node.props.label}</div>
-        <div class="mt-1 text-2xl font-semibold text-foreground">
-          {getValue(data, node.props.valueKey) ?? "—"}
+        <div class="mt-1 text-2xl font-semibold text-foreground min-w-0 break-words">
+          {#if isArray && rawValue.length > 0}
+            <ul class="list-none space-y-1 text-base font-normal">
+              {#each rawValue as item (item)}
+                <li class="break-words">{item}</li>
+              {/each}
+            </ul>
+          {:else if isArray && rawValue.length === 0}
+            —
+          {:else}
+            {rawValue ?? "—"}
+          {/if}
         </div>
       </div>
     {:else if node.type === "header"}
@@ -307,4 +359,113 @@
       </div>
     {/if}
   {/each}
+</div>
+
+{#if pendingRotate}
+  {@const idKey = "id"}
+  {@const id = pendingRotate.row?.[idKey]}
+  {@const action = pendingRotate.action}
+  <Dialog.Root
+    open={true}
+    onOpenChange={(open: boolean) => {
+      if (!open) pendingRotate = null
+    }}
+  >
+    <Dialog.Content class="sm:max-w-md">
+      <Dialog.Header>
+        <Dialog.Title>{action.confirm?.title ?? "Rotate API key?"}</Dialog.Title>
+        <Dialog.Description>
+          {action.confirm?.body ?? "The old key will stop working immediately."}
+        </Dialog.Description>
+      </Dialog.Header>
+      <Dialog.Footer>
+        <Button variant="outline" onclick={() => { pendingRotate = null }}>
+          No
+        </Button>
+        <Button
+          onclick={async () => {
+            if (!id) {
+              pendingRotate = null
+              return
+            }
+            const endpoint = `/api-keys/${encodeURIComponent(String(id))}`
+            try {
+              const response = await apiFetch<{ token?: string }>(endpoint, {
+                method: "PATCH",
+                body: JSON.stringify({ action: "rotate" }),
+              })
+              pendingRotate = null
+              const token = response?.data?.token
+              if (typeof token === "string" && token.length > 0) {
+                revealedToken = token
+                revealedTokenCopied = false
+                if (action.toast?.success) notify(action.toast.success, "success")
+              } else {
+                if (action.toast?.success) notify(action.toast.success, "success")
+                onStateChange(queryState)
+              }
+            } catch (err) {
+              const message = err instanceof Error ? err.message : "Action failed"
+              toastError(action.toast?.error ?? action.label, message)
+              pendingRotate = null
+            }
+          }}
+        >
+          Yes
+        </Button>
+      </Dialog.Footer>
+    </Dialog.Content>
+  </Dialog.Root>
+{/if}
+
+{#if revealedToken}
+  <Dialog.Root
+    open={true}
+    onOpenChange={(open) => {
+      if (!open) {
+        revealedToken = null
+        onStateChange(queryState)
+      }
+    }}
+  >
+    <Dialog.Content class="sm:max-w-md">
+      <Dialog.Header>
+        <Dialog.Title>Your new API key</Dialog.Title>
+        <Dialog.Description>
+          Copy it now — it won't be shown again.
+        </Dialog.Description>
+      </Dialog.Header>
+      <div class="flex items-center gap-2 py-2">
+        <code class="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-sm font-mono break-all select-all">
+          {revealedToken}
+        </code>
+        <Button
+          type="button"
+          variant="outline"
+          onclick={async () => {
+            try {
+              await navigator.clipboard.writeText(revealedToken ?? "")
+              revealedTokenCopied = true
+            } catch {
+              // ignore
+            }
+          }}
+        >
+          {revealedTokenCopied ? "Copied" : "Copy"}
+        </Button>
+      </div>
+      <Dialog.Footer>
+        <Button
+          type="button"
+          onclick={() => {
+            revealedToken = null
+            onStateChange(queryState)
+          }}
+        >
+          Done
+        </Button>
+      </Dialog.Footer>
+    </Dialog.Content>
+  </Dialog.Root>
+{/if}
 </div>

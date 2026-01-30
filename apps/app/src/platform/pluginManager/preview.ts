@@ -129,6 +129,7 @@ const createPlanCollector = (slug: string, version: string) => {
     configKey: (entry) => collected.configKeys?.push(entry),
     permission: (permission) => collected.permissionsRequested?.push(permission),
     warning: (warning) => collected.warnings?.push(warning),
+    table: (entry) => declaredTables.push(entry),
   };
 
   return { collected, declare, declaredTables };

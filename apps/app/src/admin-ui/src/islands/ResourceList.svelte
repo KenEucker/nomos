@@ -147,7 +147,16 @@
 
       try {
         const endpoint = interpolate(action.endpoint, row)
-        await apiFetch(endpoint, { method: action.method ?? "POST" })
+        const body =
+          action.payload === undefined
+            ? undefined
+            : typeof action.payload === "function"
+              ? action.payload(row)
+              : action.payload
+        await apiFetch(endpoint, {
+          method: action.method ?? "POST",
+          body: body ? JSON.stringify(body) : undefined,
+        })
         if (action.toast?.success) {
           notify(action.toast.success, "success")
         }

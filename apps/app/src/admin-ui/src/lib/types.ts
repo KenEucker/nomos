@@ -57,6 +57,8 @@ export type RowAction = {
   href?: string
   endpoint?: string
   method?: "POST" | "PUT" | "PATCH" | "DELETE"
+  /** Request body for method actions. Use a plain object so it survives SSR (e.g. { action: "rotate" }). */
+  payload?: Record<string, unknown> | ((row: Record<string, any>) => Record<string, unknown>)
   confirm?: { title: string; body?: string }
   after?: "refresh" | "navigate"
   toast?: { success?: string; error?: string }

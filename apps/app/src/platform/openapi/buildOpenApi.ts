@@ -316,13 +316,8 @@ export function buildOpenApi(registry: RouteRegistry) {
 
     // Add security requirements for authenticated routes
     if (route.config.auth !== "none") {
-      if (route.path.startsWith("/_/")) {
-        // Admin API routes (/_/*) prefer session cookie auth
-        operation.security = [{ cookieAuth: [] }, { bearerAuth: [] }];
-      } else {
-        // API routes support all auth methods
-        operation.security = [{ bearerAuth: [] }, { apiKeyAuth: [] }, { cookieAuth: [] }];
-      }
+      // API routes support all auth methods
+      operation.security = [{ bearerAuth: [] }, { apiKeyAuth: [] }, { cookieAuth: [] }];
     }
 
     // Add intent to operation extensions

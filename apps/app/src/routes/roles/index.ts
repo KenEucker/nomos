@@ -26,19 +26,27 @@ export default defineRoute(rolesContract, {
           ctx.prisma.role.count({ where }),
           ctx.prisma.role.findMany({
             where,
-            include: { users: true },
+            include: {
+              users: true,
+              permissions: { include: { permission: true } },
+            },
             orderBy: sortConfig ? { [sortConfig.field]: sortConfig.order } : { key: "asc" },
             skip: (page - 1) * pageSize,
             take: pageSize,
           }),
         ]);
 
-        const rolesWithCount = roles.map((role) => ({
-          id: role.id,
-          key: role.key,
-          name: role.name,
-          userCount: role.users.length,
-        }));
+        const rolesWithCount = roles.map((role) => {
+          const permissionKeys = role.permissions.map((rp) => rp.permission.key);
+          return {
+            id: role.id,
+            key: role.key,
+            name: role.name,
+            userCount: role.users.length,
+            permissionKeys,
+            permissionCount: permissionKeys.length,
+          };
+        });
 
         return ctx.json({ roles: rolesWithCount }, 200, {
           pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
@@ -50,7 +58,7 @@ export default defineRoute(rolesContract, {
       validate: { body: rolesContract.schema.createBody },
       summary: "Create role",
       handler: async (ctx: Ctx) => {
-        const { key, name } = ctx.body;
+        const { key, name, permissions: permissionKeys } = ctx.body;
 
         const existing = await ctx.prisma.role.findUnique({ where: { key } });
         if (existing) {
@@ -61,7 +69,36 @@ export default defineRoute(rolesContract, {
           data: { key, name },
         });
 
-        return ctx.json({ role: created }, 201);
+        if (permissionKeys?.length) {
+          const permissions = await ctx.prisma.permission.findMany({
+            where: { key: { in: permissionKeys } },
+          });
+          await ctx.prisma.rolePermission.createMany({
+            data: permissions.map((p) => ({
+              roleId: created.id,
+              permissionId: p.id,
+            })),
+          });
+        }
+
+        const roleWithPermissions = await ctx.prisma.role.findUnique({
+          where: { id: created.id },
+          include: { permissions: { include: { permission: true } } },
+        });
+        const keys = roleWithPermissions
+          ? roleWithPermissions.permissions.map((rp) => rp.permission.key)
+          : [];
+        const role = roleWithPermissions
+          ? {
+              id: roleWithPermissions.id,
+              key: roleWithPermissions.key,
+              name: roleWithPermissions.name,
+              permissionKeys: keys,
+              permissions: keys,
+            }
+          : { id: created.id, key: created.key, name: created.name, permissionKeys: keys, permissions: keys };
+
+        return ctx.json({ role }, 201);
       },
     },
   },

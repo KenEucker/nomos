@@ -1,6 +1,6 @@
-import type { Ctx } from "../../../../platform/ctx";
-import { defineRoute } from "../../../../platform/router/defineRoute";
-import { adminRolesContract } from "../users.contract";
+import type { Ctx } from "../../../../../platform/ctx";
+import { defineRoute } from "../../../../../platform/router/defineRoute";
+import { adminRolesContract } from "../../users.contract";
 
 export default defineRoute(adminRolesContract, {
   operations: {
@@ -8,10 +8,9 @@ export default defineRoute(adminRolesContract, {
       intent: adminRolesContract.intents.list,
       summary: "List roles",
       handler: async (ctx: Ctx) => {
-        const roles = Array.from(ctx.db.roles.entries()).map(([name, permissions]) => ({
-          name,
-          permissions,
-        }));
+        const roles = Array.from(ctx.db.roles.entries()).map(
+          ([name, permissions]: [string, string[]]) => ({ name, permissions })
+        );
         return ctx.json({ roles });
       },
     },
