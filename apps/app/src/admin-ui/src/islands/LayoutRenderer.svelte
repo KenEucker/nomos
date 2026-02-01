@@ -193,14 +193,26 @@
         }
         rowActions={node.props.rowActions}
         onRowAction={async (action, row) => {
+          const basePath = node.props.rowActionBasePath ?? ""
           const idKey = node.props.rowIdKey ?? "id"
           const id = row?.[idKey]
-          if (!id) return
-          const basePath = node.props.rowActionBasePath ?? ""
+
           if (action.type === "link" && action.href) {
             window.location.href = interpolate(action.href, row)
             return
           }
+          if (action.type === "conditionalLink" && action.href) {
+            const checkKey = action.checkKey ?? "lastPreview"
+            if (!row[checkKey]) {
+              notify(action.toastIfMissing ?? "Not available.", "info")
+              return
+            }
+            window.location.href = interpolate(action.href, row)
+            return
+          }
+
+          if (!id) return
+
           const isMethodAction = action.type === "method" && action.endpoint
           const isRotateAction = action.id === "rotate" && id
           // Use inline dialog for rotate so confirm + token reveal are in the same island

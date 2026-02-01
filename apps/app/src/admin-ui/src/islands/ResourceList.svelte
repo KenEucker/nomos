@@ -133,6 +133,16 @@
       return
     }
 
+    if (action.type === "conditionalLink" && action.href) {
+      const checkKey = action.checkKey ?? "lastPreview"
+      if (!row[checkKey]) {
+        notify(action.toastIfMissing ?? "Not available.", "info")
+        return
+      }
+      navigate(interpolate(action.href, row))
+      return
+    }
+
     if (action.type === "method" && action.endpoint) {
       const confirmed = action.confirm
         ? await confirmDialog({

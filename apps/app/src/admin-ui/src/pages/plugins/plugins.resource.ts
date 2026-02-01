@@ -46,8 +46,10 @@ export const pluginsResource = createResourceDefinition({
       {
         id: "viewPreview",
         label: "Preview",
-        type: "link",
-        href: "/plugins/{slug}/preview",
+        type: "conditionalLink",
+        href: "/admin/plugins/{slug}/preview",
+        checkKey: "lastPreview",
+        toastIfMissing: "No preview has been generated yet.",
       },
       {
         id: "preview",
@@ -55,7 +57,9 @@ export const pluginsResource = createResourceDefinition({
         type: "method",
         endpoint: "/plugins/{slug}/preview",
         method: "POST",
-        toast: { success: "Preview requested" },
+        toast: { success: "Preview generated successfully" },
+        after: "navigate",
+        href: "/admin/plugins/{slug}/preview",
       },
       {
         id: "enable",

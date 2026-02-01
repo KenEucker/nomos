@@ -552,6 +552,18 @@ export async function createApp(config: ResolvedNomosConfig) {
       url: route.path,
       config: { routeId: route.id },
       handler: async (req, reply) => {
+        // For plugin-owned routes, check if the plugin is enabled (allows enabling without restart)
+        if (route.owner && knownPluginSlugs?.has(route.owner) && !coreRouteOwners.has(route.owner)) {
+          const pluginState = getPluginStateStore(prisma);
+          const state = await pluginState.findUnique({ where: { slug: route.owner } });
+          if (!state?.enabled || state.status !== "enabled") {
+            return reply.code(404).send({
+              ok: false,
+              error: { code: "not_found", message: `Route ${route.method}:${route.path} not found` }
+            });
+          }
+        }
+
         const reqId = (req.headers["x-request-id"] as string) ?? req.id ?? nanoid();
         let subject: Subject | null = authBypassSubject;
         let apiClient: ApiClient | null = null;
