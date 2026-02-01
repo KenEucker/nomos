@@ -23,7 +23,7 @@ import { csrf } from "./middleware/builtins/csrf";
 import { rateLimit } from "./middleware/builtins/rateLimit";
 import { requestContext } from "./middleware/builtins/requestContext";
 import { loadPlugins } from "./plugins/loadPlugins";
-import { getPluginStateStore } from "./pluginManager/store";
+import { getPluginStateStore } from "./plugins/store";
 import { loadRoutes } from "./router/loadRoutes";
 import {
   buildOpenApiSpec,
@@ -177,7 +177,14 @@ export async function createApp(config: ResolvedNomosConfig) {
   await app.register(formbody);
 
   serverLog.info(
-    { env: config.app.env, logLevel: config.logging.level, pretty: config.logging.pretty },
+    {
+      env: config.app.env,
+      logLevel: config.logging.level,
+      pretty: config.logging.pretty,
+      ...(config.observability.enabled && {
+        obsHealthIntervalSeconds: config.observability.healthSignalIntervalMs / 1000,
+      }),
+    },
     "Server logger initialized."
   );
 
@@ -274,7 +281,7 @@ export async function createApp(config: ResolvedNomosConfig) {
     config.modules.pluginManager.api.enabled &&
     (config.modules.auth.enabled || config.modules.pluginManager.api.allowUnauthenticated)
   ) {
-    corePlugins.push(path.join(platformDir, "pluginManager", "plugin.ts"));
+    corePlugins.push(path.join(platformDir, "plugins", "plugin.ts"));
   }
 
   let enabledPluginSlugs: Set<string> | undefined;
@@ -525,8 +532,8 @@ export async function createApp(config: ResolvedNomosConfig) {
   };
 
   if (config.modules.docs.enabled) {
-    app.get(OPENAPI_JSON_PATH, async (_req, reply) => {
-      if (!config.swagger.public && config.app.env === "production") {
+    app.get(OPENAPI_JSON_PATH, async (req, reply) => {
+      if (!(await canAccessDocs(req))) {
         return reply.code(403).send({ error: "forbidden" });
       }
       if (services.pluginManagerState?.rebuildOpenApi) {

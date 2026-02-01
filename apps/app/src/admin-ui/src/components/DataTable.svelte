@@ -197,7 +197,13 @@
   })
 
   $: tableState =
-    $uiState.tables?.[tableId] ?? { search: "", sortKey: null, sortDir: "asc", page: 1, pageSize: 10 }
+    $uiState.tables?.[tableId] ?? {
+      search: "",
+      sortKey: defaultSort?.key ?? null,
+      sortDir: defaultSort?.dir ?? "asc",
+      page: 1,
+      pageSize: 10,
+    }
   $: effectivePage = page ?? tableState.page
   $: effectivePageSize = pageSize ?? tableState.pageSize
   $: displayRows = onQueryChange
@@ -309,7 +315,7 @@
   }
 </script>
 
-<Card>
+<Card data-column-visibility={columnVisibility}>
   <CardHeader>
     <div class="flex items-start justify-between gap-4">
       <div class="space-y-1">

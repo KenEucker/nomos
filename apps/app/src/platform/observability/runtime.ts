@@ -10,6 +10,9 @@
  * - Health signal emission (observability of observability)
  */
 
+import path from 'node:path'
+import fs from 'node:fs'
+import dotenv from 'dotenv'
 import type {
   NomosObservabilityConfig,
   NomosObservabilityHealth,
@@ -226,19 +229,35 @@ export class ObservabilityRuntime {
     this.started = true
     this.flusher.start()
 
-    // Start periodic health signal emission
-    if (this.config.healthSignalIntervalMs > 0) {
+    // Start periodic health signal emission — load .env so OBS_HEALTH_SIGNAL_INTERVAL_S is always available
+    const cwd = process.cwd()
+    for (const dir of [cwd, path.resolve(cwd, '..'), path.resolve(cwd, '../..')]) {
+      const envPath = path.join(dir, '.env')
+      if (fs.existsSync(envPath)) {
+        dotenv.config({ path: envPath, override: true })
+        break
+      }
+    }
+    const envSecondsRaw = process.env.OBS_HEALTH_SIGNAL_INTERVAL_S
+    const envSeconds =
+      envSecondsRaw != null && envSecondsRaw !== ''
+        ? Number(envSecondsRaw)
+        : NaN
+    const healthIntervalMs =
+      Number.isFinite(envSeconds) && envSeconds >= 0
+        ? envSeconds * 1000
+        : this.config.healthSignalIntervalMs
+    if (healthIntervalMs > 0) {
       this.healthInterval = setInterval(() => {
-        // Periodic health signals are forced to emit even if nothing noteworthy
         this.emitHealthSignal(this.flusher.getHealth(), true)
-      }, this.config.healthSignalIntervalMs)
+      }, healthIntervalMs)
 
       if (this.healthInterval.unref) {
         this.healthInterval.unref()
       }
     }
 
-    // Emit startup event
+    // Emit startup event (include health interval so logs show what was applied)
     this.observer
       .event('obs.runtime.started', {
         kind: 'log',
@@ -248,6 +267,7 @@ export class ObservabilityRuntime {
           env: this.config.env,
           spoolEnabled: this.config.spoolEnabled,
           consoleSinkEnabled: this.config.consoleSinkEnabled,
+          healthSignalIntervalSeconds: healthIntervalMs > 0 ? healthIntervalMs / 1000 : 0,
         },
       })
       .emit()

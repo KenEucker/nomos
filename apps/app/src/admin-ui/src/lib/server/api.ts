@@ -6,7 +6,7 @@ export class ServerApiError extends Error {
   details?: unknown;
 }
 
-const buildHeaders = (request: Request, options: RequestInit) => {
+export const buildHeaders = (request: Request, options: RequestInit) => {
   const headers = new Headers(options.headers ?? {});
   if (options.body && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
@@ -21,7 +21,7 @@ const buildHeaders = (request: Request, options: RequestInit) => {
   return headers;
 };
 
-const resolveServerUrl = (request: Request, path: string) => {
+export const resolveServerUrl = (request: Request, path: string) => {
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
@@ -74,4 +74,26 @@ export async function serverApiFetch<T>(request: Request, path: string, options:
 
 export async function serverApiGet<T>(request: Request, path: string) {
   return serverApiFetch<T>(request, path, { method: "GET" });
+}
+
+/**
+ * Fetch a URL and only check res.ok (no ApiResponse shape required).
+ * Use for endpoints that return raw JSON (e.g. /openapi.json).
+ */
+export async function serverFetchOk(
+  request: Request,
+  path: string,
+  options: RequestInit = {}
+): Promise<{ ok: true }> {
+  const res = await fetch(resolveServerUrl(request, path), {
+    ...options,
+    method: options.method ?? "GET",
+    headers: buildHeaders(request, options),
+  });
+  if (!res.ok) {
+    const err = new ServerApiError(res.status === 403 ? "Forbidden" : "Request failed");
+    err.status = res.status;
+    throw err;
+  }
+  return { ok: true as const };
 }
