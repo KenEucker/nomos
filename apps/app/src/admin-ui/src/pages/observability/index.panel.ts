@@ -189,6 +189,12 @@ const panel: PanelModule = {
                 title: "Events by Kind",
                 description: "Distribution of event types.",
                 nodes: [
+                  Layouts.pieChart({
+                    dataKey: "kindDistribution",
+                    categoryKey: "kind",
+                    valueKey: "count",
+                    title: "Events by Kind",
+                  }),
                   Layouts.table({
                     key: "kind-distribution",
                     rowsKey: "kindDistribution",
@@ -209,6 +215,12 @@ const panel: PanelModule = {
                 title: "Events by Level",
                 description: "Distribution of severity levels.",
                 nodes: [
+                  Layouts.pieChart({
+                    dataKey: "levelDistribution",
+                    categoryKey: "level",
+                    valueKey: "count",
+                    title: "Events by Level",
+                  }),
                   Layouts.table({
                     key: "level-distribution",
                     rowsKey: "levelDistribution",

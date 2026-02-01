@@ -1,10 +1,13 @@
 import type { JSONSchema7 } from "json-schema"
 
+export type FilterValue = string | number | boolean | string[]
+
 export type QueryState = {
   page: number
   pageSize: number
   search?: string
   sort?: { key: string; dir: "asc" | "desc" }
+  filters?: Record<string, FilterValue>
 }
 
 export type PanelCtx = {
@@ -30,12 +33,28 @@ export type MethodAction = {
   method?: "POST" | "PUT" | "PATCH" | "DELETE"
   payload?: (ctx: PanelCtx, data: Record<string, any>) => Record<string, any>
   confirm?: { title: string; body?: string }
-  after?: "refresh" | "navigate"
+  after?: "navigate" | "refresh" | "stay"
+  redirectTo?: string
   toast?: { success?: string; error?: string }
   intent?: string
 }
 
-export type ActionDescriptor = LinkAction | MethodAction
+export type ModalOpenAction = {
+  type: "modal.open"
+  label: string
+  modalId: string
+  props?: Record<string, unknown>
+  intent?: string
+}
+
+export type ModalCloseAction = {
+  type: "modal.close"
+  label?: string
+  modalId?: string
+  intent?: string
+}
+
+export type ActionDescriptor = LinkAction | MethodAction | ModalOpenAction | ModalCloseAction
 
 export type ColumnDef = {
   key: string
@@ -130,6 +149,13 @@ export type CardNode = {
   }
 }
 
+export type TableFilterDef = {
+  key: string
+  label: string
+  type?: "text" | "select"
+  options?: Array<{ value: string; label: string }>
+}
+
 export type TableNode = {
   type: "table"
   props: {
@@ -147,6 +173,11 @@ export type TableNode = {
     saveMethod?: "POST" | "PUT" | "PATCH"
     searchable?: boolean
     searchPlaceholder?: string
+    sortable?: boolean
+    defaultSort?: { key: string; dir: "asc" | "desc" }
+    filters?: TableFilterDef[]
+    columnVisibility?: boolean
+    bulkActions?: ActionDescriptor[]
     rowActions?: RowAction[]
     rowActionBasePath?: string
     rowActionDeleteEndpoint?: string
@@ -218,6 +249,65 @@ export type IframeNode = {
   }
 }
 
+export type TabsNode = {
+  type: "tabs"
+  props: {
+    tabs: Array<{ label: string; nodes: LayoutNode[] }>
+    defaultTab?: number
+    requiredIntent?: string
+  }
+}
+
+export type ModalNode = {
+  type: "modal"
+  props: {
+    id: string
+    title?: string
+    nodes: LayoutNode[]
+    requiredIntent?: string
+  }
+}
+
+export type LineChartNode = {
+  type: "lineChart"
+  props: {
+    dataKey: string
+    xKey: string
+    yKey: string
+    seriesKey?: string
+    title?: string
+    description?: string
+    requiredIntent?: string
+  }
+}
+
+export type BarChartNode = {
+  type: "barChart"
+  props: {
+    dataKey: string
+    xKey: string
+    yKey: string
+    seriesKey?: string
+    title?: string
+    description?: string
+    requiredIntent?: string
+  }
+}
+
+export type PieChartNode = {
+  type: "pieChart"
+  props: {
+    dataKey: string
+    categoryKey: string
+    valueKey: string
+    title?: string
+    description?: string
+    requiredIntent?: string
+  }
+}
+
+export type ChartNode = LineChartNode | BarChartNode | PieChartNode
+
 export type LayoutNode =
   | RowsNode
   | ColumnsNode
@@ -229,6 +319,11 @@ export type LayoutNode =
   | HeaderNode
   | FormNode
   | IframeNode
+  | TabsNode
+  | ModalNode
+  | LineChartNode
+  | BarChartNode
+  | PieChartNode
 
 export type PanelModule = {
   id: string
@@ -253,6 +348,8 @@ export type ResourceEndpoints = {
   create?: string
   update?: string
   delete?: string
+  /** Optional bulk delete endpoint (e.g. POST /resource/bulk-delete with body { ids }) */
+  bulkDelete?: string
 }
 
 export type ResourceLabels =
@@ -288,9 +385,14 @@ export type ResourceListConfig = {
     key: string
     direction: "asc" | "desc"
   }
+  sortable?: boolean
+  filters?: TableFilterDef[]
+  columnVisibility?: boolean
+  bulkActions?: ActionDescriptor[]
   searchable?: boolean
   searchPlaceholder?: string
   pageSize?: number
+  serverSide?: boolean
 }
 
 export type ResourceFormConfig = {
