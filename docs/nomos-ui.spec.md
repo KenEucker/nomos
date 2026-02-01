@@ -570,16 +570,22 @@ Nomos-UI is not:
 
 ## 14. Summary
 
-Nomos-UI remains:
+Nomos-UI is a declarative, policy-aware UI runtime.
 
+**Key Abstractions**:
+* **Panel**: Runtime instance (ephemeral, rendered)
+* **PanelModule**: TypeScript definition (code, contains functions, not serializable)
+* **ResourceDefinition**: Data structure (serializable, no functions, pure data)
+
+**Nomos-UI philosophy**:
 * code-first for custom panels
 * data-first for resource-driven CRUD
 * policy-aware and observable by default
 
-The additions in this document:
+**Key Patterns**:
+* PanelModules use schemas from ResourceDefinitions
+* ResourceDefinitions enable auto-generated CRUD UIs
+* PanelModules add custom behavior beyond auto-generation
+* Pages are assemblies of panels
 
-* do **not** introduce new core abstractions
-* do **not** require layout serialization
-* do **not** change PanelModule or ResourceDefinition roles
-
-They strictly expand the **layout and interaction feature set** to reach full parity with Laravel Orchid’s UI system.
+Nomos-UI exists to provide a predictable, accessible, and observable control surface for Nomos-based systems.
