@@ -19,22 +19,25 @@ const fallbackPanel: PanelModule = {
   commandBar: () => [],
 }
 
-// Cache the created panel, keyed by resource name
-// This allows reuse within the same resource but invalidates when switching resources
+// Cache the created panel, keyed by resource+mode+basePath
+// Prevents reusing the wrong panel when switching between list/edit/view for the same resource
 let cachedPanel: PanelModule | null = null
-let cachedResourceName: string | null = null
+let cachedKey: string | null = null
+
+const getCacheKey = (config: ResourcePanelConfig) =>
+  `${config.resource.name}:${config.mode}:${config.basePath ?? `/admin/${config.resource.name}`}`
 
 const getOrCreatePanel = (): PanelModule => {
   const config = getConfig()
   if (!config) return fallbackPanel
 
-  const resourceName = config.resource.name
-  if (cachedPanel && cachedResourceName === resourceName) {
+  const key = getCacheKey(config)
+  if (cachedPanel && cachedKey === key) {
     return cachedPanel
   }
 
   cachedPanel = createResourcePanel(config)
-  cachedResourceName = resourceName
+  cachedKey = key
   return cachedPanel
 }
 

@@ -22,6 +22,7 @@
   let commands: ActionDescriptor[] = initialCommands
   let error: string | null = null
   let loading = false
+  let openModalId: string | null = null
   let currentState: QueryState = parseStateFromUrl(
     new URL(typeof window === "undefined" ? href : window.location.href)
   )
@@ -103,12 +104,14 @@
         notify(action.toast.success, "success")
       }
 
-      if (action.after === "navigate" && action.endpoint) {
-        window.location.href = action.endpoint
+      if (action.after === "navigate" && action.redirectTo) {
+        window.location.href = action.redirectTo
         return
       }
 
-      await runQuery()
+      if (action.after === "refresh" || action.after === undefined) {
+        await runQuery()
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Action failed"
       toastError(action.toast?.error ?? action.label, message)
@@ -120,6 +123,14 @@
   const handleCommand = async (command: ActionDescriptor) => {
     if (command.type === "link") {
       window.location.href = command.href
+      return
+    }
+    if (command.type === "modal.open") {
+      openModalId = command.modalId
+      return
+    }
+    if (command.type === "modal.close") {
+      openModalId = (!command.modalId || openModalId === command.modalId) ? null : openModalId
       return
     }
     await executeMethodAction(command)
@@ -171,11 +182,12 @@
         if (!node) return
         if (node.type === "table") {
           const tableId = `${panelModuleKey}:${node.props.key}`
+          const defaultSort = node.props.defaultSort
           uiState.ensureTable(tableId)
           uiState.setTableState(tableId, {
             search: state.search ?? "",
-            sortKey: state.sort?.key ?? null,
-            sortDir: state.sort?.dir ?? "asc",
+            sortKey: state.sort?.key ?? defaultSort?.key ?? null,
+            sortDir: state.sort?.dir ?? defaultSort?.dir ?? "asc",
             pageSize: state.pageSize,
             page: state.page,
           })
@@ -185,6 +197,12 @@
         }
         if (node.type === "columns") {
           node.props.columns?.forEach((column: any) => visit(column.nodes ?? []))
+        }
+        if (node.type === "tabs") {
+          node.props.tabs?.forEach((tab: any) => visit(tab.nodes ?? []))
+        }
+        if (node.type === "modal") {
+          visit(node.props.nodes ?? [])
         }
       })
     }
@@ -213,6 +231,8 @@
       onStateChange={handleStateChange}
       {commands}
       onCommand={handleCommand}
+      openModalId={openModalId}
+      onModalStateChange={(id) => { openModalId = id }}
     />
   {/if}
 </div>

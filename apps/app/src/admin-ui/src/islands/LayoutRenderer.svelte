@@ -6,6 +6,7 @@
   import LayoutRendererRecursive from "./LayoutRenderer.svelte"
   import * as Dialog from "$ui/dialog"
   import { Button } from "$ui/button"
+  import { PieChart } from "$ui/chart"
   import { can, isAuthReady } from "../lib/authz/authorize.client"
   import { apiFetch } from "../lib/api"
   import { notify, toastError } from "../lib/toast"
@@ -20,6 +21,8 @@
     onStateChange,
     commands = [],
     onCommand,
+    openModalId = null,
+    onModalStateChange = () => {},
   }: {
     nodes?: LayoutNode[]
     data?: Record<string, any>
@@ -28,6 +31,8 @@
     onStateChange: (next: QueryState) => void
     commands?: ActionDescriptor[]
     onCommand: (command: ActionDescriptor) => void
+    openModalId?: string | null
+    onModalStateChange?: (modalId: string | null) => void
   } = $props()
 
   let authReady = false
@@ -36,6 +41,8 @@
   let revealedTokenCopied = $state(false)
   /** Inline confirm for rotate so the dialog is guaranteed to show (same island as the table) */
   let pendingRotate = $state<{ action: RowAction; row: Record<string, any>; recordId: string; endpoint: string } | null>(null)
+  /** Per-tabs-instance active tab index, keyed by "prefix:index" */
+  let activeTabByKey = $state<Record<string, number>>({})
 
   onMount(() => {
     // Check if auth is ready on mount (use microtask to ensure DOM is settled)
@@ -115,6 +122,8 @@
           {onStateChange}
           {commands}
           {onCommand}
+          {openModalId}
+          {onModalStateChange}
         />
       </div>
     {:else if node.type === "columns"}
@@ -129,6 +138,8 @@
               {onStateChange}
               {commands}
               {onCommand}
+              {openModalId}
+              {onModalStateChange}
             />
           </div>
         {/each}
@@ -150,13 +161,84 @@
             {onStateChange}
             {commands}
             {onCommand}
+            {openModalId}
+            {onModalStateChange}
           />
         </div>
       </div>
+    {:else if node.type === "tabs"}
+      {@const tabsKey = `${tableIdPrefix}-tabs-${index}`}
+      {@const defaultTab = node.props.defaultTab ?? 0}
+      {@const activeTab = activeTabByKey[tabsKey] ?? defaultTab}
+      <div class="rounded-xl border bg-card">
+        <div class="flex border-b">
+          {#each node.props.tabs as tab, i (i)}
+            <button
+              type="button"
+              class="px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors {activeTab === i
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"}"
+              onclick={() => {
+                activeTabByKey = { ...activeTabByKey, [tabsKey]: i }
+              }}
+            >
+              {tab.label}
+            </button>
+          {/each}
+        </div>
+        <div class="p-4">
+          <LayoutRendererRecursive
+            nodes={node.props.tabs[activeTab]?.nodes ?? []}
+            {data}
+            {queryState}
+            {tableIdPrefix}
+            {onStateChange}
+            {commands}
+            {onCommand}
+            {openModalId}
+            {onModalStateChange}
+          />
+        </div>
+      </div>
+    {:else if node.type === "modal"}
+      {@const modalOpen = openModalId === node.props.id}
+      <Dialog.Root
+        open={modalOpen}
+        onOpenChange={(open) => {
+          if (!open) onModalStateChange(null)
+        }}
+      >
+        <Dialog.Content class="sm:max-w-lg">
+          {#if node.props.title}
+            <Dialog.Header>
+              <Dialog.Title>{node.props.title}</Dialog.Title>
+            </Dialog.Header>
+          {/if}
+          <div class="space-y-4 py-2">
+            <LayoutRendererRecursive
+              nodes={node.props.nodes}
+              {data}
+              {queryState}
+              {tableIdPrefix}
+              {onStateChange}
+              {commands}
+              {onCommand}
+              {openModalId}
+              {onModalStateChange}
+            />
+          </div>
+          <Dialog.Footer>
+            <Button variant="outline" onclick={() => onModalStateChange(null)}>
+              Close
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog.Root>
     {:else if node.type === "table"}
       {@const serverSide = node.props.serverSide ?? false}
       {@const pagination =
         serverSide && node.props.paginationKey ? data[node.props.paginationKey] ?? {} : null}
+      {@const hasBulkActions = (node.props.bulkActions?.length ?? 0) > 0}
       <DataTable
         id={node.props.key}
         tableIdPrefix={tableIdPrefix}
@@ -166,26 +248,60 @@
         rows={data[node.props.rowsKey] ?? []}
         dataKey={node.props.rowsKey}
         rowIdKey={node.props.rowIdKey ?? "id"}
-        showSelection={false}
+        showSelection={hasBulkActions}
         showActions={true}
         enableEdit={node.props.enableEdit ?? false}
         loading={false}
         showSearch={node.props.searchable ?? true}
         searchPlaceholder={node.props.searchPlaceholder}
+        sortable={node.props.sortable ?? true}
+        defaultSort={node.props.defaultSort}
+        filters={node.props.filters}
+        columnVisibility={node.props.columnVisibility ?? false}
+        bulkActions={node.props.bulkActions}
         page={serverSide ? pagination?.page : undefined}
         pageSize={serverSide ? pagination?.pageSize : undefined}
         total={serverSide ? pagination?.total : undefined}
         editIntent={node.props.editIntent}
+        filtersState={queryState.filters}
+        onFiltersChange={(f) => onStateChange({ ...queryState, filters: f })}
+        onBulkAction={
+          node.props.bulkActions?.length
+            ? async (action, rowIds, rows) => {
+                if (action.type === "method" && action.endpoint) {
+                  const confirmed = action.confirm
+                    ? await confirmDialog({
+                        title: action.confirm.title,
+                        body: action.confirm.body,
+                        confirmLabel: "Yes",
+                        cancelLabel: "No",
+                        variant: "destructive",
+                      })
+                    : true
+                  if (!confirmed) return
+                  await apiFetch(action.endpoint, {
+                    method: action.method ?? "POST",
+                    body: JSON.stringify({ ids: rowIds }),
+                  })
+                  if (action.toast?.success) notify(action.toast.success, "success")
+                  if (action.after === "refresh") onStateChange(queryState)
+                }
+                onCommand(action)
+              }
+            : undefined
+        }
         onQueryChange={
           serverSide && node.props.paginationKey
             ? async (query) => {
                 const next = {
+                  ...queryState,
                   page: query.page,
                   pageSize: query.pageSize,
                   search: query.search || undefined,
                   sort: query.sortKey
                     ? { key: query.sortKey, dir: query.sortDir }
                     : undefined,
+                  filters: "filters" in query ? (query as any).filters : queryState.filters,
                 }
                 onStateChange(next)
               }
@@ -333,8 +449,52 @@
           {onStateChange}
           {commands}
           {onCommand}
+          {openModalId}
+          {onModalStateChange}
         />
       </fieldset>
+    {:else if node.type === "lineChart" || node.type === "barChart"}
+      {@const chartData = getValue(data, node.props.dataKey) ?? []}
+      {@const arr = Array.isArray(chartData) ? chartData : []}
+      {@const xKey = node.props.xKey}
+      {@const yKey = node.props.yKey}
+      {@const maxVal = arr.length ? Math.max(...arr.map((r: Record<string, any>) => Number(r?.[yKey]) || 0)) : 1}
+      <div class="rounded-xl border bg-card p-6">
+        {#if node.props.title}
+          <div class="text-lg font-semibold text-foreground mb-2">{node.props.title}</div>
+        {/if}
+        {#if node.props.description}
+          <div class="text-sm text-muted-foreground mb-4">{node.props.description}</div>
+        {/if}
+        <div class="h-48 flex items-end gap-1">
+          {#each arr as item}
+            {@const val = Number(item?.[yKey]) || 0}
+            {@const pct = maxVal > 0 ? (val / maxVal) * 100 : 0}
+            <div
+              class="flex-1 min-w-0 flex flex-col items-center gap-1"
+              title="{String(item?.[xKey] ?? "")}: {val}"
+            >
+              <div
+                class="w-full bg-primary/70 rounded-t transition-all"
+                style={`height: ${pct}%`}
+              ></div>
+              <span class="text-xs text-muted-foreground truncate max-w-full" title={String(item?.[xKey] ?? "")}>
+                {String(item?.[xKey] ?? "").slice(0, 6)}
+              </span>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {:else if node.type === "pieChart"}
+      {@const chartData = getValue(data, node.props.dataKey) ?? []}
+      {@const arr = Array.isArray(chartData) ? chartData : []}
+      <PieChart
+        data={arr}
+        categoryKey={node.props.categoryKey}
+        valueKey={node.props.valueKey}
+        title={node.props.title}
+        description={node.props.description}
+      />
     {:else if node.type === "text"}
       <p class="text-sm text-foreground">{node.props.value ?? getValue(data, node.props.valueKey)}</p>
     {:else if node.type === "stat"}

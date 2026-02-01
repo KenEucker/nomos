@@ -16,6 +16,7 @@ const { panel, panelModuleKey = "/src/lib/resource.panel.ts", resourceConfig } =
 }
 
 const ctx = buildPanelCtx(new URL(Astro.request.url), {}, Astro.request)
+const authPayload = Astro.locals.auth ?? { subject: null, capabilities: {} }
 
 // Try to fetch data, catch errors gracefully
 let data: Record<string, unknown> | null = null
