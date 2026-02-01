@@ -63,6 +63,9 @@ try {
 
 const navItems = buildAdminNav({ basePath: import.meta.env.BASE_URL, enabledPluginSlugs });
 
+const authPayload = Astro.locals.auth ?? { subject: null, capabilities: {} };
+const authJson = JSON.stringify(authPayload);
+
 const actionClass = (variant?: string) => {
   switch (variant) {
     case "secondary":
@@ -81,6 +84,7 @@ const actionClass = (variant?: string) => {
 <BaseLayout title={title}>
   <ShellState client:load />
   <SessionLoader client:load />
+  <script type="application/json" id="nomos-auth" set:html={authJson}></script>
   <div class="min-h-screen bg-background text-foreground" style="--nomos-header-height: 0px;">
     <div class="admin-shell">
       <div class="admin-shell-nav" transition:persist>

@@ -1,70 +1,32 @@
-import { writable } from "svelte/store";
+import { toast as sonnerToast } from "svelte-sonner";
 
 export type ToastType = "success" | "error" | "info" | "warning";
 
-export interface Toast {
-  id: string;
-  type: ToastType;
-  message: string;
-  duration?: number;
-}
-
-function createToastStore() {
-  const { subscribe, update } = writable<Toast[]>([]);
-
-  let counter = 0;
-
-  const add = (type: ToastType, message: string, duration = 5000) => {
-    const id = `toast-${++counter}`;
-    const toast: Toast = { id, type, message, duration };
-
-    update((toasts) => [...toasts, toast]);
-
-    if (duration > 0) {
-      setTimeout(() => {
-        remove(id);
-      }, duration);
-    }
-
-    return id;
-  };
-
-  const remove = (id: string) => {
-    update((toasts) => toasts.filter((t) => t.id !== id));
-  };
-
-  const success = (message: string, duration?: number) => add("success", message, duration);
-  const error = (message: string, duration?: number) => add("error", message, duration);
-  const info = (message: string, duration?: number) => add("info", message, duration);
-  const warning = (message: string, duration?: number) => add("warning", message, duration);
-
-  return {
-    subscribe,
-    add,
-    remove,
-    success,
-    error,
-    info,
-    warning
-  };
-}
-
-export const toasts = createToastStore();
+/** @deprecated Use toasts.success etc. for store-based toasts if needed */
+export const toasts = {
+  subscribe: () => () => {},
+  add: () => "",
+  remove: () => {},
+  success: (msg: string) => sonnerToast.success(msg),
+  error: (msg: string) => sonnerToast.error(msg),
+  info: (msg: string) => sonnerToast.info(msg),
+  warning: (msg: string) => sonnerToast.warning(msg)
+};
 
 export const notify = (message: string, type: ToastType = "info") => {
   switch (type) {
     case "success":
-      return toasts.success(message)
+      return sonnerToast.success(message);
     case "error":
-      return toasts.error(message)
+      return sonnerToast.error(message);
     case "warning":
-      return toasts.warning(message)
+      return sonnerToast.warning(message);
     default:
-      return toasts.info(message)
+      return sonnerToast.info(message);
   }
-}
+};
 
 export const toastError = (title: string, message: string) => {
-  const combined = title ? `${title}: ${message}` : message
-  toasts.error(combined)
-}
+  const combined = title ? `${title}: ${message}` : message;
+  sonnerToast.error(combined);
+};

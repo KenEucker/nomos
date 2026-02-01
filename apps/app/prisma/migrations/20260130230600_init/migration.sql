@@ -51,8 +51,10 @@ CREATE TABLE "SubjectRole" (
 CREATE TABLE "ApiKey" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "keyHash" TEXT NOT NULL,
+    "keyPrefix" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
+    "permissions" JSONB,
     "lastUsedAt" DATETIME,
     "expiresAt" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -136,6 +138,9 @@ CREATE UNIQUE INDEX "SubjectRole_subjectType_subjectId_roleId_key" ON "SubjectRo
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ApiKey_keyHash_key" ON "ApiKey"("keyHash");
+
+-- CreateIndex
+CREATE INDEX "ApiKey_keyPrefix_revokedAt_idx" ON "ApiKey"("keyPrefix", "revokedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PluginState_slug_key" ON "PluginState"("slug");

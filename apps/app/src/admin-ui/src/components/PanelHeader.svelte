@@ -36,7 +36,7 @@
               class={commandDenied
                 ? "rounded-md border px-4 py-2 text-sm font-medium opacity-60 cursor-not-allowed"
                 : "rounded-md border px-4 py-2 text-sm font-medium"}
-              on:click={() => handleCommand(command)}
+              onclick={() => handleCommand(command)}
             >
               {command.label}
             </button>
@@ -47,7 +47,7 @@
                 : "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"}
               type="button"
               aria-disabled={commandDenied}
-              on:click={() => handleCommand(command)}
+              onclick={() => handleCommand(command)}
             >
               {command.label}
             </button>

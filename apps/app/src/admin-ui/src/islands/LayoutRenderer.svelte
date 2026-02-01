@@ -3,6 +3,7 @@
   import DataTable from "../components/DataTable.svelte"
   import PanelHeader from "../components/PanelHeader.svelte"
   import PanelForm from "./PanelForm.svelte"
+  import LayoutRendererRecursive from "./LayoutRenderer.svelte"
   import * as Dialog from "$ui/dialog"
   import { Button } from "$ui/button"
   import { can, isAuthReady } from "../lib/authz/authorize.client"
@@ -34,7 +35,7 @@
   let revealedToken = $state<string | null>(null)
   let revealedTokenCopied = $state(false)
   /** Inline confirm for rotate so the dialog is guaranteed to show (same island as the table) */
-  let pendingRotate = $state<{ action: RowAction; row: Record<string, any> } | null>(null)
+  let pendingRotate = $state<{ action: RowAction; row: Record<string, any>; recordId: string; endpoint: string } | null>(null)
 
   onMount(() => {
     // Check if auth is ready on mount (use microtask to ensure DOM is settled)
@@ -106,7 +107,7 @@
       </div>
     {:else if node.type === "rows"}
       <div class="space-y-6">
-        <svelte:self
+        <LayoutRendererRecursive
           nodes={node.props.nodes}
           {data}
           {queryState}
@@ -120,7 +121,7 @@
       <div class="grid grid-cols-12 gap-4">
         {#each node.props.columns as column (column)}
           <div class={spanClass(column.span)}>
-            <svelte:self
+            <LayoutRendererRecursive
               nodes={column.nodes}
               {data}
               {queryState}
@@ -141,7 +142,7 @@
           <div class="text-sm text-muted-foreground">{node.props.description}</div>
         {/if}
         <div class="mt-4 space-y-4">
-          <svelte:self
+          <LayoutRendererRecursive
             nodes={node.props.nodes}
             {data}
             {queryState}
@@ -192,19 +193,33 @@
         }
         rowActions={node.props.rowActions}
         onRowAction={async (action, row) => {
+          const basePath = node.props.rowActionBasePath ?? ""
           const idKey = node.props.rowIdKey ?? "id"
           const id = row?.[idKey]
-          if (!id) return
-          const basePath = node.props.rowActionBasePath ?? ""
+
           if (action.type === "link" && action.href) {
             window.location.href = interpolate(action.href, row)
             return
           }
+          if (action.type === "conditionalLink" && action.href) {
+            const checkKey = action.checkKey ?? "lastPreview"
+            if (!row[checkKey]) {
+              notify(action.toastIfMissing ?? "Not available.", "info")
+              return
+            }
+            window.location.href = interpolate(action.href, row)
+            return
+          }
+
+          if (!id) return
+
           const isMethodAction = action.type === "method" && action.endpoint
           const isRotateAction = action.id === "rotate" && id
           // Use inline dialog for rotate so confirm + token reveal are in the same island
           if (isRotateAction) {
-            pendingRotate = { action, row }
+            const recordId = row[idKey] ?? row.id
+            const endpoint = action.endpoint ?? `/api-keys/${recordId}`
+            pendingRotate = { action, row, recordId, endpoint }
             return
           }
           if (isMethodAction) {
@@ -229,7 +244,7 @@
             try {
               const response = await apiFetch<{ token?: string }>(endpoint, {
                 method,
-                body: body ? JSON.stringify(body) : undefined,
+                body: body !== undefined ? JSON.stringify(body) : undefined,
               })
               const token = response?.data?.token
               if (typeof token === "string" && token.length > 0) {
@@ -310,7 +325,7 @@
         {#if node.props.title}
           <legend class="px-2 text-sm font-semibold text-muted-foreground">{node.props.title}</legend>
         {/if}
-        <svelte:self
+        <LayoutRendererRecursive
           nodes={node.props.nodes}
           {data}
           {queryState}
@@ -362,9 +377,9 @@
 </div>
 
 {#if pendingRotate}
-  {@const idKey = "id"}
-  {@const id = pendingRotate.row?.[idKey]}
   {@const action = pendingRotate.action}
+  {@const recordId = pendingRotate.recordId}
+  {@const endpoint = pendingRotate.endpoint}
   <Dialog.Root
     open={true}
     onOpenChange={(open: boolean) => {
@@ -384,11 +399,10 @@
         </Button>
         <Button
           onclick={async () => {
-            if (!id) {
+            if (!recordId) {
               pendingRotate = null
               return
             }
-            const endpoint = `/api-keys/${encodeURIComponent(String(id))}`
             try {
               const response = await apiFetch<{ token?: string }>(endpoint, {
                 method: "PATCH",

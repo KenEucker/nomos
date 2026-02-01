@@ -132,7 +132,7 @@
       <button
         type="button"
         class={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-        on:click={onBack}
+        onclick={onBack}
         aria-label="Back to navigation"
       >
         <ArrowLeftIcon class="size-4" />
@@ -142,7 +142,7 @@
       <button
         type="button"
         class={cn(buttonVariants({ variant: "default", size: "sm" }))}
-        on:click={onSave}
+        onclick={onSave}
         aria-label="Save screen settings"
         title={isDirty ? "Save changes" : "No changes to save"}
       >
@@ -155,7 +155,7 @@
       <button
         type="button"
         class="flex items-center justify-center px-2 py-3 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-        on:click={onBack}
+        onclick={onBack}
         aria-label="Back to navigation"
         title="Back"
       >
@@ -164,7 +164,7 @@
       <button
         type="button"
         class="flex items-center justify-center px-2 py-3 transition rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-        on:click={onSave}
+        onclick={onSave}
         aria-label="Save screen settings"
         title={isDirty ? "Save changes" : "No changes to save"}
       >
@@ -201,7 +201,7 @@
         {#each sharedToggles as toggle}
           <div class="flex items-center justify-between gap-3 px-3 py-2 border rounded-lg border-border">
             <div class="flex items-start gap-3">
-              <svelte:component this={toggle.icon} class="mt-0.5 size-4 text-muted-foreground" />
+              <toggle.icon class="mt-0.5 size-4 text-muted-foreground" />
               <div>
                 <div class="text-sm font-medium">{toggle.label}</div>
                 <div class="text-xs text-muted-foreground">{toggle.description}</div>
@@ -238,7 +238,7 @@
                 )}
                 aria-label="Dock sidebar left"
                 aria-pressed={draft.desktopDock === "left"}
-                on:click={() => updateDraft({ desktopDock: "left" })}
+                onclick={() => updateDraft({ desktopDock: "left" })}
               >
                 <PanelLeftIcon class="size-4" />
               </button>
@@ -252,7 +252,7 @@
                 )}
                 aria-label="Dock sidebar right"
                 aria-pressed={draft.desktopDock === "right"}
-                on:click={() => updateDraft({ desktopDock: "right" })}
+                onclick={() => updateDraft({ desktopDock: "right" })}
               >
                 <PanelRightIcon class="size-4" />
               </button>
@@ -261,7 +261,7 @@
           {#each desktopToggles as toggle}
             <div class="flex items-center justify-between gap-3 px-3 py-2 border rounded-lg border-border">
               <div class="flex items-start gap-3">
-                <svelte:component this={toggle.icon} class="mt-0.5 size-4 text-muted-foreground" />
+                <toggle.icon class="mt-0.5 size-4 text-muted-foreground" />
                 <div>
                   <div class="text-sm font-medium">{toggle.label}</div>
                   <div class="text-xs text-muted-foreground">{toggle.description}</div>
@@ -299,7 +299,7 @@
                 )}
                 aria-label="Dock menu to top"
                 aria-pressed={draft.mobileDock === "top"}
-                on:click={() => updateDraft({ mobileDock: "top" })}
+                onclick={() => updateDraft({ mobileDock: "top" })}
               >
                 <BookDown class="size-4" />
               </button>
@@ -313,7 +313,7 @@
                 )}
                 aria-label="Dock menu to bottom"
                 aria-pressed={draft.mobileDock === "bottom"}
-                on:click={() => updateDraft({ mobileDock: "bottom" })}
+                onclick={() => updateDraft({ mobileDock: "bottom" })}
               >
                 <BookUp class="size-4" />
               </button>
@@ -330,7 +330,7 @@
           <button
             type="button"
             class="flex items-center justify-center flex-shrink-0 p-3 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-            on:click={onBack}
+            onclick={onBack}
             aria-label="Back to navigation"
             title="Back"
           >
@@ -339,7 +339,7 @@
           <button
             type="button"
             class="flex items-center justify-center flex-shrink-0 p-3 text-sm font-medium transition-colors rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-            on:click={onSave}
+            onclick={onSave}
             aria-label="Save screen settings"
             title={isDirty ? "Save changes" : "No changes to save"}
           >
@@ -356,7 +356,7 @@
             }
             aria-label="Toggle dark mode"
             aria-pressed={themeIsDark}
-            on:click={toggleTheme}
+            onclick={toggleTheme}
             title="Dark mode"
           >
             {#if themeIsDark}
@@ -376,10 +376,10 @@
               }
               aria-label={toggle.label}
               aria-pressed={draft[toggle.key]}
-              on:click={() => toggleValue(toggle.key)}
+              onclick={() => toggleValue(toggle.key)}
               title={toggle.label}
             >
-              <svelte:component this={toggle.icon} class="size-5" />
+              <toggle.icon class="size-5" />
             </button>
           {/each}
           <div class="flex-shrink-0 w-px h-8 bg-border"></div>
@@ -393,7 +393,7 @@
             }
             aria-label={`Navigation ${draft.mobileDock === "top" ? "top" : "bottom"}`}
             aria-pressed={draft.mobileDock === "top"}
-            on:click={toggleMobileDock}
+            onclick={toggleMobileDock}
             title="Navigation position"
           >
             {#if draft.mobileDock === "top"}
@@ -418,7 +418,7 @@
             }
             aria-label="Toggle dark mode"
             aria-pressed={themeIsDark}
-            on:click={toggleTheme}
+            onclick={toggleTheme}
             title="Dark mode"
           >
             {#if themeIsDark}
@@ -438,10 +438,10 @@
               }
               aria-label={toggle.label}
               aria-pressed={draft[toggle.key]}
-              on:click={() => toggleValue(toggle.key)}
+              onclick={() => toggleValue(toggle.key)}
               title={toggle.label}
             >
-              <svelte:component this={toggle.icon} class="size-6" />
+              <toggle.icon class="size-6" />
             </button>
           {/each}
           <div class="self-stretch h-px my-2 bg-border"></div>
@@ -455,7 +455,7 @@
             }
             aria-label={`Sidebar ${draft.desktopDock === "left" ? "left" : "right"}`}
             aria-pressed={draft.desktopDock === "left"}
-            on:click={toggleDesktopDock}
+            onclick={toggleDesktopDock}
             title="Sidebar position"
           >
             {#if draft.desktopDock === "left"}
@@ -475,10 +475,10 @@
               }
               aria-label={toggle.label}
               aria-pressed={draft[toggle.key]}
-              on:click={() => toggleValue(toggle.key)}
+              onclick={() => toggleValue(toggle.key)}
               title={toggle.label}
             >
-              <svelte:component this={toggle.icon} class="size-6" />
+              <toggle.icon class="size-6" />
             </button>
           {/each}
         </div>

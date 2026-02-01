@@ -53,8 +53,12 @@ export type RowAction = {
   label: string
   variant?: "default" | "secondary" | "ghost" | "destructive"
   intent?: string
-  type?: "link" | "method"
+  type?: "link" | "method" | "conditionalLink"
   href?: string
+  /** For conditionalLink: key to check on row (e.g. "lastPreview"); if falsy, show toast instead of navigating */
+  checkKey?: string
+  /** For conditionalLink: toast message when check fails */
+  toastIfMissing?: string
   endpoint?: string
   method?: "POST" | "PUT" | "PATCH" | "DELETE"
   /** Request body for method actions. Use a plain object so it survives SSR (e.g. { action: "rotate" }). */

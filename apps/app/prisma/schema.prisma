@@ -62,6 +62,7 @@ model SubjectRole {
 model ApiKey {
   id           String    @id @default(cuid())
   keyHash      String    @unique
+  keyPrefix    String    // First 8 chars of token for indexed lookup
   name         String
   description  String?
   permissions  Json?     // string[] stored as JSON
@@ -71,6 +72,8 @@ model ApiKey {
   updatedAt    DateTime  @updatedAt
   revokedAt    DateTime?
   allowedHosts String?   // JSON array of strings
+
+  @@index([keyPrefix, revokedAt])
 }
 
 model UserRole {

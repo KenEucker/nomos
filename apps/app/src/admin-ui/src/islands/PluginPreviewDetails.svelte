@@ -226,7 +226,7 @@
     </Card>
   {/if}
 
-  <div class="flex justify-end">
-    <Button variant="outline" size="sm" onclick={() => history.back()}>Back to plugins</Button>
+  <div class="flex justify-end gap-2">
+    <Button variant="default" size="sm" href="/admin/plugins">Back to plugins</Button>
   </div>
 </div>
