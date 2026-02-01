@@ -1,4 +1,4 @@
-import type { PluginResource } from "./pluginTypes";
+import type { PluginResource } from "./types";
 
 export type ServicesRegistry = Record<string, any>;
 
