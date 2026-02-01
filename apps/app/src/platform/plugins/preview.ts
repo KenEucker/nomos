@@ -1,4 +1,3 @@
-import type { PrismaClient } from "@prisma/client";
 import type { ResolvedNomosConfig } from "../config/nomos-config";
 import type { PluginManifest, PluginPlan, PreviewContext } from "./types";
 import { discoverPlanFromPlugin } from "./discoverPlan";
@@ -159,7 +158,7 @@ export const runPreview = async (
     throw new Error("Isolated sandbox mode is not implemented yet.");
   }
 
-  const slug = options?.slug ?? manifest.slug ?? manifest.name;
+  const slug = options?.slug ?? manifest.slug ?? manifest.name ?? "";
   const version = manifest.version ?? "0.0.0";
 
   // 1. Build plan from filesystem discovery + manifest (part of the truth)

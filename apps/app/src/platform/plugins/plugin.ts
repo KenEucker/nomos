@@ -1,5 +1,5 @@
 export default {
-  name: "pluginManager",
+  name: "plugin",
   intents: ["plugins.manage"],
   menuGroup: "Integrations"
 };

@@ -24,9 +24,6 @@ export const get = async (ctx: Ctx) => {
   if (!config.modules.pluginManager.activation.useDatabase) {
     throw new HttpError(400, "unsupported", "Plugin manager database activation is disabled.");
   }
-  if (!config.modules.pluginManager.activation.useDatabase) {
-    throw new HttpError(400, "unsupported", "Plugin manager database activation is disabled.");
-  }
 
   const discovered = await discoverPlugins(config);
   await syncDiscoveredPlugins(ctx.prisma, discovered);

@@ -325,6 +325,19 @@ Env var parsing:
 * must fail fast on invalid values
 * must never log secrets in plaintext
 
+### 8.4 Log level and verbosity
+
+Server logging uses **Pino** and respects `logging.level` and the **`LOG_LEVEL`** environment variable.
+
+Valid levels (least to most verbose): `trace`, `debug`, `info`, `warn`, `error`, `fatal`.
+
+To reduce server log volume without removing any logging code:
+
+* Set **`LOG_LEVEL=warn`** (or `LOG_LEVEL=error`) in your environment, or
+* Set **`logging.level: "warn"`** (or `"error"`) in `nomos.config.ts`.
+
+Only messages at or above the configured level are emitted; `info` and `debug` (e.g. per-request logs) are then hidden.
+
 ---
 
 ## 9. Validation and Diagnostics

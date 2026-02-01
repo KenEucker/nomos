@@ -38,7 +38,7 @@ apps/app/
         env.ts
 
       plugins/
-        pluginTypes.ts
+        types.ts
         loadPlugins.ts
         registry.ts
 

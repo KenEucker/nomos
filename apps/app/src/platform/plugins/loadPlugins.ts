@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { PluginManifest, PluginRoute } from "./pluginTypes";
+import type { PluginManifest, PluginRoute } from "./types";
 import { createPluginRegistry } from "./registry";
 
 export type LoadedPlugins = {
