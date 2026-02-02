@@ -1,10 +1,10 @@
 ---
 import ResourcePanelPage from "../../../components/ResourcePanelPage.astro";
-import { createResourcePanel } from "../../../lib/resource-panel";
+import { createResourcePanel, type ResourcePanelConfig } from "../../../lib/resource-panel";
 import { apiKeysResource } from "../api-keys.resource";
 
 const { id } = Astro.params;
-const resourceConfig = {
+const resourceConfig: ResourcePanelConfig = {
   resource: apiKeysResource,
   mode: "edit",
   params: { id },

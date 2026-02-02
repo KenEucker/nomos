@@ -95,5 +95,5 @@ export async function serverFetchOk(
     err.status = res.status;
     throw err;
   }
-  return { ok: true as const };
+  return { ok: true };
 }

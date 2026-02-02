@@ -11,7 +11,7 @@ import { filePathToRoute } from "../router/pathMapping";
 import { discoverJobsInDirectory } from "../jobs/discovery";
 import type { PluginPlan } from "./types";
 
-const ROUTE_METHODS = ["get", "post", "put", "patch", "delete"] as const;
+const ROUTE_METHODS = ["get", "post", "put", "patch", "delete"];
 
 /**
  * Manifest shape we read from for plan discovery (platform plugin manifest).

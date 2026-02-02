@@ -9,7 +9,7 @@ type Resource = {
   methods: string[];
 };
 
-const METHOD_KEYS = ["get", "post", "put", "patch", "delete", "head", "options"] as const;
+const METHOD_KEYS = ["get", "post", "put", "patch", "delete", "head", "options"];
 
 export function extractResourcesFromOpenApi(spec: { paths?: Record<string, any> }): Resource[] {
   const resources = new Map<string, Set<string>>();

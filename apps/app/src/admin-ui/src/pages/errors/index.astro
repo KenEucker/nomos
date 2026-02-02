@@ -1,8 +1,8 @@
 ---
 import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
-import { createResourcePanel } from "../../lib/resource-panel";
+import { createResourcePanel, type ResourcePanelConfig } from "../../lib/resource-panel";
 import { errorsResource } from "./errors.resource";
-const resourceConfig = {
+const resourceConfig: ResourcePanelConfig = {
   resource: errorsResource,
   mode: "list",
 };

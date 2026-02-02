@@ -1,10 +1,10 @@
 ---
 import ResourcePanelPage from "../../../../../admin-ui/src/components/ResourcePanelPage.astro";
-import { createResourcePanel } from "../../../../../admin-ui/src/lib/resource-panel";
+import { createResourcePanel, type ResourcePanelConfig } from "../../../../../admin-ui/src/lib/resource-panel";
 import { usersResource } from "../users.resource";
 
 const { id } = Astro.params;
-const resourceConfig = {
+const resourceConfig: ResourcePanelConfig = {
   resource: usersResource,
   mode: "view",
   params: { id },

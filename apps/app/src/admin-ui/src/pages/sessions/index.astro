@@ -1,8 +1,8 @@
 ---
 import ResourcePanelPage from "../../components/ResourcePanelPage.astro";
-import { createResourcePanel } from "../../lib/resource-panel";
+import { createResourcePanel, type ResourcePanelConfig } from "../../lib/resource-panel";
 import { sessionsResource } from "./sessions.resource";
-const resourceConfig = {
+const resourceConfig: ResourcePanelConfig = {
   resource: sessionsResource,
   mode: "list",
 };
