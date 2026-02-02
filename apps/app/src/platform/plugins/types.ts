@@ -39,6 +39,7 @@ export type PluginPlan = {
   listeners?: Array<{ event: string }>;
   adminResources?: Array<{ name: string; label?: string }>;
   configKeys?: Array<{ key: string; required?: boolean; description?: string }>;
+  tables?: Array<{ name: string; description?: string }>;
   database?: {
     diff?: SchemaDiffResult;
     validationIssues?: Array<{ severity: string; message: string; code: string }>;

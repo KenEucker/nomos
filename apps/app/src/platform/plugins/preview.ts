@@ -20,6 +20,7 @@ const emptyPlanArrays = (): PluginPlan => ({
   listeners: [],
   adminResources: [],
   configKeys: [],
+  tables: [],
 });
 
 const normalizePlan = (plan: Partial<PluginPlan> & { slug: string; version: string }): PluginPlan => ({
@@ -43,6 +44,7 @@ const normalizePlan = (plan: Partial<PluginPlan> & { slug: string; version: stri
   listeners: plan.listeners ?? [],
   adminResources: plan.adminResources ?? [],
   configKeys: plan.configKeys ?? [],
+  tables: plan.tables ?? [],
 });
 
 const mergePlans = (base: PluginPlan, additions: Partial<PluginPlan>): PluginPlan => {
@@ -87,6 +89,7 @@ const mergePlans = (base: PluginPlan, additions: Partial<PluginPlan>): PluginPla
     listeners: mergeByPath(base.listeners ?? [], additions.listeners ?? [], "event"),
     adminResources: mergeByPath(base.adminResources ?? [], additions.adminResources ?? [], "name"),
     configKeys: [...(base.configKeys ?? []), ...(additions.configKeys ?? [])],
+    tables: mergeByPath(base.tables ?? [], additions.tables ?? [], "name"),
   };
 };
 
@@ -107,12 +110,13 @@ function mergeByPath<T extends Record<string, unknown>>(
   return result;
 }
 
-const createPlanCollector = (slug: string, version: string) => {
+  const createPlanCollector = (slug: string, version: string) => {
   const collected = emptyPlanArrays();
   collected.slug = slug;
   collected.version = version;
 
   const declaredTables: Array<{ name: string; description?: string }> = [];
+  collected.tables = declaredTables;
 
   const declare: PreviewContext["declare"] = {
     route: (entry) => collected.routes?.add?.push(entry),
@@ -178,7 +182,7 @@ export const runPreview = async (
 
   // 2. If plugin has preview(), run it and merge (declarative part of the truth)
   if (manifest.preview) {
-    const { collected, declare } = createPlanCollector(slug, version);
+    const { collected, declare, declaredTables } = createPlanCollector(slug, version);
 
     const ctx: PreviewContext = freeze({
       env: freeze({ nodeEnv: config.app.env }),

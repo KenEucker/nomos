@@ -11,7 +11,10 @@ export type ConfirmDialogOptions = {
 type ConfirmDialogState = ConfirmDialogOptions & {
   open: boolean
   resolve?: (value: boolean) => void
+  token?: string
 }
+
+let nextDialogId = 0
 
 function createConfirmDialogStore() {
   const { subscribe, update, set } = writable<ConfirmDialogState>({
@@ -30,10 +33,12 @@ function createConfirmDialogStore() {
 
   const show = (options: ConfirmDialogOptions): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
+      const dialogToken = `confirm-${++nextDialogId}-${Date.now()}`
       const timeout = setTimeout(() => {
         update((state) => {
+          if (state.token !== dialogToken) return state
           if (state.resolve) state.resolve(false)
-          return { ...state, open: false, resolve: undefined }
+          return { ...state, open: false, resolve: undefined, token: undefined }
         })
       }, 30000)
       const wrappedResolve = (value: boolean) => {
@@ -44,6 +49,7 @@ function createConfirmDialogStore() {
         ...options,
         open: true,
         resolve: wrappedResolve,
+        token: dialogToken,
       })
     })
   }
@@ -57,6 +63,7 @@ function createConfirmDialogStore() {
         ...state,
         open: false,
         resolve: undefined,
+        token: undefined,
       }
     })
   }

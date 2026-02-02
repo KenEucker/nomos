@@ -25,8 +25,10 @@ export type SchemaMergerOptions = {
 /**
  * Read core schema and build initial merge result (core-only).
  */
-function loadCoreAndStartMerge(corePath: string): { core: ParsedSchema; merged: MergeResult } {
-  const coreContent = fs.readFileSync(corePath, "utf-8");
+async function loadCoreAndStartMerge(
+  corePath: string
+): Promise<{ core: ParsedSchema; merged: MergeResult }> {
+  const coreContent = await fs.promises.readFile(corePath, "utf-8");
   const core = parseSchema(coreContent);
   const merged: MergeResult = {
     models: new Map(core.models),
@@ -47,12 +49,12 @@ function loadCoreAndStartMerge(corePath: string): { core: ParsedSchema; merged: 
  * Compute merged schema content (core + enabled plugins) without writing.
  * Throws on conflict or parse error.
  */
-export function getMergedSchemaContent(
+export async function getMergedSchemaContent(
   enabledPlugins: string[],
   options: SchemaMergerOptions
-): string {
+): Promise<string> {
   const { corePath, pluginsDir } = options;
-  const { core, merged } = loadCoreAndStartMerge(corePath);
+  const { core, merged } = await loadCoreAndStartMerge(corePath);
 
   const sortedPlugins = [...enabledPlugins].sort();
   for (const slug of sortedPlugins) {
@@ -73,12 +75,12 @@ export function getMergedSchemaContent(
  * Returns true if the file was written, false if it was skipped (content unchanged).
  * Throws on conflict or parse error.
  */
-export function mergeSchemas(
+export async function mergeSchemas(
   enabledPlugins: string[],
   options: SchemaMergerOptions
-): boolean {
+): Promise<boolean> {
   const { outputPath } = options;
-  const output = getMergedSchemaContent(enabledPlugins, options);
+  const output = await getMergedSchemaContent(enabledPlugins, options);
 
   const existing = fs.existsSync(outputPath)
     ? fs.readFileSync(outputPath, "utf-8")
@@ -96,12 +98,12 @@ export function mergeSchemas(
  * Same merge in memory; return preview (tables added, columns added) for admin.
  * Does not write any file.
  */
-export function previewSchemaChanges(
+export async function previewSchemaChanges(
   enabledPlugins: string[],
   options: SchemaMergerOptions
-): SchemaPreview {
+): Promise<SchemaPreview> {
   const { corePath, pluginsDir } = options;
-  const { core, merged } = loadCoreAndStartMerge(corePath);
+  const { core, merged } = await loadCoreAndStartMerge(corePath);
   const coreModelNames = new Set(core.models.keys());
 
   const sortedPlugins = [...enabledPlugins].sort();

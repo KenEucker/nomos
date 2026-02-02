@@ -63,20 +63,22 @@ export default defineRoute(rolesContract, {
         });
 
         if (permissionKeys !== undefined) {
-          await ctx.prisma.rolePermission.deleteMany({
-            where: { roleId },
+          await ctx.prisma.$transaction(async (tx) => {
+            await tx.rolePermission.deleteMany({
+              where: { roleId },
+            });
+            if (permissionKeys.length > 0) {
+              const permissions = await tx.permission.findMany({
+                where: { key: { in: permissionKeys } },
+              });
+              await tx.rolePermission.createMany({
+                data: permissions.map((p) => ({
+                  roleId,
+                  permissionId: p.id,
+                })),
+              });
+            }
           });
-          if (permissionKeys.length > 0) {
-            const permissions = await ctx.prisma.permission.findMany({
-              where: { key: { in: permissionKeys } },
-            });
-            await ctx.prisma.rolePermission.createMany({
-              data: permissions.map((p) => ({
-                roleId,
-                permissionId: p.id,
-              })),
-            });
-          }
         }
 
         const updated = await ctx.prisma.role.findUnique({

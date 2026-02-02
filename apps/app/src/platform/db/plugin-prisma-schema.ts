@@ -75,11 +75,11 @@ export function buildGetPluginSchemaContent(
  * Returns tablesAdded, columnsAdded, warnings for the admin.
  * When getPluginSchemaContent is provided, used to resolve schema (file or manifest.database).
  */
-export function getSchemaPreview(
+export async function getSchemaPreview(
   enabledPluginsIncludingNew: string[],
   config: ResolvedNomosConfig,
   getPluginSchemaContent?: (slug: string) => string | null
-): SchemaPreview {
+): Promise<SchemaPreview> {
   const opts = getPluginPrismaOptions(config);
   return previewSchemaChanges(enabledPluginsIncludingNew, {
     corePath: opts.coreSchemaPath,

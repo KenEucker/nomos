@@ -1,6 +1,12 @@
-import type { ActionDescriptor, ResourceDefinition, ColumnDef, FieldDef, RowAction } from "./types"
+import type {
+  ActionDescriptor,
+  ColumnDef,
+  FieldDef,
+  PanelModule,
+  ResourceDefinition,
+  RowAction,
+} from "./types"
 import { Layouts } from "./layouts"
-import type { ActionDescriptor, PanelModule } from "./types"
 import { panelApiFetch } from "./panel-api"
 
 export type ResourcePanelMode = "list" | "create" | "edit" | "view"

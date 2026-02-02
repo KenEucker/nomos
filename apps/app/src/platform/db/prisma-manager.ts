@@ -90,7 +90,7 @@ export class PrismaManager {
     }
 
     // Only write when content changed so file watchers (e.g. tsx watch) don't restart in a loop
-    const didWrite = mergeSchemas(enabledPlugins, {
+    const didWrite = await mergeSchemas(enabledPlugins, {
       corePath: this.coreSchemaPath,
       pluginsDir: this.pluginsDir,
       outputPath: this.outputSchemaPath,

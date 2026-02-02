@@ -55,6 +55,7 @@ export const rolesContract = defineContract({
         name: z.string(),
         userCount: z.number(),
         permissionKeys: z.array(z.string()).optional(),
+        permissionCount: z.number(),
       })),
     }),
   },

@@ -6,6 +6,9 @@ export default {
   services: {
     auth: (db: any) => {
       const store = db.prisma ?? db.apiKeys;
+      if (store == null) {
+        throw new Error("Auth store missing: expected db.prisma or db.apiKeys");
+      }
       return {
         createApiKey(payload: any) {
           return createApiKey(store, payload);

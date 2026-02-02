@@ -229,12 +229,12 @@ export class ObservabilityRuntime {
     this.started = true
     this.flusher.start()
 
-    // Start periodic health signal emission — load .env so OBS_HEALTH_SIGNAL_INTERVAL_S is always available
+    // Load .env (without override) so OBS_HEALTH_SIGNAL_INTERVAL_S is available if not already set
     const cwd = process.cwd()
     for (const dir of [cwd, path.resolve(cwd, '..'), path.resolve(cwd, '../..')]) {
       const envPath = path.join(dir, '.env')
       if (fs.existsSync(envPath)) {
-        dotenv.config({ path: envPath, override: true })
+        dotenv.config({ path: envPath })
         break
       }
     }

@@ -57,7 +57,7 @@ export const post = async (ctx: Ctx) => {
       const allEnabled = allRows.filter((r) => r.enabled).map((r) => r.slug);
       const enabledWithThis = Array.from(new Set([...allEnabled, slug]));
       const getPluginSchemaContent = buildGetPluginSchemaContent(discovered);
-      const databasePrisma = getSchemaPreview(enabledWithThis, config, getPluginSchemaContent);
+      const databasePrisma = await getSchemaPreview(enabledWithThis, config, getPluginSchemaContent);
       plan = { ...plan, databasePrisma } as typeof plan & { databasePrisma: typeof databasePrisma };
     }
     const updated = await pluginState.update({
