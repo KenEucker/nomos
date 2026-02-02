@@ -1,7 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { JobsRuntime } from "./jobs/runtime";
 import type { EventBus } from "./events/bus";
-import type { WebhookRuntime } from "./webhooks/outbound";
 import type { ServicesRegistry } from "./plugins/registry";
 import type { PrismaClient } from "@prisma/client";
 import { HttpError } from "./errors";
@@ -35,9 +34,6 @@ export type Ctx = {
   headers: Record<string, string | string[] | undefined>;
   /** The authenticated subject (user, apiKey, service, etc.) */
   subject: Subject | null;
-  /** @deprecated Use subject instead */
-  user: UserIdentity | null;
-  /** @deprecated Use subject instead */
   apiClient: ApiClient | null;
   /** The authorization decision for this request (if intent was checked) */
   authzDecision?: Decision;
@@ -46,7 +42,6 @@ export type Ctx = {
   services: ServicesRegistry;
   events: EventBus;
   jobs: JobsRuntime;
-  webhooks: WebhookRuntime;
   /**
    * Observability observer for emitting structured events.
    * Plugins and routes MUST use this instead of direct console logging.
@@ -84,8 +79,6 @@ export type InMemoryStore = {
   permissions: Set<string>;
   apiKeys: Map<string, any>;
   sessions: Map<string, any>;
-  webhookDestinations: Map<string, any>;
-  webhookDeliveries: any[];
   jobs: Map<string, any>;
   jobRuns: any[];
 };
@@ -100,21 +93,30 @@ const hasPermission = (permission: string, permissions?: string[]) => {
 export function createAuthHelpers(ctx: Omit<Ctx, "auth">): Ctx["auth"] {
   return {
     requireUser: () => {
-      if (!ctx.user) {
+      if (!ctx.subject) {
         throw new HttpError(401, "unauthorized", "Authentication required");
       }
-      return ctx.user;
+      const sub = ctx.subject;
+      return {
+        id: sub.id,
+        roles: (sub.claims?.roles as string[] | undefined) ?? [],
+        permissions: (sub.claims?.permissions as string[] | undefined) ?? [],
+      };
     },
+    /** @deprecated Prefer intent-based route config and authzEngine.decide; authorization is enforced by the authz engine. */
     requirePermission: (permission: string) => {
-      const has = hasPermission(permission, ctx.user?.permissions) ||
+      const perms = ctx.subject?.claims?.permissions as string[] | undefined;
+      const has = hasPermission(permission, perms) ||
         hasPermission(permission, ctx.apiClient?.permissions);
       if (!has) {
         throw new HttpError(403, "forbidden", "Missing permission", { permission });
       }
     },
+    /** @deprecated Prefer intent-based route config and authzEngine.decide; authorization is enforced by the authz engine. */
     hasPermission: (permission: string) => {
+      const perms = ctx.subject?.claims?.permissions as string[] | undefined;
       return (
-        hasPermission(permission, ctx.user?.permissions) ||
+        hasPermission(permission, perms) ||
         hasPermission(permission, ctx.apiClient?.permissions) ||
         false
       );

@@ -1,10 +1,13 @@
 import type { JSONSchema7 } from "json-schema"
 
+export type FilterValue = string | number | boolean | string[]
+
 export type QueryState = {
   page: number
   pageSize: number
   search?: string
   sort?: { key: string; dir: "asc" | "desc" }
+  filters?: Record<string, FilterValue>
 }
 
 export type PanelCtx = {
@@ -30,12 +33,28 @@ export type MethodAction = {
   method?: "POST" | "PUT" | "PATCH" | "DELETE"
   payload?: (ctx: PanelCtx, data: Record<string, any>) => Record<string, any>
   confirm?: { title: string; body?: string }
-  after?: "refresh" | "navigate"
+  after?: "navigate" | "refresh" | "stay"
+  redirectTo?: string
   toast?: { success?: string; error?: string }
   intent?: string
 }
 
-export type ActionDescriptor = LinkAction | MethodAction
+export type ModalOpenAction = {
+  type: "modal.open"
+  label: string
+  modalId: string
+  props?: Record<string, unknown>
+  intent?: string
+}
+
+export type ModalCloseAction = {
+  type: "modal.close"
+  label?: string
+  modalId?: string
+  intent?: string
+}
+
+export type ActionDescriptor = LinkAction | MethodAction | ModalOpenAction | ModalCloseAction
 
 export type ColumnDef = {
   key: string
@@ -53,10 +72,16 @@ export type RowAction = {
   label: string
   variant?: "default" | "secondary" | "ghost" | "destructive"
   intent?: string
-  type?: "link" | "method"
+  type?: "link" | "method" | "conditionalLink"
   href?: string
+  /** For conditionalLink: key to check on row (e.g. "lastPreview"); if falsy, show toast instead of navigating */
+  checkKey?: string
+  /** For conditionalLink: toast message when check fails */
+  toastIfMissing?: string
   endpoint?: string
   method?: "POST" | "PUT" | "PATCH" | "DELETE"
+  /** Request body for method actions. Use a plain object so it survives SSR (e.g. { action: "rotate" }). */
+  payload?: Record<string, unknown> | ((row: Record<string, any>) => Record<string, unknown>)
   confirm?: { title: string; body?: string }
   after?: "refresh" | "navigate"
   toast?: { success?: string; error?: string }
@@ -64,7 +89,9 @@ export type RowAction = {
     key: string
     equals?: string | number | boolean
     notEquals?: string | number | boolean
+    in?: Array<string | number | boolean>
     truthy?: boolean
+    falsy?: boolean
   }
 }
 
@@ -96,6 +123,14 @@ export type FieldDef = {
   showOnEdit?: boolean
   showOnView?: boolean
   transform?: "lines" | "csv"
+  /** Regular expression pattern for validation (e.g. URL format). Applied when value is non-empty. */
+  pattern?: string
+  /** Error message when pattern does not match. */
+  patternMessage?: string
+  /** When true, show a button to reveal this field (e.g. "Set/change password" on edit). Field is not required when hidden. */
+  revealByButton?: boolean
+  /** Label for the button that reveals the field (e.g. "Set/change password"). */
+  revealButtonLabel?: string
 }
 
 export type RowsNode = {
@@ -124,6 +159,13 @@ export type CardNode = {
   }
 }
 
+export type TableFilterDef = {
+  key: string
+  label: string
+  type?: "text" | "select"
+  options?: Array<{ value: string; label: string }>
+}
+
 export type TableNode = {
   type: "table"
   props: {
@@ -141,6 +183,11 @@ export type TableNode = {
     saveMethod?: "POST" | "PUT" | "PATCH"
     searchable?: boolean
     searchPlaceholder?: string
+    sortable?: boolean
+    defaultSort?: { key: string; dir: "asc" | "desc" }
+    filters?: TableFilterDef[]
+    columnVisibility?: boolean
+    bulkActions?: ActionDescriptor[]
     rowActions?: RowAction[]
     rowActionBasePath?: string
     rowActionDeleteEndpoint?: string
@@ -212,6 +259,65 @@ export type IframeNode = {
   }
 }
 
+export type TabsNode = {
+  type: "tabs"
+  props: {
+    tabs: Array<{ label: string; nodes: LayoutNode[] }>
+    defaultTab?: number
+    requiredIntent?: string
+  }
+}
+
+export type ModalNode = {
+  type: "modal"
+  props: {
+    id: string
+    title?: string
+    nodes: LayoutNode[]
+    requiredIntent?: string
+  }
+}
+
+export type LineChartNode = {
+  type: "lineChart"
+  props: {
+    dataKey: string
+    xKey: string
+    yKey: string
+    seriesKey?: string
+    title?: string
+    description?: string
+    requiredIntent?: string
+  }
+}
+
+export type BarChartNode = {
+  type: "barChart"
+  props: {
+    dataKey: string
+    xKey: string
+    yKey: string
+    seriesKey?: string
+    title?: string
+    description?: string
+    requiredIntent?: string
+  }
+}
+
+export type PieChartNode = {
+  type: "pieChart"
+  props: {
+    dataKey: string
+    categoryKey: string
+    valueKey: string
+    title?: string
+    description?: string
+    requiredIntent?: string
+  }
+}
+
+export type ChartNode = LineChartNode | BarChartNode | PieChartNode
+
 export type LayoutNode =
   | RowsNode
   | ColumnsNode
@@ -223,6 +329,11 @@ export type LayoutNode =
   | HeaderNode
   | FormNode
   | IframeNode
+  | TabsNode
+  | ModalNode
+  | LineChartNode
+  | BarChartNode
+  | PieChartNode
 
 export type PanelModule = {
   id: string
@@ -247,6 +358,8 @@ export type ResourceEndpoints = {
   create?: string
   update?: string
   delete?: string
+  /** Optional bulk delete endpoint (e.g. POST /resource/bulk-delete with body { ids }) */
+  bulkDelete?: string
 }
 
 export type ResourceLabels =
@@ -272,6 +385,8 @@ export type ResourceMenu = {
 
 export type ResourceListConfig = {
   columns?: ColumnDef[]
+  /** Key for row identity (default "id"). Use "slug" for slug-based resources like plugins. */
+  rowIdKey?: string
   rowActions?: {
     view?: boolean
     edit?: boolean
@@ -282,9 +397,14 @@ export type ResourceListConfig = {
     key: string
     direction: "asc" | "desc"
   }
+  sortable?: boolean
+  filters?: TableFilterDef[]
+  columnVisibility?: boolean
+  bulkActions?: ActionDescriptor[]
   searchable?: boolean
   searchPlaceholder?: string
   pageSize?: number
+  serverSide?: boolean
 }
 
 export type ResourceFormConfig = {

@@ -72,6 +72,7 @@ export const createResourceDefinition = (input: ResourceDefinitionPartial): Reso
     list: input.list
       ? {
           columns: input.list.columns ?? [],
+          rowIdKey: input.list.rowIdKey,
           defaultSort: input.list.defaultSort,
           searchable: input.list.searchable,
           searchPlaceholder: input.list.searchPlaceholder,

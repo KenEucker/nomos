@@ -31,10 +31,12 @@ export const rolesContract = defineContract({
     createBody: z.object({
       key: z.string().min(1).regex(/^[a-z][a-z0-9_]*$/, "Key must be lowercase with underscores"),
       name: z.string().min(1),
+      permissions: z.array(z.string()).optional(),
     }),
 
     updateBody: z.object({
       name: z.string().min(1).optional(),
+      permissions: z.array(z.string()).optional(),
       // Note: key is not editable after creation
     }),
 
@@ -43,6 +45,7 @@ export const rolesContract = defineContract({
       key: z.string(),
       name: z.string(),
       userCount: z.number().optional(),
+      permissionKeys: z.array(z.string()).optional(),
     }),
 
     listResponse: z.object({
@@ -51,6 +54,8 @@ export const rolesContract = defineContract({
         key: z.string(),
         name: z.string(),
         userCount: z.number(),
+        permissionKeys: z.array(z.string()).optional(),
+        permissionCount: z.number(),
       })),
     }),
   },

@@ -23,7 +23,7 @@ import { csrf } from "./middleware/builtins/csrf";
 import { rateLimit } from "./middleware/builtins/rateLimit";
 import { requestContext } from "./middleware/builtins/requestContext";
 import { loadPlugins } from "./plugins/loadPlugins";
-import { getPluginStateStore } from "./pluginManager/store";
+import { getPluginStateStore } from "./plugins/store";
 import { loadRoutes } from "./router/loadRoutes";
 import {
   buildOpenApiSpec,
@@ -35,13 +35,14 @@ import { EventBus } from "./events/bus";
 import { createHookRegistry } from "./events/hooks";
 import { createJobsStore } from "./jobs/store";
 import { createJobsRuntime, type JobsRuntime } from "./jobs/runtime";
-import { WebhookRuntime } from "./webhooks/outbound";
 import { LocalStorageProvider } from "./storage/local";
 import { getSession } from "./auth/sessions";
 import { verifyJwt } from "./auth/jwt";
 import { findApiKey } from "./auth/apiKeys";
 import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logging/logger";
+import { PrismaClient } from "@prisma/client";
 import { getPrismaClient } from "./db/prisma";
+import { getPrismaManager, buildGetPluginSchemaContent } from "./db/plugin-prisma-schema";
 import {
   createAuthorizationEngine,
   createGrantProvider,
@@ -115,6 +116,27 @@ export async function createApp(config: ResolvedNomosConfig) {
     process.env.LOG_DOMAINS = logDomainsStr;
   }
 
+  // Bootstrap runtime Prisma schema when core-schema.prisma exists.
+  // We never run db push with core-only schema so plugin-added columns (e.g. bio) and data are never dropped on disable/restart.
+  const coreSchemaPath = path.join(process.cwd(), "prisma", "core-schema.prisma");
+  const outputSchemaPath = path.join(process.cwd(), "prisma", "schema.prisma");
+  if (fs.existsSync(coreSchemaPath) && config.modules.pluginManager?.enabled) {
+    const prismaManager = getPrismaManager(config);
+    if (!fs.existsSync(outputSchemaPath)) {
+      fs.copyFileSync(coreSchemaPath, outputSchemaPath);
+    }
+    await prismaManager.bootstrapFromCurrentSchema();
+    const pluginState = getPluginStateStore(prismaManager.getClient<PrismaClient>());
+    const allRows = await pluginState.findMany();
+    const enabledSlugs = allRows.filter((r) => r.enabled).map((r) => r.slug);
+    if (enabledSlugs.length > 0) {
+      const { discoverPlugins } = await import("./plugins/discovery");
+      const discovered = await discoverPlugins(config);
+      const getPluginSchemaContent = buildGetPluginSchemaContent(discovered);
+      await prismaManager.updateSchema(enabledSlugs, getPluginSchemaContent);
+    }
+  }
+
   const contentTypeForPath = (filePath: string) => {
     const ext = path.extname(filePath);
     switch (ext) {
@@ -156,7 +178,6 @@ export async function createApp(config: ResolvedNomosConfig) {
   const adminLog = createDomainLogger(baseLogger, "admin", allowedDomains);
   const jobsLog = createDomainLogger(baseLogger, "jobs", allowedDomains);
   const eventsLog = createDomainLogger(baseLogger, "events", allowedDomains);
-  const webhooksLog = createDomainLogger(baseLogger, "webhooks", allowedDomains);
   const observabilityLog = createDomainLogger(baseLogger, "observability", allowedDomains);
   const openApiLog = createDomainLogger(baseLogger, "openapi", allowedDomains);
 
@@ -176,7 +197,14 @@ export async function createApp(config: ResolvedNomosConfig) {
   await app.register(formbody);
 
   serverLog.info(
-    { env: config.app.env, logLevel: config.logging.level, pretty: config.logging.pretty },
+    {
+      env: config.app.env,
+      logLevel: config.logging.level,
+      pretty: config.logging.pretty,
+      ...(config.observability.enabled && {
+        obsHealthIntervalSeconds: config.observability.healthSignalIntervalMs / 1000,
+      }),
+    },
     "Server logger initialized."
   );
 
@@ -244,8 +272,6 @@ export async function createApp(config: ResolvedNomosConfig) {
     permissions: new Set<string>(),
     apiKeys: new Map<string, any>(),
     sessions: new Map<string, any>(),
-    webhookDestinations: new Map<string, any>(),
-    webhookDeliveries: [],
     jobs: new Map<string, any>(),
     jobRuns: []
   };
@@ -273,7 +299,7 @@ export async function createApp(config: ResolvedNomosConfig) {
     config.modules.pluginManager.api.enabled &&
     (config.modules.auth.enabled || config.modules.pluginManager.api.allowUnauthenticated)
   ) {
-    corePlugins.push(path.join(platformDir, "pluginManager", "plugin.ts"));
+    corePlugins.push(path.join(platformDir, "plugins", "plugin.ts"));
   }
 
   let enabledPluginSlugs: Set<string> | undefined;
@@ -302,7 +328,6 @@ export async function createApp(config: ResolvedNomosConfig) {
     corePlugins.push(path.join(platformDir, "observability", "plugin.ts"));
   }
   corePlugins.push(path.join(platformDir, "jobs", "plugin.ts"));
-  corePlugins.push(path.join(platformDir, "webhooks", "plugin.ts"));
   corePlugins.push(path.join(platformDir, "router", "plugin.ts"));
 
   const plugins = await loadPlugins(baseDir, corePlugins, enabledPluginSlugs);
@@ -351,7 +376,8 @@ export async function createApp(config: ResolvedNomosConfig) {
   };
 
   for (const [name, service] of Object.entries(plugins.registry.services)) {
-    services[name] = typeof service === "function" ? service(db, hooks, events) : service;
+    const deps = name === "auth" ? { ...db, prisma } : db;
+    services[name] = typeof service === "function" ? service(deps, hooks, events) : service;
   }
 
   app.decorate("services", services);
@@ -374,28 +400,8 @@ export async function createApp(config: ResolvedNomosConfig) {
     },
   });
 
-  let webhooksRuntime: WebhookRuntime;
-  // WebhookRuntime uses the jobs system to enqueue webhook deliveries
-  // The actual delivery job is discovered from platform/webhooks/jobs/deliver-webhook.ts
-  webhooksRuntime = new WebhookRuntime(
-    jobsRuntime, // Pass jobsRuntime so webhooks can be enqueued
-    events,
-    {
-      destinations: db.webhookDestinations,
-      deliveries: db.webhookDeliveries
-    },
-    webhooksLog
-  );
-
-  const originalEmit = events.emit.bind(events);
-  events.emit = async (event: string, payload: any) => {
-    await originalEmit(event, payload);
-    webhooksRuntime.enqueue(event, payload);
-  };
-
   services.jobsRuntime = jobsRuntime;
   services.jobsStore = jobsStore;
-  services.webhooksRuntime = webhooksRuntime;
 
   // Discover and register jobs from filesystem
   // This allows the API to know about available jobs without starting the worker
@@ -449,7 +455,7 @@ export async function createApp(config: ResolvedNomosConfig) {
   const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
   services.routeRegistry = routeRegistry;
 
-  const coreRouteOwners = new Set(["core", "admin", "auth", "pluginManager", "observability", "jobs", "webhooks", "router"]);
+  const coreRouteOwners = new Set(["core", "admin", "auth", "pluginManager", "observability", "jobs", "router"]);
   const filterRoutes = () =>
     enabledPluginSlugs
       ? routeRegistry.routes.filter(
@@ -513,8 +519,8 @@ export async function createApp(config: ResolvedNomosConfig) {
   };
 
   if (config.modules.docs.enabled) {
-    app.get(OPENAPI_JSON_PATH, async (_req, reply) => {
-      if (!config.swagger.public && config.app.env === "production") {
+    app.get(OPENAPI_JSON_PATH, async (req, reply) => {
+      if (!(await canAccessDocs(req))) {
         return reply.code(403).send({ error: "forbidden" });
       }
       if (services.pluginManagerState?.rebuildOpenApi) {
@@ -540,6 +546,18 @@ export async function createApp(config: ResolvedNomosConfig) {
       url: route.path,
       config: { routeId: route.id },
       handler: async (req, reply) => {
+        // For plugin-owned routes, check if the plugin is enabled (allows enabling without restart)
+        if (route.owner && knownPluginSlugs?.has(route.owner) && !coreRouteOwners.has(route.owner)) {
+          const pluginState = getPluginStateStore(prisma);
+          const state = await pluginState.findUnique({ where: { slug: route.owner } });
+          if (!state?.enabled || state.status !== "enabled") {
+            return reply.code(404).send({
+              ok: false,
+              error: { code: "not_found", message: `Route ${route.method}:${route.path} not found` }
+            });
+          }
+        }
+
         const reqId = (req.headers["x-request-id"] as string) ?? req.id ?? nanoid();
         let subject: Subject | null = authBypassSubject;
         let apiClient: ApiClient | null = null;
@@ -580,7 +598,7 @@ export async function createApp(config: ResolvedNomosConfig) {
           if (!subject) {
             const apiKeyHeader = req.headers["x-api-key"] as string | undefined;
             if (apiKeyHeader) {
-              const foundKey = findApiKey(db.apiKeys, apiKeyHeader);
+              const foundKey = await findApiKey(prisma, apiKeyHeader);
               if (foundKey) {
                 subject = {
                   type: "apiKey",
@@ -588,6 +606,7 @@ export async function createApp(config: ResolvedNomosConfig) {
                   claims: {
                     name: foundKey.name,
                     allowedHosts: foundKey.allowedHosts,
+                    permissions: foundKey.permissions ?? [],
                   }
                 };
                 // Keep apiClient for backward compatibility in context
@@ -657,11 +676,10 @@ export async function createApp(config: ResolvedNomosConfig) {
           user,
           apiClient,
           db,
-          prisma,
+          prisma: getPrismaClient(),
           services,
           events,
           jobs: jobsRuntime,
-          webhooks: webhooksRuntime,
           observer,
           req,
           reply,
@@ -853,53 +871,6 @@ export async function createApp(config: ResolvedNomosConfig) {
       }
     });
   }
-
-  app.post("/webhooks/:provider", async (req, reply) => {
-    const provider = (req.params as { provider?: string }).provider;
-    const handler = provider ? plugins.registry.inboundWebhooks.get(provider) : undefined;
-    if (!handler) return reply.code(404).send({ error: "not_found" });
-
-    const ctxBase = {
-      reqId: nanoid(),
-      method: req.method,
-      path: req.url,
-      params: req.params as any,
-      query: req.query as any,
-      body: req.body,
-      headers: req.headers as any,
-      user: null,
-      apiClient: null,
-      subject: null,
-      db,
-      prisma,
-      services,
-      events,
-      jobs: jobsRuntime,
-      webhooks: webhooksRuntime,
-      observer,
-      req,
-      reply,
-      log: req.log.child({
-        domain: "webhooks",
-        reqId: req.id,
-        method: req.method,
-        path: req.url
-      }),
-      json: async (payload: any, statusCode = 200) => jsonResponse(reply, payload, statusCode),
-      error: errorResponse
-    };
-
-    const ctx = { ...ctxBase, auth: createAuthHelpers(ctxBase) };
-
-    try {
-      const result = await handler(ctx);
-      if (!reply.sent && result !== undefined) {
-        reply.send(result);
-      }
-    } catch (_error) {
-      reply.code(500).send({ error: "internal_error" });
-    }
-  });
 
   const astroDevPort = config.adminUi.devPort;
   const adminEnabled = config.modules.admin.enabled;

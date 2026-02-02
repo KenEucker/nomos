@@ -6,6 +6,7 @@ import NomosNav from "../components/NomosNav.svelte";
 import ShellState from "../islands/ShellState.svelte";
 import SessionLoader from "../islands/SessionLoader.svelte";
 import type { SessionUser } from "../lib/session";
+import type { Subject } from "../lib/auth/subject";
 import { requireAdminSession } from "../lib/server/session";
 import { buildAdminNav } from "../lib/navigation";
 
@@ -25,13 +26,15 @@ type Props = {
   subtitle?: string;
   breadcrumbs?: PageBreadcrumb[];
   actions?: PageAction[];
+  subject?: Subject | null;
 };
 
 const {
   title = "Dashboard",
   subtitle,
   breadcrumbs = [],
-  actions = []
+  actions = [],
+  subject
 }: Props = Astro.props;
 
 const sessionResult = await requireAdminSession(Astro);
@@ -60,6 +63,9 @@ try {
 
 const navItems = buildAdminNav({ basePath: import.meta.env.BASE_URL, enabledPluginSlugs });
 
+const authPayload = Astro.locals.auth ?? { subject: null, capabilities: {} };
+const authJson = JSON.stringify(authPayload);
+
 const actionClass = (variant?: string) => {
   switch (variant) {
     case "secondary":
@@ -78,10 +84,11 @@ const actionClass = (variant?: string) => {
 <BaseLayout title={title}>
   <ShellState client:load />
   <SessionLoader client:load />
+  <script type="application/json" id="nomos-auth" set:html={authJson}></script>
   <div class="min-h-screen bg-background text-foreground" style="--nomos-header-height: 0px;">
     <div class="admin-shell">
       <div class="admin-shell-nav" transition:persist>
-        <NomosNav menuName="Ken's Admin" client:only="svelte" {navItems} />
+        <NomosNav menuName="Nomos Admin" client:load {navItems} />
       </div>
 
       <main id="main-content" class="overflow-x-hidden admin-shell-main">
@@ -161,7 +168,7 @@ const actionClass = (variant?: string) => {
       <Toast client:load />
     </div>
     <div transition:persist="confirm-dialog">
-      <ConfirmDialog client:only="svelte" />
+      <ConfirmDialog client:load />
     </div>
   </div>
 </BaseLayout>

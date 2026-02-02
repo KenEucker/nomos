@@ -29,11 +29,11 @@ export const config = {
 };
 
 export const get = async (ctx: Ctx) => {
-  if (!ctx.user) {
+  if (!ctx.subject) {
     throw new HttpError(401, "unauthorized", "Authentication required");
   }
   const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.id },
+    where: { id: ctx.subject.id },
     include: { roles: { include: { role: true } } }
   });
   if (!user) {

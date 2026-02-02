@@ -1,6 +1,12 @@
-import type { ResourceDefinition, ColumnDef, FieldDef, RowAction } from "./types"
+import type {
+  ActionDescriptor,
+  ColumnDef,
+  FieldDef,
+  PanelModule,
+  ResourceDefinition,
+  RowAction,
+} from "./types"
 import { Layouts } from "./layouts"
-import type { ActionDescriptor, PanelModule } from "./types"
 import { panelApiFetch } from "./panel-api"
 
 export type ResourcePanelMode = "list" | "create" | "edit" | "view"
@@ -38,10 +44,16 @@ const requireEndpoint = (endpoint: string | undefined, label: string) => {
   return endpoint
 }
 
-const buildListUrl = (endpoint: string, state: { page: number; pageSize: number; search?: string; sort?: {
-  key: string
-  dir: "asc" | "desc"
-} }) => {
+const buildListUrl = (
+  endpoint: string,
+  state: {
+    page: number
+    pageSize: number
+    search?: string
+    sort?: { key: string; dir: "asc" | "desc" }
+    filters?: Record<string, string | number | boolean | string[]>
+  }
+) => {
   const url = new URL(endpoint, "http://local")
   url.searchParams.set("page", String(state.page))
   url.searchParams.set("pageSize", String(state.pageSize))
@@ -50,6 +62,17 @@ const buildListUrl = (endpoint: string, state: { page: number; pageSize: number;
   }
   if (state.sort?.key) {
     url.searchParams.set("sort", `${state.sort.key}:${state.sort.dir}`)
+  }
+  if (state.filters && typeof state.filters === "object") {
+    for (const [k, v] of Object.entries(state.filters)) {
+      if (v !== undefined && v !== null && v !== "") {
+        if (Array.isArray(v)) {
+          v.forEach((item) => url.searchParams.append(`filter.${k}`, String(item)))
+        } else {
+          url.searchParams.set(`filter.${k}`, String(v))
+        }
+      }
+    }
   }
   return `${url.pathname}${url.search}`
 }
@@ -92,6 +115,34 @@ const resolveFields = (resource: ResourceDefinition, mode: ResourcePanelMode): F
   return []
 }
 
+const resolveBulkActions = (
+  resource: ResourceDefinition,
+  listHref: string
+): ActionDescriptor[] => {
+  if (resource.list?.bulkActions?.length) {
+    return resource.list.bulkActions
+  }
+  const bulkDeleteEndpoint = resource.endpoints.bulkDelete
+  if (bulkDeleteEndpoint) {
+    return [
+      {
+        type: "method",
+        label: "Delete selected",
+        endpoint: bulkDeleteEndpoint,
+        method: "POST",
+        intent: resource.intents?.delete,
+        confirm: {
+          title: "Delete selected items?",
+          body: "This action cannot be undone.",
+        },
+        after: "refresh",
+        toast: { success: "Items deleted" },
+      },
+    ]
+  }
+  return []
+}
+
 const resolveColumns = (resource: ResourceDefinition): ColumnDef[] => {
   if (resource.list?.columns?.length) {
     return resource.list.columns.filter((column) => column.render !== "action")
@@ -117,7 +168,7 @@ export const createResourcePanel = ({
   const singleKey = resolveSingleKey(resource)
   const fields = resolveFields(resource, mode)
   const columns = resolveColumns(resource)
-  const serverSideList = false
+  const serverSideList = resource.list?.serverSide ?? false
 
   const listHref = basePath
   const createHref = `${basePath}/new`
@@ -191,6 +242,7 @@ export const createResourcePanel = ({
                 body: `This will permanently remove the ${labels.label.toLowerCase()}.`,
               },
               after: "navigate",
+              redirectTo: listHref,
               toast: { success: `${labels.label} deleted` },
             })
           }
@@ -228,6 +280,7 @@ export const createResourcePanel = ({
         pageSize,
         search: serverSideList ? ctx.state.search : undefined,
         sort,
+        filters: serverSideList ? ctx.state.filters : undefined,
       })
       const response = await panelApiFetch(ctx, url)
       const { items, total } = unwrapListResponse(response, resource)
@@ -278,12 +331,19 @@ export const createResourcePanel = ({
             paginationKey: serverSideList ? "meta" : undefined,
             serverSide: serverSideList,
             columns,
-            rowIdKey: "id",
+            rowIdKey: resource.list?.rowIdKey ?? "id",
             enableEdit: false,
             saveEndpoint: resource.endpoints.update,
             saveMethod: "PATCH",
             searchable: resource.list?.searchable ?? true,
             searchPlaceholder: resource.list?.searchPlaceholder,
+            sortable: resource.list?.sortable ?? true,
+            defaultSort: resource.list?.defaultSort
+              ? { key: resource.list.defaultSort.key, dir: resource.list.defaultSort.direction }
+              : undefined,
+            filters: resource.list?.filters,
+            columnVisibility: resource.list?.columnVisibility ?? false,
+            bulkActions: resolveBulkActions(resource, listHref),
             rowActions: combinedRowActions.length ? combinedRowActions : undefined,
             rowActionBasePath: basePath,
             rowActionDeleteEndpoint: deleteEndpoint,

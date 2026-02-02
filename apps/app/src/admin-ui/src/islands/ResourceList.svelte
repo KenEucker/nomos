@@ -7,12 +7,16 @@
   import { onMount } from "svelte"
   import { navigate } from "astro:transitions/client"
   import DataTable from "../components/DataTable.svelte"
+  import EnablePluginModal from "./EnablePluginModal.svelte"
   import { apiGet, apiFetch } from "../lib/api"
   import { confirmDialog } from "../lib/confirm-dialog"
   import { notify, toastError } from "../lib/toast"
   import type { ResourceDefinition, RowAction } from "../lib/types"
 
   export let definition: ResourceDefinition
+
+  let enablePluginModalOpen = $state(false)
+  let enablePluginModalSlug = $state("")
 
   type Row = Record<string, any>
 
@@ -133,7 +137,23 @@
       return
     }
 
+    if (action.type === "conditionalLink" && action.href) {
+      const checkKey = action.checkKey ?? "lastPreview"
+      if (!row[checkKey]) {
+        notify(action.toastIfMissing ?? "Not available.", "info")
+        return
+      }
+      navigate(interpolate(action.href, row))
+      return
+    }
+
     if (action.type === "method" && action.endpoint) {
+      if (definition.name === "plugins" && action.id === "enable") {
+        enablePluginModalSlug = row.slug ?? ""
+        enablePluginModalOpen = true
+        return
+      }
+
       const confirmed = action.confirm
         ? await confirmDialog({
             title: action.confirm.title,
@@ -147,7 +167,16 @@
 
       try {
         const endpoint = interpolate(action.endpoint, row)
-        await apiFetch(endpoint, { method: action.method ?? "POST" })
+        const body =
+          action.payload === undefined
+            ? undefined
+            : typeof action.payload === "function"
+              ? action.payload(row)
+              : action.payload
+        await apiFetch(endpoint, {
+          method: action.method ?? "POST",
+          body: body ? JSON.stringify(body) : undefined,
+        })
         if (action.toast?.success) {
           notify(action.toast.success, "success")
         }
@@ -168,3 +197,12 @@
     }
   }}
 />
+{#if definition.name === "plugins"}
+  <EnablePluginModal
+    bind:open={enablePluginModalOpen}
+    slug={enablePluginModalSlug}
+    onSuccess={() => window.location.reload()}
+    onClose={() => { enablePluginModalOpen = false }}
+    onError={(msg) => toastError("Enable failed", msg)}
+  />
+{/if}

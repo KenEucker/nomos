@@ -40,12 +40,25 @@ export const parseStateFromUrl = (url: URL): QueryState => {
         dir: (sortParam.split(":")[1] ?? "asc") as "asc" | "desc",
       }
     : undefined
+  const filters: Record<string, string | number | boolean | string[]> = {}
+  url.searchParams.forEach((value, key) => {
+    if (key.startsWith("filter.")) {
+      const fk = key.slice(7)
+      const existing = filters[fk]
+      if (existing !== undefined) {
+        filters[fk] = Array.isArray(existing) ? [...existing, value] : [existing, value]
+      } else {
+        filters[fk] = value
+      }
+    }
+  })
 
   return {
     page: Number.isNaN(page) ? 1 : page,
     pageSize: Number.isNaN(pageSize) ? 10 : pageSize,
     search,
     sort,
+    filters: Object.keys(filters).length ? filters : undefined,
   }
 }
 
@@ -72,6 +85,19 @@ export const updateUrlWithState = (url: URL, state: QueryState): URL => {
     next.searchParams.set("sort", `${state.sort.key}:${state.sort.dir}`)
   } else {
     next.searchParams.delete("sort")
+  }
+  const filterKeys = [...next.searchParams.keys()].filter((k) => k.startsWith("filter."))
+  filterKeys.forEach((k) => next.searchParams.delete(k))
+  if (state.filters && typeof state.filters === "object") {
+    for (const [k, v] of Object.entries(state.filters)) {
+      if (v !== undefined && v !== null && v !== "") {
+        if (Array.isArray(v)) {
+          v.forEach((item) => next.searchParams.append(`filter.${k}`, String(item)))
+        } else {
+          next.searchParams.set(`filter.${k}`, String(v))
+        }
+      }
+    }
   }
   return next
 }

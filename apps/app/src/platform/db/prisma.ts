@@ -3,6 +3,7 @@ import path from "node:path"
 
 import { PrismaClient } from "@prisma/client"
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3"
+import { PrismaManager } from "./prisma-manager"
 
 let prisma: PrismaClient | undefined
 
@@ -75,6 +76,9 @@ const normalizeSqliteFileUrl = (databaseUrl: string) => {
 }
 
 export const getPrismaClient = () => {
+  if (PrismaManager.getInstance().hasClient()) {
+    return PrismaManager.getInstance().getClient<PrismaClient>()
+  }
   if (prisma) return prisma
 
   const databaseUrlRaw = requireDatabaseUrl()

@@ -1,13 +1,13 @@
 {
   "name": "nomos-platform",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "type": "module",
   "private": true,
   "scripts": {
     "postinstall": "prisma generate",
     "prepare:sdk": "tsx scripts/generate-sdk.ts",
     "dev": "npm --prefix src/admin-ui install && ASTRO_DEV_PORT=${ASTRO_DEV_PORT:-4321} concurrently -k -n \"astro,server\" -c \"magenta,cyan\" \"npm run dev:admin-ui\" \"npm run dev:server\"",
-    "dev:server": "tsx watch src/server.ts",
+    "dev:server": "tsx watch --exclude \"../../node_modules/.prisma/client/**/*\" --clear-screen=false src/server.ts",
     "dev:admin-ui": "ASTRO_MIDDLEWARE_MODE=true npm --prefix src/admin-ui run dev -- --port ${ASTRO_DEV_PORT:-4321}",
     "build": "npm run build:admin-ui && tsc -p tsconfig.json",
     "build:admin-ui": "npm --prefix src/admin-ui install && npm --prefix src/admin-ui run build",

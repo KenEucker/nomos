@@ -2,7 +2,7 @@
 
 **Status**: Draft
 
-**Version**: 0.1.1
+**Version**: 0.1.3
 
 **Scope**: Core platform + plugin API routing
 

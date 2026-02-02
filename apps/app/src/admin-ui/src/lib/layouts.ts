@@ -1,14 +1,19 @@
 import type {
+  BarChartNode,
   CardNode,
   ColumnsNode,
   FieldsetNode,
   FormNode,
   HeaderNode,
   IframeNode,
-  RowsNode,
+  LineChartNode,
   LayoutNode,
+  ModalNode,
+  PieChartNode,
+  RowsNode,
   StatNode,
   TableNode,
+  TabsNode,
   TextNode,
 } from "./types"
 
@@ -60,6 +65,31 @@ export const Layouts = {
 
   iframe: (props: IframeNode["props"]): IframeNode => ({
     type: "iframe",
+    props,
+  }),
+
+  tabs: (props: TabsNode["props"]): TabsNode => ({
+    type: "tabs",
+    props,
+  }),
+
+  modal: (props: ModalNode["props"]): ModalNode => ({
+    type: "modal",
+    props,
+  }),
+
+  lineChart: (props: LineChartNode["props"]): LineChartNode => ({
+    type: "lineChart",
+    props,
+  }),
+
+  barChart: (props: BarChartNode["props"]): BarChartNode => ({
+    type: "barChart",
+    props,
+  }),
+
+  pieChart: (props: PieChartNode["props"]): PieChartNode => ({
+    type: "pieChart",
     props,
   }),
 }

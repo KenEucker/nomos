@@ -316,13 +316,8 @@ export function buildOpenApi(registry: RouteRegistry) {
 
     // Add security requirements for authenticated routes
     if (route.config.auth !== "none") {
-      if (route.path.startsWith("/_/")) {
-        // Admin API routes (/_/*) prefer session cookie auth
-        operation.security = [{ cookieAuth: [] }, { bearerAuth: [] }];
-      } else {
-        // API routes support all auth methods
-        operation.security = [{ bearerAuth: [] }, { apiKeyAuth: [] }, { cookieAuth: [] }];
-      }
+      // API routes support all auth methods
+      operation.security = [{ bearerAuth: [] }, { apiKeyAuth: [] }, { cookieAuth: [] }];
     }
 
     // Add intent to operation extensions
@@ -365,7 +360,7 @@ export function buildOpenApi(registry: RouteRegistry) {
     openapi: "3.0.0",
     info: {
       title: "Nomos Platform",
-      version: "0.1.0",
+      version: "0.1.3",
     },
     components,
     paths,

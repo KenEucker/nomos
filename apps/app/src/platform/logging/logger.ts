@@ -19,7 +19,6 @@ export const LOG_DOMAINS = [
   "admin",
   "jobs",
   "events",
-  "webhooks",
   "observability",
   "openapi",
   "diagnostics"

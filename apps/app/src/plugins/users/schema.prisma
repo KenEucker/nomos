@@ -1,0 +1,7 @@
+// Users plugin: extends core User with profile fields.
+// Merged at runtime when the plugin is enabled (SchemaMerger + PrismaManager).
+
+model User {
+  bio    String?
+  avatar String?
+}

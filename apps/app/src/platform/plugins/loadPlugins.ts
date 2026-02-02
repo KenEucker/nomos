@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { PluginManifest, PluginRoute } from "./pluginTypes";
+import type { PluginManifest, PluginRoute } from "./types";
 import { createPluginRegistry } from "./registry";
 
 export type LoadedPlugins = {
@@ -70,12 +70,10 @@ export async function loadPlugins(
       const manifest = await importPlugin(indexPath);
       const name = manifest.name ?? entry.name;
       const slug = manifest.slug ?? entry.name;
-      
-      // Filter filesystem plugins based on enabled state if provided
-      if (enabledPluginSlugs !== undefined && !enabledPluginSlugs.has(slug)) {
-        continue;
-      }
-      
+
+      // Load all filesystem plugins so routes and services exist. The route handler
+      // checks enabled state at request time for plugin-owned routes (allows enabling
+      // plugins without server restart).
       discovered.push({ name, manifest: { ...manifest, name, slug } });
       const pluginRoot = path.join(pluginDir, entry.name);
       pluginRoutes.push({
@@ -110,11 +108,6 @@ export async function loadPlugins(
     }
     if (manifest.listeners) {
       listeners.push(...manifest.listeners);
-    }
-    if (manifest.inboundWebhooks) {
-      for (const [provider, handler] of Object.entries(manifest.inboundWebhooks)) {
-        registry.inboundWebhooks.set(provider, handler);
-      }
     }
   }
 

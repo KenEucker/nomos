@@ -7,9 +7,9 @@
   export let commands: ActionDescriptor[] = []
   export let onCommand: (command: ActionDescriptor) => void
 
-  const isDenied = (intent?: string) => Boolean(intent) && !can(intent)
+  const isDenied = (intent: string) => Boolean(intent) && !can(intent)
   const handleCommand = (command: ActionDescriptor) => {
-    if (isDenied(command.intent)) {
+    if (isDenied(command.intent!)) {
       notifyDeny(command.intent as string)
       return
     }
@@ -28,7 +28,7 @@
     {#if commands.length}
       <div class="flex flex-wrap gap-2">
         {#each commands as command (command.label)}
-          {@const commandDenied = isDenied(command.intent)}
+          {@const commandDenied = isDenied(command.intent!)}
           {#if command.type === "link"}
             <button
               type="button"
@@ -36,7 +36,7 @@
               class={commandDenied
                 ? "rounded-md border px-4 py-2 text-sm font-medium opacity-60 cursor-not-allowed"
                 : "rounded-md border px-4 py-2 text-sm font-medium"}
-              on:click={() => handleCommand(command)}
+              onclick={() => handleCommand(command)}
             >
               {command.label}
             </button>
@@ -47,7 +47,7 @@
                 : "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"}
               type="button"
               aria-disabled={commandDenied}
-              on:click={() => handleCommand(command)}
+              onclick={() => handleCommand(command)}
             >
               {command.label}
             </button>

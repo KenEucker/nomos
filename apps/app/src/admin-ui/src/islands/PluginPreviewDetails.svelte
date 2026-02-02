@@ -3,11 +3,15 @@
   import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "$ui/card"
   import { Badge } from "$ui/badge"
   import { Button } from "$ui/button"
-  import { apiGet } from "../lib/api";
+  import EnablePluginModal from "./EnablePluginModal.svelte"
+  import { apiGet, apiFetch } from "../lib/api";
+  import { notify, toastError } from "../lib/toast";
 
   let { slug } = $props<{
     slug?: string;
   }>();
+
+  let enablePluginModalOpen = $state(false);
 
   type PluginPlan = {
     slug: string;
@@ -41,6 +45,26 @@
   let plugin = $state<PluginRecord | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let generating = $state(false);
+
+  const openEnableModal = () => {
+    if (slug) enablePluginModalOpen = true;
+  };
+
+  const generatePreview = async () => {
+    if (!slug) return;
+    generating = true;
+    error = null;
+    try {
+      await apiFetch(`/plugins/${slug}/preview`, { method: "POST" });
+      notify("Preview generated successfully", "success");
+      await loadPreview();
+    } catch (err: any) {
+      toastError("Generate preview failed", err?.message ?? "Failed to generate preview.");
+    } finally {
+      generating = false;
+    }
+  };
 
   const loadPreview = async () => {
     loading = true;
@@ -93,10 +117,17 @@
     {#if plugin.lastError}
       <Card>
         <CardHeader>
-          <CardTitle>Preview Error</CardTitle>
+          <CardTitle>{plugin.status === "broken" ? "What went wrong" : "Preview Error"}</CardTitle>
+          <CardDescription>
+            {#if plugin.status === "broken"}
+              This plugin failed during enable. Fix the issue below and try enabling again.
+            {:else}
+              An error was recorded for this plugin.
+            {/if}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div class="text-sm text-destructive">{plugin.lastError}</div>
+          <div class="rounded-md bg-destructive/10 border border-destructive/20 p-3 font-mono text-sm text-destructive whitespace-pre-wrap break-words">{plugin.lastError}</div>
         </CardContent>
       </Card>
     {/if}
@@ -226,7 +257,36 @@
     </Card>
   {/if}
 
-  <div class="flex justify-end">
-    <Button variant="outline" size="sm" onclick={() => history.back()}>Back to plugins</Button>
+  <div class="flex flex-wrap justify-end gap-2">
+    {#if plugin && !loading}
+      {#if !plugin.enabled}
+        <Button
+          variant="default"
+          size="sm"
+          onclick={openEnableModal}
+        >
+          Enable plugin
+        </Button>
+      {/if}
+      <Button
+        variant="secondary"
+        size="sm"
+        onclick={generatePreview}
+        disabled={generating}
+      >
+        {generating ? "Generating…" : "Generate new preview"}
+      </Button>
+    {/if}
+    <Button variant="outline" size="sm" href="/admin/plugins">Back to plugins</Button>
   </div>
+
+  {#if slug}
+    <EnablePluginModal
+      bind:open={enablePluginModalOpen}
+      slug={slug}
+      onSuccess={() => window.location.reload()}
+      onClose={() => { enablePluginModalOpen = false }}
+      onError={(msg) => toastError("Enable failed", msg)}
+    />
+  {/if}
 </div>

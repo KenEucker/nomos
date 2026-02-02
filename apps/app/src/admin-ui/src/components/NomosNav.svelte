@@ -124,10 +124,10 @@
   )
   let mobileItems = $derived(navGroups.flatMap((group) => group.items))
 
-  let mode: NavMode = $state("nav")
+  let mode = $state<NavMode>("nav")
   let draft: NavPreferences = $state(createDraftFromSaved(defaultNavPreferences))
-  let themeDraft: ThemePreference = $state("system")
-  let savedTheme: ThemePreference = $state("system")
+  let themeDraft = $state<ThemePreference>("system")
+  let savedTheme = $state<ThemePreference>("system")
   let currentPath = $state("")
   let isMobile = $state(false)
 
@@ -228,7 +228,7 @@
   $effect(() => {
     updateDocumentPrefs(appliedPrefs)
   })
-  let variant = $derived((mode === "settings" && (isMobile || appliedPrefs.sidebarCollapsed)) ? "quick" : (isMobile ? "quick" : "form"))
+  let variant: "form" | "quick" = $derived((mode === "settings" && (isMobile || appliedPrefs.sidebarCollapsed)) ? "quick" : (isMobile ? "quick" : "form"))
   let expandedGroups = $derived(navGroups
     .filter((group) => {
       if (appliedPrefs.sidebarCollapsed || !appliedPrefs.showGroupHeadings) return true
@@ -280,7 +280,7 @@
                 aria-label={item.label}
               >
                 {#if item.iconComponent}
-                        <svelte:component this={item.iconComponent} class="size-5" />
+                        <item.iconComponent class="size-5" />
                       {:else}
                         <span class="size-5 text-foreground" aria-hidden="true">{@html item.icon}</span>
                       {/if}
@@ -293,7 +293,7 @@
               type="button"
               class="flex items-center justify-center px-3 py-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Open screen settings"
-              on:click={openSettings}
+              onclick={openSettings}
             >
               <SettingsIcon class="size-5" />
             </button>
@@ -304,7 +304,7 @@
               class="flex items-center justify-center px-3 py-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label={`Switch to ${$effectiveTheme === "dark" ? "light" : "dark"} mode`}
               aria-pressed={$effectiveTheme === "dark"}
-              on:click={toggleTheme}
+              onclick={toggleTheme}
             >
               {#if $effectiveTheme === "dark"}
                 <MoonIcon class="size-5" />
@@ -358,7 +358,7 @@
               type="button"
               class="p-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Collapse to icon-only mode"
-              on:click={toggleSidebarCollapse}
+              onclick={toggleSidebarCollapse}
             >
               <ChevronLeftIcon class="size-4" />
             </button>
@@ -366,7 +366,7 @@
               type="button"
               class="p-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Open screen settings"
-              on:click={openSettings}
+              onclick={openSettings}
             >
               <SettingsIcon class="size-4" />
             </button>
@@ -376,7 +376,7 @@
             type="button"
             class="flex items-center justify-center w-full p-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
             aria-label="Expand to full width mode"
-            on:click={toggleSidebarCollapse}
+            onclick={toggleSidebarCollapse}
           >
             <ChevronRightIcon class="size-5" />
           </button>
@@ -384,7 +384,7 @@
             type="button"
             class="flex items-center justify-center w-full p-2 transition rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
             aria-label="Open screen settings"
-            on:click={openSettings}
+            onclick={openSettings}
           >
             <SettingsIcon class="size-5" />
           </button>
@@ -430,7 +430,7 @@
                           }
                         >
                           {#if item.iconComponent}
-                            <svelte:component this={item.iconComponent} class={$navPreferences.sidebarCollapsed ? "size-6" : "size-4"} />
+                            <item.iconComponent class={$navPreferences.sidebarCollapsed ? "size-6" : "size-4"} />
                           {:else}
                             <span class={cn($navPreferences.sidebarCollapsed ? "size-6" : "size-4", "text-foreground")} aria-hidden="true">{@html item.icon}</span>
                           {/if}
@@ -474,7 +474,7 @@
             )}
             aria-label={`Switch to ${$effectiveTheme === "dark" ? "light" : "dark"} mode`}
             aria-pressed={$effectiveTheme === "dark"}
-            on:click={toggleTheme}
+            onclick={toggleTheme}
           >
             {#if $effectiveTheme === "dark"}
               <MoonIcon class={$navPreferences.sidebarCollapsed ? "size-5" : "size-4"} />

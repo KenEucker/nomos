@@ -14,6 +14,7 @@ const { panel, panelModuleKey } = Astro.props as {
 }
 
 const ctx = buildPanelCtx(Astro.url, {}, Astro.request)
+const authPayload = Astro.locals.auth ?? { subject: null, capabilities: {} }
 
 // Try to fetch data, catch errors gracefully
 let data: Record<string, unknown> | null = null
@@ -39,8 +40,6 @@ try {
   }
 }
 
-const authPayload = Astro.locals.auth ?? { subject: null, capabilities: {} }
-const authJson = JSON.stringify(authPayload)
 ---
 
 {error ? (
@@ -67,6 +66,5 @@ const authJson = JSON.stringify(authPayload)
       </div>
       <Toaster client:load />
     </AdminLayout>
-    <script type="application/json" id="nomos-auth" set:html={authJson}></script>
   </>
 ) : null}

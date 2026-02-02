@@ -1,7 +1,7 @@
 # Nomos Uploads Specification
 
 **Status:** Draft
-**Version:** 0.1.2
+**Version:** 0.1.3
 **Audience:** Platform contributors, plugin authors, admin‑UI implementers
 **Scope:** Defines first‑class asset uploads in Nomos, including storage abstraction, API contracts, SDK exposure, admin‑UI integration, and observability requirements.
 **Applies to:** nomos-core, nomos-api, nomos-sdk, nomos-ui, storage plugins

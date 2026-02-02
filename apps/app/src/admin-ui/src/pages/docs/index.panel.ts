@@ -1,5 +1,6 @@
 import { Layouts } from "../../lib/layouts"
 import { panelApiFetch } from "../../lib/panel-api"
+import { serverFetchOk } from "../../lib/server/api"
 import type { LayoutNode, PanelModule } from "../../lib/types"
 
 const panel: PanelModule = {
@@ -8,7 +9,12 @@ const panel: PanelModule = {
   subtitle: "Browse the OpenAPI reference for Nomos.",
   query: async (ctx) => {
     try {
-      await panelApiFetch(ctx, "/openapi.json")
+      // /openapi.json returns raw spec, not { ok, data }; use serverFetchOk on server
+      if (typeof window === "undefined" && ctx.request) {
+        await serverFetchOk(ctx.request, "/openapi.json")
+      } else {
+        await panelApiFetch(ctx, "/openapi.json")
+      }
       return { docsAccessible: true, error: null }
     } catch (error) {
       const status = (error as { status?: number }).status

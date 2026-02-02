@@ -60,8 +60,9 @@ export const apiKeysResource = createResourceDefinition({
         label: "Rotate",
         variant: "secondary",
         type: "method",
-        endpoint: "/api-keys/{id}/rotate",
-        method: "POST",
+        endpoint: "/api-keys/{id}",
+        method: "PATCH",
+        payload: { action: "rotate" },
         confirm: {
           title: "Rotate API key?",
           body: "The old key will stop working immediately.",
@@ -86,6 +87,8 @@ export const apiKeysResource = createResourceDefinition({
         type: "multiselect",
         optionsEndpoint: "/permissions",
         optionsKey: "permissions",
+        valueKey: "key",
+        labelKey: "name",
         helperText: "Select which permissions this API key should have.",
       },
       {

@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "npm --prefix apps/app run dev",
+    "dev:reset": "node scripts/dev-reset.mjs",
     "build": "npm --prefix apps/app run build",
     "migrate": "npm --prefix apps/app run prisma:migrate",
     "seed": "npm --prefix apps/app run prisma:seed",

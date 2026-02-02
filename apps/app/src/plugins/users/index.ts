@@ -1,4 +1,4 @@
-import type { PluginPlan, PreviewContext } from "../../platform/pluginManager/types";
+import type { PluginPlan, PreviewContext } from "../../platform/plugins/types";
 import { createUsersService } from "./services/users.service";
 import { resources } from "./admin/resources";
 import auditListener from "./listeners/audit.listener";

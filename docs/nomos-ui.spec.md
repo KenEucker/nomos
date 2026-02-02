@@ -1,8 +1,11 @@
 # Nomos UI Specification (Nomos-UI)
 
 **Status:** Active Draft
-**Version:** 0.1.2
+
+**Version:** 0.1.3
+
 **Audience:** Framework users, UI contributors, plugin authors
+
 **Scope:** Defines Nomos-UI, Panels, PanelModules, ResourceDefinitions, and UI generation
 
 ---
@@ -336,6 +339,43 @@ Panels may be:
 
 Layout decisions are separate from panel definitions and may be applied at runtime.
 
+### 6.1 Layout Nodes
+
+Nomos-UI defines a fixed set of **layout nodes** used by both PanelModules and resource-generated panels.
+
+Existing layout nodes include:
+
+* rows
+* columns
+* card
+* header
+* table
+* form
+* fieldset
+* text
+* stat
+* iframe
+
+The following layout nodes are **added for Orchid parity**:
+
+#### Tabs
+
+A **tabs** layout node groups child layouts into labeled tabbed sections.
+
+* Tabs may contain arbitrary layout nodes
+* Tabs may be conditionally visible based on intent
+* Tab state may be client-managed
+
+#### Modal
+
+A **modal** layout node represents a secondary surface that overlays the current panel.
+
+* Modals may contain full layouts (forms, tables, cards)
+* Modals are opened via actions
+* Modals may submit actions and trigger refresh or navigation
+
+Modals are part of the same layout system and do not introduce a separate rendering model.
+
 ---
 
 ## 7. Data Flow
@@ -407,55 +447,82 @@ actions: [
 
 ---
 
-## 8. Policy Awareness
+## 8. Actions
 
-Nomos-UI is policy-aware but not policy-defining.
+Panels may define actions that:
 
-Policies may influence:
+* invoke platform services
+* mutate resources via API
+* trigger navigation
+* open or close modals
+* trigger partial or full refreshes
 
-* panel visibility
-* field visibility
-* action availability
-* form mutability
+### 8.1 Action Surfaces
 
-All policy decisions are evaluated by the platform authorization engine and surfaced to the UI with rationale.
+Actions may appear in:
 
-Example:
+* panel command bars
+* table row actions
+* table bulk actions
+* form primary or secondary actions
 
-```typescript
-// In panel render logic
-const canEdit = await ctx.authz.can("users.update", { userId })
+### 8.2 Bulk Actions
 
-if (canEdit) {
-  // Show edit button
-} else {
-  // Hide or disable edit button
-}
-```
+Tables may define **bulk actions** that operate on selected rows.
 
----
+Bulk actions:
 
-## 9. Error Handling
-
-Panels may define:
-
-* inline error presentation
-* field-level validation errors
-* action-level failures
-
-Errors are structured and traceable to platform decisions.
+* are policy-checked
+* receive selected row identifiers
+* may invoke destructive or non-destructive operations
 
 ---
 
-## 10. Extensibility
+## 9. Tables
 
-Nomos-UI is extensible via:
+Tables are first-class **data grid** components.
 
-* plugins providing PanelModules
-* plugins providing Resource Definitions
-* custom-written pages and panels
+In addition to existing functionality, tables support:
 
-Custom UI does not bypass platform contracts.
+* column sorting (client or server driven)
+* default sort configuration
+* field-based filters
+* column visibility toggles
+* row selection
+* bulk actions
+* consistent empty, loading, and error states
+
+These capabilities apply equally to custom panel tables and resource-generated CRUD tables.
+
+---
+
+## 10. Metrics and Visualization
+
+Nomos-UI supports metric-oriented layouts for dashboards and observability.
+
+### 10.1 Stat Nodes
+
+Stat nodes display:
+
+* single values
+* counters
+* derived aggregates
+
+### 10.2 Chart Nodes
+
+The following chart layout nodes are added for Orchid parity:
+
+* line charts
+* bar charts
+* pie/donut charts
+
+Charts:
+
+* bind to panel data keys
+* may be time-series or categorical
+* respect intent-based visibility
+
+Charts are layout primitives and do not define data aggregation logic themselves.
 
 ---
 
@@ -509,13 +576,16 @@ Nomos-UI is not:
 Nomos-UI is a declarative, policy-aware UI runtime.
 
 **Key Abstractions**:
-
 * **Panel**: Runtime instance (ephemeral, rendered)
 * **PanelModule**: TypeScript definition (code, contains functions, not serializable)
 * **ResourceDefinition**: Data structure (serializable, no functions, pure data)
 
-**Key Patterns**:
+**Nomos-UI philosophy**:
+* code-first for custom panels
+* data-first for resource-driven CRUD
+* policy-aware and observable by default
 
+**Key Patterns**:
 * PanelModules use schemas from ResourceDefinitions
 * ResourceDefinitions enable auto-generated CRUD UIs
 * PanelModules add custom behavior beyond auto-generation

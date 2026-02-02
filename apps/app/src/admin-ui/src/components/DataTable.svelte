@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte"
   import { uiState } from "../lib/state"
-  import type { ColumnDef, RowAction } from "../lib/types"
+  import type { ActionDescriptor, ColumnDef, RowAction, TableFilterDef } from "../lib/types"
   import { can, notifyDeny } from "../lib/authz/authorize.client"
 
   import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "$ui/card"
@@ -53,6 +53,7 @@
         search: string
         sortKey: string | null
         sortDir: "asc" | "desc"
+        filters?: Record<string, any>
       }) => void | Promise<void>)
     | undefined = undefined
 
@@ -75,11 +76,23 @@
     | ((action: RowAction, row: Row) => void | Promise<void>)
     | undefined = undefined
 
+  export let sortable: boolean = true
+  export let defaultSort: { key: string; dir: "asc" | "desc" } | undefined = undefined
+  export let filters: TableFilterDef[] | undefined = undefined
+  export let filtersState: Record<string, any> | undefined = undefined
+  export let onFiltersChange: ((f: Record<string, any>) => void) | undefined = undefined
+  export let columnVisibility: boolean = false
+  export let bulkActions: ActionDescriptor[] | undefined = undefined
+  export let onBulkAction:
+    | ((action: ActionDescriptor, rowIds: Array<string | number>, rows: Row[]) => void | Promise<void>)
+    | undefined = undefined
+
   $: tableId = `${tableIdPrefix}:${id ?? title}`
   $: actionColumnVisible = showActions && (enableEdit || (rowActions?.length ?? 0) > 0)
   $: columnCount = columns.length + (showSelection ? 1 : 0) + (actionColumnVisible ? 1 : 0)
+  $: showBulkBar = showSelection && selectedIds.size > 0 && (bulkActions?.length ?? 0) > 0
 
-  const isDenied = (intent?: string) => Boolean(intent) && !can(intent)
+  const isDenied = (intent?: string) => Boolean(intent) && !can(intent!)
   const denyIfNeeded = (intent?: string) => {
     if (!intent) return false
     if (can(intent)) return false
@@ -105,8 +118,14 @@
     return String(a ?? "").localeCompare(String(b ?? ""))
   }
 
-  const getNestedValue = (obj: Record<string, any>, path: string) =>
-    path.split(".").reduce((acc, key) => (acc ? acc[key] : undefined), obj)
+  const getNestedValue = (obj: Record<string, any>, path: string): unknown =>
+    path.split(".").reduce<unknown>(
+      (acc, key) =>
+        acc != null && typeof acc === "object" && !Array.isArray(acc)
+          ? (acc as Record<string, any>)[key]
+          : undefined,
+      obj as unknown
+    )
 
   const formatDate = (value: string) => {
     const date = new Date(value)
@@ -128,10 +147,10 @@
     return String(value)
   }
 
-  const resolveBadgeVariant = (column: ColumnDef, value: unknown) => {
+  const resolveBadgeVariant = (column: ColumnDef, value: unknown): "secondary" | "default" | "destructive" | "outline" | undefined => {
     if (!column.badgeVariants) return "secondary"
     const key = String(value)
-    return column.badgeVariants[key] ?? "secondary"
+    return (column.badgeVariants[key] as "secondary" | "default" | "destructive" | "outline" | undefined) ?? "secondary"
   }
 
   const actionVisible = (action: RowAction, row: Row) => {
@@ -139,15 +158,34 @@
     const value = getNestedValue(row, action.showWhen.key)
     if (action.showWhen.equals !== undefined) return value === action.showWhen.equals
     if (action.showWhen.notEquals !== undefined) return value !== action.showWhen.notEquals
+    if (action.showWhen.in) return action.showWhen.in.includes(value)
     if (action.showWhen.truthy) return Boolean(value)
+    if (action.showWhen.falsy) return !Boolean(value)
+    return true
+  }
+
+  const matchesFilters = (row: Row, filterVals: Record<string, any>) => {
+    if (!filterVals || typeof filterVals !== "object") return true
+    for (const [key, val] of Object.entries(filterVals)) {
+      if (val === undefined || val === null || val === "") continue
+      const rowVal = getNestedValue(row, key)
+      if (Array.isArray(val)) {
+        if (!val.includes(String(rowVal))) return false
+      } else {
+        if (String(rowVal).toLowerCase().indexOf(String(val).toLowerCase()) < 0) return false
+      }
+    }
     return true
   }
 
   const deriveRows = (
     source: Row[],
-    state: { search: string; sortKey: string | null; sortDir: "asc" | "desc" }
+    state: { search: string; sortKey: string | null; sortDir: "asc" | "desc"; filters?: Record<string, any> }
   ) => {
-    const filtered = source.filter((r) => matchesSearch(r, state.search))
+    let filtered = source.filter((r) => matchesSearch(r, state.search))
+    if (state.filters) {
+      filtered = filtered.filter((r) => matchesFilters(r, state.filters))
+    }
     if (!state.sortKey) return filtered
 
     return [...filtered].sort((ra, rb) => {
@@ -161,12 +199,18 @@
   })
 
   $: tableState =
-    $uiState.tables?.[tableId] ?? { search: "", sortKey: null, sortDir: "asc", page: 1, pageSize: 10 }
+    $uiState.tables?.[tableId] ?? {
+      search: "",
+      sortKey: defaultSort?.key ?? null,
+      sortDir: defaultSort?.dir ?? "asc",
+      page: 1,
+      pageSize: 10,
+    }
   $: effectivePage = page ?? tableState.page
   $: effectivePageSize = pageSize ?? tableState.pageSize
   $: displayRows = onQueryChange
     ? ((rows ?? []) as Row[])
-    : deriveRows((rows ?? []) as Row[], tableState)
+    : deriveRows((rows ?? []) as Row[], { ...tableState, filters: filtersState ?? {} })
   $: totalPages = Math.max(1, Math.ceil((total ?? displayRows.length) / effectivePageSize))
   $: pageStart = (effectivePage - 1) * effectivePageSize
   $: paginatedRows = onQueryChange
@@ -273,7 +317,7 @@
   }
 </script>
 
-<Card>
+<Card data-column-visibility={columnVisibility}>
   <CardHeader>
     <div class="flex items-start justify-between gap-4">
       <div class="space-y-1">
@@ -301,8 +345,73 @@
   </CardHeader>
 
   <CardContent class="pt-0">
+    {#if showBulkBar && bulkActions?.length}
+      <div class="flex items-center gap-3 py-2 px-3 mb-3 rounded-md border bg-muted/30 text-sm">
+        <span class="text-muted-foreground">
+          {selectedIds.size} selected
+        </span>
+        <div class="flex gap-2">
+          {#each bulkActions as action, i (action.type + ":" + (action.label ?? "") + ":" + i)}
+            {#if action.type === "link"}
+              <Button
+                size="sm"
+                variant="secondary"
+                onclick={() => action.href && (window.location.href = action.href)}
+              >
+                {action.label}
+              </Button>
+            {:else if action.type === "method" || action.type === "modal.open"}
+              <Button
+                size="sm"
+                variant={action.type === "method" && action.method === "DELETE" ? "destructive" : "secondary"}
+                onclick={() => onBulkAction?.(action, selectedRowIds, selectedRows)}
+              >
+                {action.label}
+              </Button>
+            {/if}
+          {/each}
+        </div>
+      </div>
+    {/if}
     <div class="rounded-md border overflow-auto relative">
-      <Table>
+        {#if filters?.length && onFiltersChange}
+          <div class="flex flex-wrap gap-2 p-2 border-b bg-muted/10">
+            {#each filters as filterDef (filterDef.key)}
+              {#if filterDef.type === "select"}
+                <div class="flex items-center gap-1">
+                  <span class="text-xs text-muted-foreground">{filterDef.label}:</span>
+                  <select
+                    class="text-sm rounded border border-input bg-background px-2 py-1"
+                    value={String(filtersState?.[filterDef.key] ?? "")}
+                    onchange={(e) => {
+                      const v = (e.currentTarget as HTMLSelectElement).value
+                      onFiltersChange?.({ ...filtersState, [filterDef.key]: v || undefined })
+                    }}
+                  >
+                    <option value="">All</option>
+                    {#each filterDef.options ?? [] as opt (opt.value)}
+                      <option value={opt.value}>{opt.label}</option>
+                    {/each}
+                  </select>
+                </div>
+              {:else}
+                <div class="flex items-center gap-1">
+                  <span class="text-xs text-muted-foreground">{filterDef.label}:</span>
+                  <Input
+                    class="h-8 w-32 text-sm"
+                    placeholder={filterDef.label}
+                    value={String(filtersState?.[filterDef.key] ?? "")}
+                    oninput={(e) => {
+                      const v = (e.currentTarget as HTMLInputElement).value
+                      onFiltersChange?.({ ...filtersState, [filterDef.key]: v || undefined })
+                    }}
+                  />
+                </div>
+              {/if}
+            {/each}
+          </div>
+        {/if}
+        <Table>
         <TableHeader>
           <TableRow>
             {#if showSelection}
@@ -311,7 +420,7 @@
 
             {#each columns as col (col.key)}
               <TableHead class={col.hideOnMobile ? "hidden sm:table-cell" : ""}>
-                {#if col.sortable}
+                {#if (col.sortable ?? sortable)}
                   <Button
                     variant="ghost"
                     class="h-8 px-2 -ml-2"

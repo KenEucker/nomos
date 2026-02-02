@@ -16,22 +16,40 @@
   let search = ""
   let container: HTMLDivElement | null = null
 
-  $: selectedValues = new Set(selected?.map((item) => item.value) ?? [])
-  $: filteredItems = items.filter((item) =>
+  // Deduplicate by value so keyed each blocks never see duplicate keys (e.g. from API or form state)
+  $: uniqueSelected = (() => {
+    const list = selected ?? []
+    const seen = new Set<string>()
+    return list.filter((item) => {
+      if (seen.has(item.value)) return false
+      seen.add(item.value)
+      return true
+    })
+  })()
+  $: selectedValues = new Set(uniqueSelected.map((item) => item.value))
+  $: uniqueItems = (() => {
+    const seen = new Set<string>()
+    return items.filter((item) => {
+      if (seen.has(item.value)) return false
+      seen.add(item.value)
+      return true
+    })
+  })()
+  $: filteredItems = uniqueItems.filter((item) =>
     item.label.toLowerCase().includes(search.trim().toLowerCase())
   )
 
   const toggleItem = (item: MultiSelectItem) => {
     if (disabled) return
     const next = selectedValues.has(item.value)
-      ? selected.filter((entry) => entry.value !== item.value)
-      : [...selected, item]
+      ? uniqueSelected.filter((entry) => entry.value !== item.value)
+      : [...uniqueSelected, item]
     dispatch("change", { selected: next })
   }
 
   const removeItem = (item: MultiSelectItem) => {
     if (disabled) return
-    const next = selected.filter((entry) => entry.value !== item.value)
+    const next = uniqueSelected.filter((entry) => entry.value !== item.value)
     dispatch("change", { selected: next })
   }
 
@@ -82,10 +100,10 @@
       }
     }}
   >
-    {#if selected.length === 0}
+    {#if uniqueSelected.length === 0}
       <span>{placeholder}</span>
     {:else}
-      {#each selected as item (item.value)}
+      {#each uniqueSelected as item (item.value)}
         <span class="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs text-foreground">
           {item.label}
           <button

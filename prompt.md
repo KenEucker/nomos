@@ -1,4 +1,4 @@
-You are implementing an AI-first Node.js platform: a single bundled Fastify application that includes both an API and an Admin control plane. The goal is to be extremely LLM-legible: filesystem conventions, minimal boilerplate, explicit contracts, and generated inventories. Follow the spec below exactly. Produce working TypeScript code (ESM), with a minimal but complete first pass implementing routing, plugins, auth, admin, jobs, events/hooks, webhooks, observability/listeners, diagnostics, swagger UI, and API credential management.
+You are implementing an AI-first Node.js platform: a single bundled Fastify application that includes both an API and an Admin control plane. The goal is to be extremely LLM-legible: filesystem conventions, minimal boilerplate, explicit contracts, and generated inventories. Follow the spec below exactly. Produce working TypeScript code (ESM), with a minimal but complete first pass implementing routing, plugins, auth, admin, jobs, events/hooks, observability/listeners, diagnostics, swagger UI, and API credential management.
 
 ========================
 0) Global constraints
@@ -11,7 +11,6 @@ You are implementing an AI-first Node.js platform: a single bundled Fastify appl
 - Plugins: Filesystem-first; plugin name inferred from folder name.
 - Auth: Built-in, implemented as core plugin, but still uses same plugin contribution model.
 - Observability: event-driven listeners, audit log.
-- Webhooks: outbound and inbound first-class; outbound delivery via jobs with retries and signing.
 - Swagger UI: built-in at /docs and /openapi.json.
 - API credentials: API keys with allowed host/origin allowlist per key; Admin management UI.
 - Diagnostics: /health /ready /version + admin-only /admin/diagnostics* endpoints; disable in prod unless enabled.
@@ -38,7 +37,7 @@ apps/app/
         env.ts
 
       plugins/
-        pluginTypes.ts
+        types.ts
         loadPlugins.ts
         registry.ts
 
@@ -68,12 +67,6 @@ apps/app/
         runtime.ts
         drivers/
           memoryDriver.ts
-
-      webhooks/
-        types.ts
-        outbound.ts
-        inbound.ts
-        signing.ts
 
       observability/
         listeners.ts
@@ -210,7 +203,7 @@ Ctx includes:
 - db placeholder (simple in-memory store is acceptable for first pass if Prisma isn’t wired)
 - services registry
 - auth helpers: requireUser(), requirePermission(), hasPermission()
-- jobs/events/webhooks helpers
+- jobs/events helpers
 - response helpers: json(), error()
 
 Validation:
@@ -257,7 +250,6 @@ Implement plugin loader that:
   - jobs
   - events/hooks registrations
   - listeners
-  - inbound webhook handlers
 Also include core plugins:
 - platform/auth/plugin.ts
 - platform/admin/plugin.ts
@@ -299,7 +291,6 @@ Admin must provide:
 Admin should manage:
 - users, roles, permissions
 - API keys
-- webhook config
 - jobs + runs
 - audit log + recent errors
 
@@ -316,7 +307,6 @@ Built-in platform events:
 - http.request.completed (duration, status, routeId)
 - auth.login/auth.failed
 - jobs.dispatched/jobs.started/jobs.succeeded/jobs.failed
-- webhooks.delivered/webhooks.failed
 - apiKey.used/apiKey.denied
 
 Hooks:
@@ -346,20 +336,7 @@ Admin:
 Emit job lifecycle events.
 
 =================================
-11) Webhooks (first pass implemented)
-=================================
-Outbound webhooks:
-- Admin-configurable destinations (url, subscribed events, secret, headers, retry policy)
-- When matching event emitted, enqueue a webhook delivery job
-- Signing: HMAC signature header (e.g. X-Signature) with timestamp; store algorithm in signing.ts
-- Delivery logs stored for admin viewing
-Inbound webhooks:
-- Standard route space: POST /webhooks/:provider
-- Plugin can register provider handlers; handler can verify signature and emit internal events
-- Provide idempotency helper (idempotency key header or payload hash)
-
-=================================
-12) API Authentication Management (API keys + allowed hosts)
+11) API Authentication Management (API keys + allowed hosts)
 =================================
 Implement API keys:
 - create/revoke/rotate
@@ -372,7 +349,7 @@ Enforcement:
 Admin endpoints and UI to manage keys.
 
 =================================
-13) Built-in Swagger UI + OpenAPI
+12) Built-in Swagger UI + OpenAPI
 =================================
 Implement OpenAPI generation:
 - Use route registry + route config openapi fields
@@ -385,7 +362,7 @@ Access control:
 - In prod: /docs admin-only by default; /openapi.json configurable via env.
 
 =================================
-14) Diagnostics & Debugging
+13) Diagnostics & Debugging
 =================================
 Endpoints:
 - GET /health (liveness)
@@ -401,7 +378,7 @@ Safety:
 - always audit access
 
 =================================
-15) Observability & audit
+14) Observability & audit
 =================================
 Implement:
 - structured logger wrapper
@@ -411,13 +388,12 @@ Implement:
   - auth failures
   - api key usage/denials
   - job lifecycle
-  - webhook delivery results
 Admin exposes:
 - /admin/audit
 - /admin/errors (recent errors)
 
 =================================
-16) Admin UI (Astro + Svelte islands)
+15) Admin UI (Astro + Svelte islands)
 =================================
 Implement minimal admin UI:
 - /admin loads shell
@@ -434,7 +410,7 @@ Include simple styling.
 Resource schema fields: id, text, email, select, boolean, datetime, relation (relation can be stubbed).
 
 =================================
-17) Example plugin: users
+16) Example plugin: users
 =================================
 Implement `plugins/users` with:
 - permissions: users.read/users.create/users.update/users.delete; roles/permissions management permissions
@@ -446,7 +422,7 @@ Implement `plugins/users` with:
 - hooks: users beforeCreate/afterCreate emits events
 
 =================================
-18) Quality bar
+17) Quality bar
 =================================
 - Everything must run end-to-end in dev with in-memory stores.
 - Keep interfaces so Prisma can be swapped in later.

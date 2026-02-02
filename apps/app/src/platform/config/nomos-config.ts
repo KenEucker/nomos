@@ -32,8 +32,11 @@ export type ObservabilityConfig = {
   dropDebugUnderPressure?: boolean;
   /** Trace sampling rate (0.0 to 1.0) */
   sampleTraceRate?: number;
-  /** Health signal emission interval in milliseconds (0 to disable) */
-  healthSignalIntervalMs?: number;
+  /**
+   * How often to emit obs.health signals (seconds). Use 0 to disable periodic health signals.
+   * Also configurable via OBS_HEALTH_SIGNAL_INTERVAL_S env.
+   */
+  healthSignalIntervalS?: number;
 };
 
 export type JobsConfig = {
@@ -71,6 +74,11 @@ export type NomosConfig = {
     devAuthSecret?: string;
   };
   logging?: {
+    /**
+     * Minimum log level: "trace" | "debug" | "info" | "warn" | "error" | "fatal".
+     * Use "warn" or "error" to reduce server log verbosity.
+     * Also configurable via LOG_LEVEL env.
+     */
     level?: string;
     pretty?: boolean;
     errorStack?: boolean;
@@ -379,7 +387,13 @@ export function resolveNomosConfig(
     consoleSinkLevel: obsRaw.consoleSinkLevel ?? (isProduction ? "info" : "debug"),
     dropDebugUnderPressure: obsRaw.dropDebugUnderPressure ?? true,
     sampleTraceRate: obsRaw.sampleTraceRate ?? 1.0,
-    healthSignalIntervalMs: obsRaw.healthSignalIntervalMs ?? 30000,
+    healthSignalIntervalMs: (() => {
+      // Env wins so OBS_HEALTH_SIGNAL_INTERVAL_S is reliable (set after loadEnvFiles in loadNomosConfig)
+      const envSeconds = parseIntEnv(process.env.OBS_HEALTH_SIGNAL_INTERVAL_S);
+      const seconds = envSeconds ?? obsRaw.healthSignalIntervalS ?? 30;
+      const s = Number.isFinite(seconds) && seconds >= 0 ? seconds : 30;
+      return s * 1000;
+    })(),
   };
 
   // Jobs configuration
@@ -478,18 +492,15 @@ function loadEnvFiles(envDirs: string[]): void {
 export async function loadNomosConfig(options: LoadNomosConfigOptions = {}): Promise<LoadedNomosConfig> {
   const rootDir = options.rootDir ?? process.cwd();
 
-  // Load .env files before resolving config
-  // Default search order: rootDir (apps/app), then monorepo root, then cwd
-  // Later files override earlier ones, so project root .env takes precedence
+  // Load .env files before resolving config so OBS_*, LOG_LEVEL, etc. are available
+  // Load cwd first (where npm run was executed), then rootDir, then monorepo root
   if (!options.skipEnvLoad) {
     const cwd = process.cwd();
-    // From apps/app, go up 2 levels to reach monorepo root
     const monorepoRoot = path.resolve(rootDir, "../..");
-    // Load in order: app-specific first, then project root (which overrides)
-    const defaultEnvDirs = [rootDir, monorepoRoot, cwd].filter(
-      (dir, idx, arr) => arr.indexOf(dir) === idx // dedupe
+    const envDirs = [cwd, rootDir, monorepoRoot].filter(
+      (dir, idx, arr) => arr.indexOf(dir) === idx
     );
-    loadEnvFiles(defaultEnvDirs);
+    loadEnvFiles(envDirs);
   }
 
   let resolvedPath: string | null = null;

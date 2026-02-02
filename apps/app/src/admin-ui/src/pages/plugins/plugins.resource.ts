@@ -14,6 +14,7 @@ export const pluginsResource = createResourceDefinition({
   },
   dataKey: "plugins",
   list: {
+    rowIdKey: "slug",
     columns: [
       { key: "slug", label: "Slug", sortable: true },
       { key: "name", label: "Name", sortable: true },
@@ -46,8 +47,18 @@ export const pluginsResource = createResourceDefinition({
       {
         id: "viewPreview",
         label: "Preview",
+        type: "conditionalLink",
+        href: "/admin/plugins/{slug}/preview",
+        checkKey: "lastPreview",
+        toastIfMissing: "No preview has been generated yet.",
+        showWhen: { key: "status", in: ["staged", "disabled"] },
+      },
+      {
+        id: "viewWhenBroken",
+        label: "View",
         type: "link",
-        href: "/plugins/{slug}/preview",
+        href: "/admin/plugins/{slug}/preview",
+        showWhen: { key: "status", equals: "broken" },
       },
       {
         id: "preview",
@@ -55,7 +66,10 @@ export const pluginsResource = createResourceDefinition({
         type: "method",
         endpoint: "/plugins/{slug}/preview",
         method: "POST",
-        toast: { success: "Preview requested" },
+        toast: { success: "Preview generated successfully" },
+        after: "navigate",
+        href: "/admin/plugins/{slug}/preview",
+        showWhen: { key: "lastPreview", falsy: true },
       },
       {
         id: "enable",
@@ -68,6 +82,7 @@ export const pluginsResource = createResourceDefinition({
         },
         toast: { success: "Plugin enabled" },
         after: "refresh",
+        showWhen: { key: "status", in: ["staged", "disabled", "broken"] },
       },
       {
         id: "disable",
@@ -80,6 +95,7 @@ export const pluginsResource = createResourceDefinition({
         },
         toast: { success: "Plugin disabled" },
         after: "refresh",
+        showWhen: { key: "enabled", equals: true },
       },
       {
         id: "uninstall",

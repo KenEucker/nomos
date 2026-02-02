@@ -48,7 +48,20 @@ export const getSubject = (): Subject | null => readPayload()?.subject ?? null
 
 export const getCapabilities = (): CapabilityMap => readPayload()?.capabilities ?? {}
 
-export const can = (intent: string): boolean => Boolean(getCapabilities()[intent])
+/**
+ * Check if the subject has the given intent.
+ * If the intent key exists in the capability map, its value is used (true = allow, false = deny).
+ * Only when the intent key is absent do we fall back to admin-level (subject?.level === "admin");
+ * otherwise we return false.
+ */
+export const can = (intent: string): boolean => {
+  const payload = readPayload()
+  const capabilities = payload?.capabilities ?? {}
+  const subject = payload?.subject ?? null
+  if (Object.hasOwn(capabilities, intent)) return capabilities[intent] === true
+  if (subject?.level === "admin") return true
+  return false
+}
 
 const isAdmin = (subject: Subject | null) => subject?.level === "admin"
 
