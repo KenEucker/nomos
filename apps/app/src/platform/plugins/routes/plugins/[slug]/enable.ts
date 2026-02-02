@@ -4,7 +4,7 @@ import { HttpError } from "../../../../errors";
 import { discoverPlugins } from "../../../discovery";
 import { getPluginStateStore } from "../../../store";
 import { syncDiscoveredPlugins } from "../../../state";
-import { applySchema } from "../../../../db/pluginSchema";
+import { hasPluginPrismaSchema, getPrismaManager, buildGetPluginSchemaContent } from "../../../../db/plugin-prisma-schema";
 
 export const postConfig = {
   auth: "required",
@@ -44,38 +44,31 @@ export const post = async (ctx: Ctx) => {
     throw new HttpError(400, "preview_required", "Plugin preview is required before enabling.");
   }
 
-  // Apply database schema if the plugin declares one
+  // Apply database schema if the plugin declares one (manifest.database or schema.prisma)
   let dbResult: { success: boolean; error?: string; summary?: string[] } | undefined;
-  if (match.manifest?.database) {
-    const result = await applySchema(ctx.prisma, slug, match.manifest.database);
 
-    if (!result.migration.success) {
-      // Schema migration failed — do NOT enable the plugin
+  if (hasPluginPrismaSchema(match.folderPath) || match.manifest?.database) {
+    // Runtime Prisma schema: merge core + enabled plugins (schema.prisma or converted manifest.database), generate, reload client
+    const allRows = await pluginState.findMany();
+    const allEnabled = allRows.filter((r) => r.enabled).map((r) => r.slug);
+    const enabledWithNew = Array.from(new Set([...allEnabled, slug]));
+    const getPluginSchemaContent = buildGetPluginSchemaContent(discovered);
+    try {
+      const prismaManager = getPrismaManager(config);
+      await prismaManager.updateSchema(enabledWithNew, getPluginSchemaContent);
+      dbResult = { success: true, summary: ["Prisma schema merged and client reloaded."] };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Prisma schema merge or migration failed.";
       await pluginState.update({
         where: { slug },
         data: {
           status: "broken",
           enabled: false,
-          lastError: result.migration.error ?? "Database schema migration failed.",
+          lastError: message,
         }
       });
-
-      throw new HttpError(
-        400,
-        "schema_migration_failed",
-        result.migration.error ?? "Database schema migration failed. Check the plugin's database definition.",
-        {
-          validationIssues: result.validation.issues,
-          appliedActions: result.migration.applied.length,
-          failedAction: result.migration.failedAction,
-        }
-      );
+      throw new HttpError(400, "schema_migration_failed", message);
     }
-
-    dbResult = {
-      success: true,
-      summary: result.diff.summary,
-    };
   }
 
   const updated = await pluginState.update({

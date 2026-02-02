@@ -32,7 +32,7 @@ export default defineRoute(usersContract, {
       },
       summary: "Update user",
       handler: async (ctx: Ctx) => {
-        const { name, email, password, roles } = ctx.body;
+        const { name, email, password, bio, avatar, roles } = ctx.body;
 
         const existing = await ctx.prisma.user.findUnique({
           where: { id: ctx.params.id },
@@ -50,6 +50,8 @@ export default defineRoute(usersContract, {
             ...(name ? { name } : {}),
             ...(email ? { email } : {}),
             ...(passwordHash ? { passwordHash } : {}),
+            ...(bio !== undefined ? { bio: bio ?? null } : {}),
+            ...(avatar !== undefined ? { avatar: avatar === "" ? null : avatar } : {}),
           },
           include: { roles: { include: { role: true } } },
         });

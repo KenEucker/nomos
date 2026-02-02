@@ -127,6 +127,10 @@ export type FieldDef = {
   pattern?: string
   /** Error message when pattern does not match. */
   patternMessage?: string
+  /** When true, show a button to reveal this field (e.g. "Set/change password" on edit). Field is not required when hidden. */
+  revealByButton?: boolean
+  /** Label for the button that reveals the field (e.g. "Set/change password"). */
+  revealButtonLabel?: string
 }
 
 export type RowsNode = {

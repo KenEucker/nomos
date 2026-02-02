@@ -43,15 +43,26 @@
     onRefresh = () => {},
   }: PanelFormProps = $props()
 
-  const resolveRequiredFields = (formFields: FieldDef[], jsonSchema?: JSONSchema7) => {
+  // Initialize values with data if available (only spread when it's a non-null object)
+  const rawInitial = $derived.by(() => initialValuesKey && data?.[initialValuesKey])
+  const isEdit = $derived(Boolean(rawInitial?.id))
+
+  const resolveRequiredFields = (formFields: FieldDef[], jsonSchema?: JSONSchema7, opts?: { isEdit?: boolean }) => {
+    let names: string[]
     if (Array.isArray(jsonSchema?.required)) {
-      return new Set(jsonSchema?.required)
+      names = jsonSchema.required as string[]
+    } else {
+      names = formFields.filter((field) => field.required).map((field) => field.name)
     }
-    return new Set(formFields.filter((field) => field.required).map((field) => field.name))
+    const set = new Set(names)
+    if (opts?.isEdit) {
+      set.delete("password")
+    }
+    return set
   }
 
-  const validateRequiredFields = (formFields: FieldDef[], jsonSchema: JSONSchema7 | undefined, valuesToValidate: Record<string, any>) => {
-    const requiredFields = resolveRequiredFields(formFields, jsonSchema)
+  const validateRequiredFields = (formFields: FieldDef[], jsonSchema: JSONSchema7 | undefined, valuesToValidate: Record<string, any>, opts?: { isEdit?: boolean }) => {
+    const requiredFields = resolveRequiredFields(formFields, jsonSchema, opts)
     const nextErrors: Record<string, string> = {}
 
     for (const field of formFields) {
@@ -70,8 +81,7 @@
     return nextErrors
   }
 
-  // Initialize values with data if available (only spread when it's a non-null object)
-  const rawInitial = $derived.by(() => initialValuesKey && data?.[initialValuesKey])
+  let revealedFields = $state<Record<string, boolean>>({})
   const safeInitial = $derived.by(() => {
     const raw = rawInitial
     return raw != null && typeof raw === "object" && !Array.isArray(raw)
@@ -173,7 +183,7 @@
   })
 
   const validate = () => {
-    const requiredErrors = validateRequiredFields(fields, schema!, values)
+    const requiredErrors = validateRequiredFields(fields, schema!, values, { isEdit })
     const patternErrors: Record<string, string> = {}
     for (const field of fields) {
       if (!field.pattern) continue
@@ -214,7 +224,9 @@
     try {
       const payload: Record<string, any> = {}
       for (const field of fields) {
+        if (field.revealByButton && isEdit && !revealedFields[field.name]) continue
         let value = values[field.name]
+        if (field.revealByButton && isEdit && (value === undefined || value === null || (typeof value === "string" && value.trim() === ""))) continue
         if (field.type === "multiselect" && value === undefined) {
           value = []
         }
@@ -319,7 +331,16 @@
       <div class="space-y-2">
         <label class="text-sm font-medium" for={`${id}-${field.name}`}>{field.label}</label>
 
-        {#if field.readonly}
+        {#if field.revealByButton && isEdit && !revealedFields[field.name]}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onclick={() => { revealedFields = { ...revealedFields, [field.name]: true } }}
+          >
+            {field.revealButtonLabel ?? "Show field"}
+          </Button>
+        {:else if field.readonly}
           <div class="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
             {values[field.name] ?? "—"}
           </div>
