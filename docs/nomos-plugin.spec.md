@@ -206,12 +206,16 @@ Authorization artifacts must:
 
 Plugins may require database schema.
 
-All schema changes must be expressed via platform migration mechanisms.
+**Runtime schema and client regeneration**: The platform supports runtime schema composition when plugins are enabled or disabled. Plugins may provide a Prisma schema file (`schema.prisma`) in their directory. The platform merges the core schema with enabled plugins' schemas, regenerates the Prisma client, and reloads it so the same client sees core and plugin models (including new tables and new columns on existing core tables). This happens when a plugin is enabled (no server restart required). Schema changes are expressed via the platform's merge-and-regenerate flow; migration files may be used for production or uninstall.
+
+**Preview**: Before enabling a plugin that adds schema, the platform exposes a preview that spells out the database changes (tables added, columns added) for the admin to review.
+
+**Disable**: Disabling a plugin does not change the database; orphaned columns or tables may remain. Only when a plugin is **uninstalled** does the platform remove that plugin's database additions (when supported).
 
 Plugins must not:
 
-* mutate schema ad hoc at runtime
-* bypass the migration system
+* bypass the platform's schema merge and migration mechanisms
+* introduce schema changes outside the platform's defined flow (merge, generate, reload)
 
 ---
 
@@ -281,12 +285,16 @@ The platform boots plugins in the following sequence:
    - Validate structure
    - Detect conflicts
    
-3. Setup (one-time)
+3. Runtime schema (when core-schema exists)
+   - Merge core schema with enabled plugins' Prisma schemas
+   - Regenerate and reload the Prisma client so routes use the merged schema
+   
+4. Setup (one-time)
    - Run plugin setup() hooks
-   - Apply database migrations
+   - Apply database migrations (when not using runtime merge)
    - Ensure intents in database
    
-4. Start (every boot)
+5. Start (every boot)
    - Run plugin start() hooks
    - Register services
    - Register routes

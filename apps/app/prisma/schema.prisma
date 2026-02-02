@@ -6,59 +6,6 @@ datasource db {
   provider = "sqlite"
 }
 
-model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  name         String
-  passwordHash String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  roles        UserRole[]
-  sessions     Session[]
-}
-
-model Role {
-  id          String           @id @default(cuid())
-  key         String           @unique
-  name        String
-  description String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  users       UserRole[]
-  permissions RolePermission[]
-  subjects    SubjectRole[]
-}
-
-model Permission {
-  id          String           @id @default(cuid())
-  key         String           @unique
-  description String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  roles       RolePermission[]
-}
-
-model RolePermission {
-  roleId       String
-  permissionId String
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@id([roleId, permissionId])
-}
-
-model SubjectRole {
-  id          String   @id @default(cuid())
-  subjectType String
-  subjectId   String
-  roleId      String
-  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-
-  @@unique([subjectType, subjectId, roleId])
-  @@index([subjectType, subjectId])
-}
-
 model ApiKey {
   id           String    @id @default(cuid())
   keyHash      String    @unique
@@ -72,25 +19,39 @@ model ApiKey {
   updatedAt    DateTime  @updatedAt
   revokedAt    DateTime?
   allowedHosts String?   // JSON array of strings
-
   @@index([keyPrefix, revokedAt])
 }
 
-model UserRole {
-  userId String
-  roleId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@id([userId, roleId])
+model JobRun {
+  id                    String    @id @default(cuid())
+  jobId                 String
+  status                String    // pending, running, succeeded, failed, cancelled, timed_out
+  trigger               String    // cron, event, manual, api
+  scheduledFor          DateTime
+  startedAt             DateTime?
+  finishedAt            DateTime?
+  attempt               Int       @default(1)
+  error                 Json?
+  triggerPayload        Json?
+  correlationId         String?
+  lastHeartbeatAt       DateTime?
+  cancellationRequestedAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  @@index([jobId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([createdAt])
+  @@index([cancellationRequestedAt])
 }
 
-model Session {
-  id        String   @id
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  expiresAt DateTime
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
 }
 
 model PluginState {
@@ -112,30 +73,62 @@ model PluginState {
   lastPreviewedAt DateTime?
 }
 
-// =============================================================================
-// Jobs System
-// =============================================================================
+model Role {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  name        String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       UserRole[]
+  permissions RolePermission[]
+  subjects    SubjectRole[]
+}
 
-model JobRun {
-  id                    String    @id @default(cuid())
-  jobId                 String
-  status                String    // pending, running, succeeded, failed, cancelled, timed_out
-  trigger               String    // cron, event, manual, api
-  scheduledFor          DateTime
-  startedAt             DateTime?
-  finishedAt            DateTime?
-  attempt               Int       @default(1)
-  error                 Json?
-  triggerPayload        Json?
-  correlationId         String?
-  lastHeartbeatAt       DateTime?
-  cancellationRequestedAt DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+}
 
-  @@index([jobId])
-  @@index([status])
-  @@index([scheduledFor])
-  @@index([createdAt])
-  @@index([cancellationRequestedAt])
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model SubjectRole {
+  id          String   @id @default(cuid())
+  subjectType String
+  subjectId   String
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  @@unique([subjectType, subjectId, roleId])
+  @@index([subjectType, subjectId])
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  roles        UserRole[]
+  sessions     Session[]
+  bio    String?
+  avatar String?
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  @@id([userId, roleId])
 }

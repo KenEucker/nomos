@@ -7,7 +7,7 @@ export function audit(): Middleware {
       reqId: ctx.reqId,
       path: ctx.path,
       method: ctx.method,
-      userId: ctx.user?.id ?? null,
+      userId: ctx.subject?.id ?? null,
       apiClientId: ctx.apiClient?.id ?? null
     });
   };

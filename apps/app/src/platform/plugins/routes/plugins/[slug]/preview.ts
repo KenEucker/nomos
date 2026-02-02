@@ -6,6 +6,7 @@ import { runPreview } from "../../../preview";
 import type { ManifestForPlan } from "../../../discoverPlan";
 import { getPluginStateStore } from "../../../store";
 import { syncDiscoveredPlugins } from "../../../state";
+import { hasPluginPrismaSchema, getSchemaPreview, buildGetPluginSchemaContent } from "../../../../db/plugin-prisma-schema";
 
 export const postConfig = {
   auth: "required",
@@ -50,18 +51,27 @@ export const post = async (ctx: Ctx) => {
       slug: match.slug,
       platformManifest: match.manifest as ManifestForPlan,
     });
+    let plan = result.plan;
+    if (hasPluginPrismaSchema(match.folderPath) || match.manifest?.database) {
+      const allRows = await pluginState.findMany();
+      const allEnabled = allRows.filter((r) => r.enabled).map((r) => r.slug);
+      const enabledWithThis = Array.from(new Set([...allEnabled, slug]));
+      const getPluginSchemaContent = buildGetPluginSchemaContent(discovered);
+      const databasePrisma = getSchemaPreview(enabledWithThis, config, getPluginSchemaContent);
+      plan = { ...plan, databasePrisma } as typeof plan & { databasePrisma: typeof databasePrisma };
+    }
     const updated = await pluginState.update({
       where: { slug },
       data: {
         status: state.enabled ? "enabled" : "staged",
-        lastPreview: result.plan,
+        lastPreview: plan,
         lastPreviewedAt: new Date(),
         lastError: null
       }
     });
 
-    return ctx.json({ plugin: updated, plan: result.plan });
-  } catch (error: any) {
+    return ctx.json({ plugin: updated, plan });
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Preview failed.";
     await pluginState.update({
       where: { slug },

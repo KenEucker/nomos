@@ -40,7 +40,9 @@ import { getSession } from "./auth/sessions";
 import { verifyJwt } from "./auth/jwt";
 import { findApiKey } from "./auth/apiKeys";
 import { createDomainLogger, createLoggerOptions, parseLogDomains } from "./logging/logger";
+import { PrismaClient } from "@prisma/client";
 import { getPrismaClient } from "./db/prisma";
+import { getPrismaManager, buildGetPluginSchemaContent } from "./db/plugin-prisma-schema";
 import {
   createAuthorizationEngine,
   createGrantProvider,
@@ -61,7 +63,6 @@ import {
   type NomosObserver,
   type NomosEnv,
 } from "./observability";
-import { createDbClient, type PluginDbClient } from "./db/pluginSchema";
 
 export async function createApp(config: ResolvedNomosConfig) {
   // Initialize observability runtime first (before anything else logs)
@@ -113,6 +114,27 @@ export async function createApp(config: ResolvedNomosConfig) {
   process.env.LOG_PRETTY = String(config.logging.pretty);
   if (logDomainsStr) {
     process.env.LOG_DOMAINS = logDomainsStr;
+  }
+
+  // Bootstrap runtime Prisma schema when core-schema.prisma exists.
+  // We never run db push with core-only schema so plugin-added columns (e.g. bio) and data are never dropped on disable/restart.
+  const coreSchemaPath = path.join(process.cwd(), "prisma", "core-schema.prisma");
+  const outputSchemaPath = path.join(process.cwd(), "prisma", "schema.prisma");
+  if (fs.existsSync(coreSchemaPath) && config.modules.pluginManager?.enabled) {
+    const prismaManager = getPrismaManager(config);
+    if (!fs.existsSync(outputSchemaPath)) {
+      fs.copyFileSync(coreSchemaPath, outputSchemaPath);
+    }
+    await prismaManager.bootstrapFromCurrentSchema();
+    const pluginState = getPluginStateStore(prismaManager.getClient<PrismaClient>());
+    const allRows = await pluginState.findMany();
+    const enabledSlugs = allRows.filter((r) => r.enabled).map((r) => r.slug);
+    if (enabledSlugs.length > 0) {
+      const { discoverPlugins } = await import("./plugins/discovery");
+      const discovered = await discoverPlugins(config);
+      const getPluginSchemaContent = buildGetPluginSchemaContent(discovered);
+      await prismaManager.updateSchema(enabledSlugs, getPluginSchemaContent);
+    }
   }
 
   const contentTypeForPath = (filePath: string) => {
@@ -321,16 +343,6 @@ export async function createApp(config: ResolvedNomosConfig) {
     seedDefaultRoles: true,
   });
   authzLog.info("Authorization database seeded.")
-
-  // Build plugin database client registry for plugins that declare database schemas.
-  // Each plugin gets a scoped PluginDbClient that auto-prefixes table names.
-  const pluginDbClients = new Map<string, PluginDbClient>();
-  for (const { name, manifest } of plugins.manifests) {
-    const slug = manifest.slug ?? name;
-    if (manifest.database) {
-      pluginDbClients.set(slug, createDbClient(prisma, slug, manifest.database));
-    }
-  }
 
   // When auth is disabled, create a bypass subject with admin role
   const authBypassSubject: Subject | null = config.modules.auth.enabled
@@ -652,8 +664,6 @@ export async function createApp(config: ResolvedNomosConfig) {
             permissions: [] as string[], // Permissions now resolved via authz engine
           } : null;
 
-          // Per-request plugin DB: only set when route has a plugin slug with a scoped client; otherwise null.
-          const pluginSlug = route.owner && pluginDbClients.has(route.owner) ? route.owner : null;
           const ctxBase = {
           reqId,
           method: req.method,
@@ -666,8 +676,7 @@ export async function createApp(config: ResolvedNomosConfig) {
           user,
           apiClient,
           db,
-          prisma,
-          pluginDb: pluginSlug ? pluginDbClients.get(pluginSlug) ?? null : null,
+          prisma: getPrismaClient(),
           services,
           events,
           jobs: jobsRuntime,

@@ -32,6 +32,8 @@ export const usersContract = defineContract({
       email: z.string().email(),
       name: z.string().min(1),
       password: z.string().min(6),
+      bio: z.string().optional(),
+      avatar: z.string().url().optional().or(z.literal("")),
       roles: z.array(z.string()).optional(),
     }),
 
@@ -39,6 +41,8 @@ export const usersContract = defineContract({
       name: z.string().min(1).optional(),
       email: z.string().email().optional(),
       password: z.string().min(6).optional(),
+      bio: z.string().optional().nullable(),
+      avatar: z.string().url().optional().nullable().or(z.literal("")),
       roles: z.array(z.string()).optional(),
     }),
 
@@ -50,8 +54,11 @@ export const usersContract = defineContract({
       id: z.string(),
       email: z.string(),
       name: z.string(),
+      bio: z.string().nullable().optional(),
+      avatar: z.string().nullable().optional(),
       roles: z.array(z.string()),
       createdAt: z.string(),
+      updatedAt: z.string().optional(),
     }),
 
     listResponse: z.object({
@@ -59,6 +66,8 @@ export const usersContract = defineContract({
         id: z.string(),
         email: z.string(),
         name: z.string(),
+        bio: z.string().nullable().optional(),
+        avatar: z.string().nullable().optional(),
         roles: z.array(z.string()),
         createdAt: z.string(),
       })),

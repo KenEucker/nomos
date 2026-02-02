@@ -54,6 +54,13 @@ export const pluginsResource = createResourceDefinition({
         showWhen: { key: "status", in: ["staged", "disabled"] },
       },
       {
+        id: "viewWhenBroken",
+        label: "View",
+        type: "link",
+        href: "/admin/plugins/{slug}/preview",
+        showWhen: { key: "status", equals: "broken" },
+      },
+      {
         id: "preview",
         label: "Generate Preview",
         type: "method",
@@ -75,7 +82,7 @@ export const pluginsResource = createResourceDefinition({
         },
         toast: { success: "Plugin enabled" },
         after: "refresh",
-        showWhen: { key: "status", in: ["staged", "disabled"] },
+        showWhen: { key: "status", in: ["staged", "disabled", "broken"] },
       },
       {
         id: "disable",

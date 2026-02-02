@@ -45,7 +45,7 @@ export default defineRoute(usersContract, {
       validate: { body: usersContract.schema.createBody },
       summary: "Create user",
       handler: async (ctx: Ctx) => {
-        const { email, name, password, roles } = ctx.body;
+        const { email, name, password, bio, avatar, roles } = ctx.body;
 
         const existing = await ctx.prisma.user.findUnique({ where: { email } });
         if (existing) {
@@ -58,6 +58,8 @@ export default defineRoute(usersContract, {
             email,
             name,
             passwordHash,
+            ...(bio != null && { bio }),
+            ...(avatar != null && avatar !== "" && { avatar }),
             roles: roles?.length
               ? {
                   create: roles.map((roleKey: string) => ({

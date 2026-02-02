@@ -7,12 +7,16 @@
   import { onMount } from "svelte"
   import { navigate } from "astro:transitions/client"
   import DataTable from "../components/DataTable.svelte"
+  import EnablePluginModal from "./EnablePluginModal.svelte"
   import { apiGet, apiFetch } from "../lib/api"
   import { confirmDialog } from "../lib/confirm-dialog"
   import { notify, toastError } from "../lib/toast"
   import type { ResourceDefinition, RowAction } from "../lib/types"
 
   export let definition: ResourceDefinition
+
+  let enablePluginModalOpen = $state(false)
+  let enablePluginModalSlug = $state("")
 
   type Row = Record<string, any>
 
@@ -144,6 +148,12 @@
     }
 
     if (action.type === "method" && action.endpoint) {
+      if (definition.name === "plugins" && action.id === "enable") {
+        enablePluginModalSlug = row.slug ?? ""
+        enablePluginModalOpen = true
+        return
+      }
+
       const confirmed = action.confirm
         ? await confirmDialog({
             title: action.confirm.title,
@@ -187,3 +197,12 @@
     }
   }}
 />
+{#if definition.name === "plugins"}
+  <EnablePluginModal
+    bind:open={enablePluginModalOpen}
+    slug={enablePluginModalSlug}
+    onSuccess={() => window.location.reload()}
+    onClose={() => { enablePluginModalOpen = false }}
+    onError={(msg) => toastError("Enable failed", msg)}
+  />
+{/if}
