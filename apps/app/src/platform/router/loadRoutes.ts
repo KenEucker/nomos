@@ -10,7 +10,6 @@ import {
   type ContractRouteModule,
 } from "./defineRoute";
 import { deriveHandler, isCollectionRoute } from "./restHandlers";
-import type { ResolvedContract } from "./contract";
 
 const METHODS = [
   "get",
@@ -25,10 +24,10 @@ const METHODS = [
 type Method = (typeof METHODS)[number];
 
 /**
- * Contract registry for intent discovery.
- * Populated during route loading.
+ * Discovered intents from contracts and route configs during loadRoutes.
+ * getLoadedIntents() returns these; nothing is stored for later lookup.
  */
-export const contractRegistry: Map<string, ResolvedContract> = new Map();
+const discoveredIntents: Set<string> = new Set();
 
 function collectFiles(dir: string): string[] {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -54,7 +53,7 @@ async function importRoute(filePath: string): Promise<RouteModule> {
 }
 
 /**
- * Process a contract route module to derive handlers and register contracts.
+ * Process a contract route module to derive handlers and discover intents from the contract.
  */
 function processContractModule(
   routeModule: ContractRouteModule,
@@ -64,9 +63,11 @@ function processContractModule(
   const operations = routeModule.__operations ?? {};
   const isCollection = isCollectionRoute(routePath);
 
-  // Register contract for intent discovery
-  if (!contractRegistry.has(contract.id)) {
-    contractRegistry.set(contract.id, contract);
+  // Discover intents from contract (no registry)
+  for (const intent of Object.values(contract.intents)) {
+    if (intent) {
+      discoveredIntents.add(intent);
+    }
   }
 
   // Process each method to derive handlers if needed
@@ -104,8 +105,7 @@ export async function loadRoutes(
     ...pluginRoutes,
   ];
 
-  // Clear contract registry for fresh load
-  contractRegistry.clear();
+  discoveredIntents.clear();
 
   for (const source of sources) {
     if (!fs.existsSync(source.baseDir)) continue;
@@ -125,12 +125,20 @@ export async function loadRoutes(
         if (!handler) continue;
         const methodConfigKey = `${configMethod}Config` as keyof RouteModule;
         const methodConfig = routeModule[methodConfigKey];
+        const moduleIntent =
+          routeModule.intents && method !== "options" && method !== "head"
+            ? routeModule.intents[method as keyof typeof routeModule.intents]
+            : undefined;
         const config: RouteDefinition["config"] = {
           auth: "required",
           ...(routeModule.config ?? {}),
+          ...(moduleIntent ? { intent: moduleIntent } : {}),
           ...(methodConfig ?? {}),
         };
         const id = `${source.owner}:${method}:${routePath}`;
+        if (config.intent) {
+          discoveredIntents.add(config.intent);
+        }
         registry.routes.push({
           id,
           method: method === "delete" ? "delete" : method,
@@ -149,27 +157,9 @@ export async function loadRoutes(
 }
 
 /**
- * Get all contracts from the registry.
- * Call after loadRoutes to get all registered contracts.
- */
-export function getLoadedContracts(): ResolvedContract[] {
-  return Array.from(contractRegistry.values());
-}
-
-/**
- * Get all intents from loaded contracts.
- * Call after loadRoutes to get all intents for seeding.
+ * Return intents discovered during loadRoutes (from contracts and route configs).
+ * Call after loadRoutes so intents are available for seeding.
  */
 export function getLoadedIntents(): string[] {
-  const intents: Set<string> = new Set();
-
-  for (const contract of contractRegistry.values()) {
-    for (const intent of Object.values(contract.intents)) {
-      if (intent) {
-        intents.add(intent);
-      }
-    }
-  }
-
-  return Array.from(intents);
+  return Array.from(discoveredIntents);
 }

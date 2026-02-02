@@ -20,7 +20,7 @@ import { getRateLimitConfig } from "./router/defineRoute";
 import { createMiddlewareRegistry, resolveMiddleware } from "./middleware/registry";
 import { audit } from "./middleware/builtins/audit";
 import { csrf } from "./middleware/builtins/csrf";
-import { rateLimit } from "./middleware/builtins/rateLimit";
+import { createRateLimitMiddleware, rateLimit } from "./middleware/builtins/rateLimit";
 import { requestContext } from "./middleware/builtins/requestContext";
 import { loadPlugins } from "./plugins/loadPlugins";
 import { getPluginStateStore } from "./plugins/store";
@@ -333,7 +333,9 @@ export async function createApp(config: ResolvedNomosConfig) {
   const plugins = await loadPlugins(baseDir, corePlugins, enabledPluginSlugs);
   pluginsLog.info({ plugins: plugins.manifests.length }, "Plugins loaded.");
 
-  // Seed authorization database with permissions from plugins
+  const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
+
+  // Seed authorization database with permissions from plugins and route intents
   await seedAuthzDatabase({
     prisma,
     plugins: plugins.manifests.map((p) => ({
@@ -452,7 +454,6 @@ export async function createApp(config: ResolvedNomosConfig) {
     events.on(listener.event, listener.handler, { mode: listener.mode });
   }
 
-  const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
   services.routeRegistry = routeRegistry;
 
   const coreRouteOwners = new Set(["core", "admin", "auth", "pluginManager", "observability", "jobs", "router"]);
@@ -710,6 +711,12 @@ export async function createApp(config: ResolvedNomosConfig) {
             !enabledPluginSlugs.has(route.owner)
           ) {
             throw new HttpError(404, "not_found", "Plugin route is disabled");
+          }
+
+          // Per-route rate limit (before auth, per spec)
+          const rateLimitConfig = getRateLimitConfig(route.config);
+          if (rateLimitConfig) {
+            await createRateLimitMiddleware(rateLimitConfig)(ctx, async () => {});
           }
 
           // Authorization check using the new authz engine

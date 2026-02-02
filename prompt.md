@@ -15,8 +15,6 @@ You are implementing an AI-first Node.js platform: a single bundled Fastify appl
 - API credentials: API keys with allowed host/origin allowlist per key; Admin management UI.
 - Diagnostics: /health /ready /version + admin-only /admin/diagnostics* endpoints; disable in prod unless enabled.
 
-Deliver code in a clean folder layout under `apps/app/src/**` that matches this prompt. Include a short `docs/AI_CONTRACT.md` in-repo mirroring the key conventions.
-
 =================================
 1) Repository layout to create
 =================================
@@ -39,13 +37,11 @@ apps/app/
       plugins/
         types.ts
         loadPlugins.ts
-        registry.ts
 
       router/
         routeTypes.ts
         pathMapping.ts
         loadRoutes.ts
-        registry.ts
 
       middleware/
         types.ts
@@ -146,9 +142,6 @@ apps/app/
           manifest.ts
         styles/
           admin.css
-
-docs/
-  AI_CONTRACT.md
 
 Note: If you prefer, admin-ui can live under apps/app/src/admin/ui, but keep it bundled and runnable from the same repo. The important part is that the platform serves the admin UI routes.
 
@@ -429,7 +422,6 @@ Implement `plugins/users` with:
 - No excessive abstractions; prefer explicit code.
 - Add comments where the conventions are critical.
 - Ensure route and plugin registries are easily inspectable and exported for diagnostics.
-- Provide docs/AI_CONTRACT.md summarizing conventions for LLMs.
 
 Output:
 - Create all files with complete implementations (not stubs unless explicitly allowed).

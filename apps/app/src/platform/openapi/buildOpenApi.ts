@@ -184,13 +184,13 @@ function extractPathParams(routePath: string): Array<{
   name: string;
   in: "path";
   required: true;
-  schema: { type: string };
+  schema: Record<string, any>;
 }> {
   const params: Array<{
     name: string;
     in: "path";
     required: true;
-    schema: { type: string };
+    schema: Record<string, any>;
   }> = [];
 
   const matches = routePath.matchAll(/:(\w+)/g);
@@ -204,6 +204,24 @@ function extractPathParams(routePath: string): Array<{
   }
 
   return params;
+}
+
+/**
+ * Get path parameters for OpenAPI, using Zod validate.params when present for schema.
+ * Params that appear in both the path and the Zod schema use the Zod-derived schema.
+ */
+function getPathParams(
+  routePath: string,
+  paramsSchema?: ZodSchema<any>
+): Array<{ name: string; in: "path"; required: true; schema: Record<string, any> }> {
+  const fromPath = extractPathParams(routePath);
+  if (!paramsSchema) return fromPath;
+  const jsonSchema = zodToJsonSchema(paramsSchema);
+  if (!jsonSchema?.properties) return fromPath;
+  return fromPath.map((p) => ({
+    ...p,
+    schema: jsonSchema.properties[p.name] ?? p.schema,
+  }));
 }
 
 /**
@@ -231,8 +249,8 @@ export function buildOpenApi(registry: RouteRegistry) {
   for (const route of registry.routes) {
     const pathItem = paths[route.path] ?? {};
 
-    // Extract path parameters
-    const pathParams = extractPathParams(route.path);
+    // Path parameters: use Zod validate.params when present for schema
+    const pathParams = getPathParams(route.path, route.config.validate?.params);
 
     const operation: Record<string, any> = {
       tags: route.config.tags ?? [route.owner],
