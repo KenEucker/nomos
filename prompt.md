@@ -37,13 +37,11 @@ apps/app/
       plugins/
         types.ts
         loadPlugins.ts
-        registry.ts
 
       router/
         routeTypes.ts
         pathMapping.ts
         loadRoutes.ts
-        registry.ts
 
       middleware/
         types.ts

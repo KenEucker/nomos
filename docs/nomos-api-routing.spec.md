@@ -99,6 +99,17 @@ Both layers coexist and are interoperable.
 
 A route module MUST export a default object compatible with the platform `RouteModule` type, either directly or via a helper.
 
+### 4.3 Fully Custom (No-Contract) Route Module
+
+A route module may be **fully custom** without using a contract or `defineRoute`. The default export may include:
+
+* Handlers: `get`, `post`, `put`, `patch`, `del` (and optionally `options`, `head`)
+* Optional `config`: module-level auth, tags, middleware, etc.
+* Optional per-method config: `getConfig`, `postConfig`, etc.
+* Optional **`intents`**: a `Record<method, intent>` (e.g. `intents: { get: "things.list", post: "things.create" }`)
+
+When `intents` is set, the platform enforces authz for each method and includes those intents in intent discovery for seeding. No contract or `defineRoute` is required. Merge order for config is: `config` → `intents[method]` → `[method]Config`, so per-method config overrides module-level intent.
+
 ---
 
 ## 5. API Contracts
@@ -256,6 +267,8 @@ Validation is always enforced via Zod.
 * Compatibility with current Swagger UI
   * SDK artifacts remain derived from OpenAPI and served per instance
 
+Path parameter schemas in OpenAPI may be derived from `route.config.validate.params` (Zod) when provided; otherwise path params use a default string schema from the route path.
+
 ---
 
 ## 10. Authorization Integration
@@ -360,7 +373,7 @@ const DEFAULT_RATE_LIMITS = {
 
 ### 11.2 Per-Route Overrides
 
-Routes may override rate limits in their configuration:
+Per-route rate limit overrides are applied in the request pipeline **before** authorization when present. Routes may override rate limits in their configuration:
 
 ```typescript
 defineRoute(helloContract, {
@@ -455,13 +468,15 @@ export default {
 
 ## 12. Intent Discovery
 
-Contracts are the canonical source for intent discovery.
+Intents are **discovered** during `loadRoutes`, not stored in a registry. When a contract route module is processed, all intents from that contract are discovered; when any route (contract or no-contract) is added, its `config.intent` is discovered. `getLoadedIntents()` returns those discovered intents for seeding. No route list or contract list is passed in or retained.
 
-At plugin load or install time:
+Seeding should run **after** routes are loaded so that all intents are available.
 
-* All contract intents are collected
-* Intents are ensured in persistent storage
-* Default roles (e.g. `admin`) may be seeded
+At load time:
+
+* Contract intents are discovered as each contract route module is processed
+* Route config intents (including no-contract `intents`) are discovered as each route is added
+* For seeding, intents are ensured in persistent storage and default roles may be seeded
 
 ---
 

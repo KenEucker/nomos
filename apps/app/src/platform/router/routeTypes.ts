@@ -24,8 +24,21 @@ export type RouteConfig = {
   };
 };
 
+/**
+ * Per-method intents for no-contract routes.
+ * When set on the route module, the loader merges each method's intent into config.intent.
+ */
+export type RouteModuleIntents = Partial<
+  Record<"get" | "post" | "put" | "patch" | "delete", string>
+>;
+
 export type RouteModule = {
   config?: RouteConfig;
+  /**
+   * Per-method intents (permissions) for no-contract routes.
+   * Platform enforces authz and includes these in intent discovery; no contract required.
+   */
+  intents?: RouteModuleIntents;
   get?: Handler;
   post?: Handler;
   put?: Handler;

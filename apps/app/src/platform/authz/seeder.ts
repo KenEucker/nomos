@@ -317,7 +317,7 @@ export interface SeederOptions {
   plugins?: Array<{ intents?: string[]; permissions?: string[] }>
   additionalIntents?: string[]
   seedDefaultRoles?: boolean
-  /** Include intents discovered from API contracts (call after loadRoutes) */
+  /** Include intents discovered from API contracts and route configs (call after loadRoutes) */
   includeContractIntents?: boolean
 }
 
@@ -343,14 +343,14 @@ export async function seedAuthzDatabase(options: SeederOptions): Promise<void> {
     ...additionalIntents,
   ])
 
-  // Collect intents from loaded API contracts
+  // Collect intents from loaded API contracts and route configs
   if (includeContractIntents) {
     const contractIntents = getLoadedIntents()
     for (const intent of contractIntents) {
       allIntents.add(intent)
     }
     if (contractIntents.length > 0) {
-      console.log(`[authz] Discovered ${contractIntents.length} intents from API contracts`)
+      console.log(`[authz] Discovered ${contractIntents.length} intents from API contracts and routes`)
     }
   }
 
