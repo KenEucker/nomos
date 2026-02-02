@@ -27,7 +27,6 @@ const PLATFORM_PERMISSION_KEYS: string[] = [
   "apiKeys.update",
   "apiKeys.delete",
   "debug.decisions.view",
-  "webhooks.manage",
   "jobs.manage",
   "auth.manage",
   "plugins.manage",

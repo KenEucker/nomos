@@ -13,7 +13,7 @@ This file is a **scoped extension** of the root Nomos AI guide. Read the root gu
 
 **Expected exports / entry points**
 - Default export (object) matching the `PluginManifest` shape.
-- Common fields: `name`, `dependsOn`, `permissions`, `roles`, `middleware`, `services`, `setup`, `adminResources`, `adminPages`, `nav`, `events`, `listeners`, `inboundWebhooks`.
+- Common fields: `name`, `dependsOn`, `permissions`, `roles`, `middleware`, `services`, `setup`, `adminResources`, `adminPages`, `nav`, `events`, `listeners`.
 
 **How the platform discovers/uses it**
 - `loadPlugins` imports `index.ts` via dynamic import and uses `mod.default ?? mod`. (`apps/app/src/platform/plugins/loadPlugins.ts`)

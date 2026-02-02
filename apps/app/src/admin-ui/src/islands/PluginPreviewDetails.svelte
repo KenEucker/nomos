@@ -3,7 +3,8 @@
   import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "$ui/card"
   import { Badge } from "$ui/badge"
   import { Button } from "$ui/button"
-  import { apiGet } from "../lib/api";
+  import { apiGet, apiFetch } from "../lib/api";
+  import { notify, toastError } from "../lib/toast";
 
   let { slug } = $props<{
     slug?: string;
@@ -41,6 +42,22 @@
   let plugin = $state<PluginRecord | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
+  let generating = $state(false);
+
+  const generatePreview = async () => {
+    if (!slug) return;
+    generating = true;
+    error = null;
+    try {
+      await apiFetch(`/plugins/${slug}/preview`, { method: "POST" });
+      notify("Preview generated successfully", "success");
+      await loadPreview();
+    } catch (err: any) {
+      toastError("Generate preview failed", err?.message ?? "Failed to generate preview.");
+    } finally {
+      generating = false;
+    }
+  };
 
   const loadPreview = async () => {
     loading = true;
@@ -227,6 +244,16 @@
   {/if}
 
   <div class="flex justify-end gap-2">
+    {#if plugin && !loading}
+      <Button
+        variant="secondary"
+        size="sm"
+        onclick={generatePreview}
+        disabled={generating}
+      >
+        {generating ? "Generating…" : "Generate new preview"}
+      </Button>
+    {/if}
     <Button variant="default" size="sm" href="/admin/plugins">Back to plugins</Button>
   </div>
 </div>

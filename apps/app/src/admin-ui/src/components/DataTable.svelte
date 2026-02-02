@@ -158,7 +158,9 @@
     const value = getNestedValue(row, action.showWhen.key)
     if (action.showWhen.equals !== undefined) return value === action.showWhen.equals
     if (action.showWhen.notEquals !== undefined) return value !== action.showWhen.notEquals
+    if (action.showWhen.in) return action.showWhen.in.includes(value)
     if (action.showWhen.truthy) return Boolean(value)
+    if (action.showWhen.falsy) return !Boolean(value)
     return true
   }
 

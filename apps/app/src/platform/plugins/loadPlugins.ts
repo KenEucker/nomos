@@ -109,11 +109,6 @@ export async function loadPlugins(
     if (manifest.listeners) {
       listeners.push(...manifest.listeners);
     }
-    if (manifest.inboundWebhooks) {
-      for (const [provider, handler] of Object.entries(manifest.inboundWebhooks)) {
-        registry.inboundWebhooks.set(provider, handler);
-      }
-    }
   }
 
   return { registry, pluginRoutes, listeners, manifests: sorted };

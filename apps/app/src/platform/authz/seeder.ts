@@ -46,8 +46,7 @@ export const CORE_INTENTS = [
   // Debug/diagnostics
   "debug.decisions.view",
 
-  // Webhooks and jobs
-  "webhooks.manage",
+  // Jobs
   "jobs.manage",
 
   // Auth management

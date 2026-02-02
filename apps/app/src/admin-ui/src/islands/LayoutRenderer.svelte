@@ -12,6 +12,7 @@
   import { notify, toastError } from "../lib/toast"
   import { confirmDialog } from "../lib/confirm-dialog"
   import { onMount } from "svelte"
+  import { navigate } from "astro:transitions/client"
 
   let {
     nodes = [],
@@ -41,6 +42,10 @@
   let revealedTokenCopied = $state(false)
   /** Inline confirm for rotate so the dialog is guaranteed to show (same island as the table) */
   let pendingRotate = $state<{ action: RowAction; row: Record<string, any>; recordId: string; endpoint: string } | null>(null)
+  /** Inline confirm for method actions (Enable, Disable, etc.) - same island as table, no global ConfirmDialog */
+  let pendingMethodConfirm = $state<{ action: RowAction; row: Record<string, any>; endpoint: string; method: string; body?: string } | null>(null)
+  /** Inline confirm for delete action - same island as table, avoids cross-island ConfirmDialog timing */
+  let pendingDelete = $state<{ action: RowAction; row: Record<string, any>; endpoint: string } | null>(null)
   /** Per-tabs-instance active tab index, keyed by "prefix:index" */
   let activeTabByKey = $state<Record<string, number>>({})
 
@@ -314,7 +319,7 @@
           const id = row?.[idKey]
 
           if (action.type === "link" && action.href) {
-            window.location.href = interpolate(action.href, row)
+            navigate(interpolate(action.href, row))
             return
           }
           if (action.type === "conditionalLink" && action.href) {
@@ -323,21 +328,14 @@
               notify(action.toastIfMissing ?? "Not available.", "info")
               return
             }
-            window.location.href = interpolate(action.href, row)
+            navigate(interpolate(action.href, row))
             return
           }
 
-          if (!id) return
-
-          const isMethodAction = action.type === "method" && action.endpoint
-          const isRotateAction = action.id === "rotate" && id
-          // Use inline dialog for rotate so confirm + token reveal are in the same island
-          if (isRotateAction) {
-            const recordId = row[idKey] ?? row.id
-            const endpoint = action.endpoint ?? `/api-keys/${recordId}`
-            pendingRotate = { action, row, recordId, endpoint }
-            return
-          }
+          // Method actions (Enable, Disable, etc.) use row for endpoint interpolation (e.g. {slug});
+          // handle before id check so slug-based resources like plugins work.
+          // Exclude rotate - it uses inline dialog and token reveal.
+          const isMethodAction = action.type === "method" && action.endpoint && action.id !== "rotate"
           if (isMethodAction) {
             const endpoint = interpolate(action.endpoint!, row)
             const method = action.method ?? "POST"
@@ -347,31 +345,26 @@
                 : typeof action.payload === "function"
                   ? action.payload(row)
                   : action.payload
-            const confirmed = action.confirm
-              ? await confirmDialog({
-                  title: action.confirm.title,
-                  body: action.confirm.body,
-                  confirmLabel: "Yes",
-                  cancelLabel: "No",
-                  variant: method === "DELETE" ? "destructive" : "default",
-                })
-              : true
-            if (!confirmed) return
+            if (action.confirm) {
+              pendingMethodConfirm = { action, row, endpoint, method, body: body !== undefined ? JSON.stringify(body) : undefined }
+              return
+            }
             try {
-              const response = await apiFetch<{ token?: string }>(endpoint, {
+              const response = await apiFetch<{ token?: string; isOwnSession?: boolean }>(endpoint, {
                 method,
                 body: body !== undefined ? JSON.stringify(body) : undefined,
               })
-              const token = response?.data?.token
-              if (typeof token === "string" && token.length > 0) {
-                revealedToken = token
-                revealedTokenCopied = false
-                if (action.toast?.success) notify(action.toast.success, "success")
+              
+              // If the user deleted/revoked their own session, redirect to login
+              if (response?.data?.isOwnSession) {
+                notify("Session deleted. You have been logged out.", "success")
+                window.location.href = "/admin/nomos/login"
                 return
               }
+              
               if (action.toast?.success) notify(action.toast.success, "success")
               if (action.after === "navigate" && action.href) {
-                window.location.href = interpolate(action.href, row)
+                navigate(interpolate(action.href, row))
                 return
               }
               if (action.after === "refresh") {
@@ -385,26 +378,29 @@
             }
             return
           }
+
+          if (!id) return
+
+          const isRotateAction = action.id === "rotate" && id
+          // Use inline dialog for rotate so confirm + token reveal are in the same island
+          if (isRotateAction) {
+            const recordId = row[idKey] ?? row.id
+            const endpoint = action.endpoint ? interpolate(action.endpoint, row) : `/api-keys/${recordId}`
+            pendingRotate = { action, row, recordId, endpoint }
+            return
+          }
           if (action.id === "view") {
-            window.location.href = `${basePath}/${encodeURIComponent(String(id))}`
+            navigate(`${basePath}/${encodeURIComponent(String(id))}`)
             return
           }
           if (action.id === "edit") {
-            window.location.href = `${basePath}/${encodeURIComponent(String(id))}/edit`
+            navigate(`${basePath}/${encodeURIComponent(String(id))}/edit`)
             return
           }
           if (action.id === "delete" && node.props.rowActionDeleteEndpoint) {
-            const confirmed = await confirmDialog({
-              title: "Delete this item?",
-              body: "This action cannot be undone.",
-              confirmLabel: "Delete",
-              cancelLabel: "Cancel",
-              variant: "destructive",
-            })
-            if (!confirmed) return
             const endpoint = interpolate(node.props.rowActionDeleteEndpoint, row)
-            await apiFetch(endpoint, { method: "DELETE" })
-            onStateChange(queryState)
+            pendingDelete = { action, row, endpoint }
+            return
           }
         }}
         onSave={
@@ -535,6 +531,119 @@
     {/if}
   {/each}
 </div>
+
+{#if pendingMethodConfirm}
+  {@const item = pendingMethodConfirm}
+  {@const action = item.action}
+  <Dialog.Root
+    open={true}
+    onOpenChange={(open: boolean) => {
+      if (!open) pendingMethodConfirm = null
+    }}
+  >
+    <Dialog.Content class="sm:max-w-md">
+      <Dialog.Header>
+        <Dialog.Title>{action.confirm?.title ?? "Confirm"}</Dialog.Title>
+        {#if action.confirm?.body}
+          <Dialog.Description>{action.confirm.body}</Dialog.Description>
+        {/if}
+      </Dialog.Header>
+      <Dialog.Footer>
+        <Button variant="outline" onclick={() => { pendingMethodConfirm = null }}>
+          No
+        </Button>
+        <Button
+          onclick={async () => {
+            try {
+              const response = await apiFetch<{ isOwnSession?: boolean }>(item.endpoint, {
+                method: item.method,
+                body: item.body,
+              })
+              
+              // If the user deleted/revoked their own session, redirect to login
+              if (response?.data?.isOwnSession) {
+                pendingMethodConfirm = null
+                notify("Session deleted. You have been logged out.", "success")
+                window.location.href = "/admin/nomos/login"
+                return
+              }
+              
+              if (action.toast?.success) notify(action.toast.success, "success")
+              if (action.after === "navigate" && action.href) {
+                pendingMethodConfirm = null
+                navigate(interpolate(action.href, item.row))
+                return
+              }
+              if (action.after === "refresh" || (action.confirm && action.after !== "navigate")) {
+                pendingMethodConfirm = null
+                onStateChange(queryState)
+                const url = new URL(window.location.href)
+                url.searchParams.set("_r", String(Date.now()))
+                const a = document.createElement("a")
+                a.href = url.toString()
+                a.setAttribute("data-astro-reload", "")
+                document.body.appendChild(a)
+                a.click()
+                a.remove()
+                return
+              }
+              pendingMethodConfirm = null
+              onStateChange(queryState)
+            } catch (err) {
+              const message = err instanceof Error ? err.message : "Action failed"
+              toastError(action.toast?.error ?? action.label, message)
+            }
+          }}
+        >
+          Yes
+        </Button>
+      </Dialog.Footer>
+    </Dialog.Content>
+  </Dialog.Root>
+{/if}
+
+{#if pendingDelete}
+  {@const item = pendingDelete}
+  {@const action = item.action}
+  <Dialog.Root
+    open={true}
+    onOpenChange={(open: boolean) => {
+      if (!open) pendingDelete = null
+    }}
+  >
+    <Dialog.Content class="sm:max-w-md">
+      <Dialog.Header>
+        <Dialog.Title>Delete this item?</Dialog.Title>
+        <Dialog.Description>This action cannot be undone.</Dialog.Description>
+      </Dialog.Header>
+      <Dialog.Footer>
+        <Button variant="outline" onclick={() => { pendingDelete = null }}>
+          Cancel
+        </Button>
+        <Button
+          variant="destructive"
+          onclick={async () => {
+            try {
+              const response = await apiFetch<{ deleted: boolean; isOwnSession?: boolean }>(item.endpoint, { method: "DELETE" })
+              pendingDelete = null
+              if (response?.data?.isOwnSession) {
+                notify("Session deleted. You have been logged out.", "success")
+                window.location.href = "/admin/nomos/login"
+                return
+              }
+              onStateChange(queryState)
+            } catch (err) {
+              const message = err instanceof Error ? err.message : "Delete failed"
+              toastError("Delete failed", message)
+            }
+          }}
+        >
+          Delete
+        </Button>
+      </Dialog.Footer>
+    </Dialog.Content>
+  </Dialog.Root>
+{/if}
 
 {#if pendingRotate}
   {@const action = pendingRotate.action}

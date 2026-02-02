@@ -1,7 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { JobsRuntime } from "./jobs/runtime";
 import type { EventBus } from "./events/bus";
-import type { WebhookRuntime } from "./webhooks/outbound";
 import type { ServicesRegistry } from "./plugins/registry";
 import type { PrismaClient } from "@prisma/client";
 import { HttpError } from "./errors";
@@ -47,7 +46,6 @@ export type Ctx = {
   services: ServicesRegistry;
   events: EventBus;
   jobs: JobsRuntime;
-  webhooks: WebhookRuntime;
   /**
    * Observability observer for emitting structured events.
    * Plugins and routes MUST use this instead of direct console logging.
@@ -102,8 +100,6 @@ export type InMemoryStore = {
   permissions: Set<string>;
   apiKeys: Map<string, any>;
   sessions: Map<string, any>;
-  webhookDestinations: Map<string, any>;
-  webhookDeliveries: any[];
   jobs: Map<string, any>;
   jobRuns: any[];
 };

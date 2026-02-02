@@ -6,7 +6,6 @@ const DEFAULT_ADMIN_PERMISSIONS = [
   "admin.read",
   "admin.diagnostics",
   "auth.manage",
-  "webhooks.manage",
   "jobs.manage"
 ];
 const DEFAULT_DEV_PERMISSIONS = ["users.read", "users.create", "users.update", "users.delete"];

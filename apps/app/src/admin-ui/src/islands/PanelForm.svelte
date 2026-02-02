@@ -7,7 +7,7 @@
   import { NativeSelect, NativeSelectOption } from "$ui/native-select"
   import MultiSelect from "../components/svelte-multiselect"
   import type { JSONSchema7 } from "json-schema"
-  import { onMount } from "svelte"
+  import { onMount, untrack } from "svelte"
   import { apiFetch } from "../lib/api"
   import type { FieldDef } from "../lib/types"
 
@@ -81,7 +81,8 @@
   let values = $state<Record<string, any>>({})
   $effect(() => {
     const initial = safeInitial
-    if (Object.keys(values).length === 0) {
+    const valuesEmpty = untrack(() => Object.keys(values).length === 0)
+    if (valuesEmpty) {
       values = { ...initial }
     }
   })
@@ -173,14 +174,26 @@
 
   const validate = () => {
     const requiredErrors = validateRequiredFields(fields, schema!, values)
-
-    if (Object.keys(requiredErrors).length) {
-      fieldErrors = requiredErrors
+    const patternErrors: Record<string, string> = {}
+    for (const field of fields) {
+      if (!field.pattern) continue
+      const value = values[field.name]
+      if (value === undefined || value === null || (typeof value === "string" && value.trim() === "")) continue
+      const str = typeof value === "string" ? value : String(value)
+      try {
+        if (!new RegExp(field.pattern).test(str)) {
+          patternErrors[field.name] = field.patternMessage ?? "Invalid format."
+        }
+      } catch {
+        // invalid regex in field def — skip
+      }
+    }
+    const nextErrors = { ...requiredErrors, ...patternErrors }
+    if (Object.keys(nextErrors).length) {
+      fieldErrors = nextErrors
       formError = "Please fix the errors below."
       return false
     }
-
-    // Placeholder for future JSON Schema validation (Ajv or server-side).
     fieldErrors = {}
     formError = null
     return true
@@ -202,6 +215,9 @@
       const payload: Record<string, any> = {}
       for (const field of fields) {
         let value = values[field.name]
+        if (field.type === "multiselect" && value === undefined) {
+          value = []
+        }
         if (field.transform === "lines" && typeof value === "string") {
           value = value
             .split(/[\n,]+/)
