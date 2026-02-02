@@ -89,7 +89,9 @@ export type RowAction = {
     key: string
     equals?: string | number | boolean
     notEquals?: string | number | boolean
+    in?: Array<string | number | boolean>
     truthy?: boolean
+    falsy?: boolean
   }
 }
 
@@ -121,6 +123,10 @@ export type FieldDef = {
   showOnEdit?: boolean
   showOnView?: boolean
   transform?: "lines" | "csv"
+  /** Regular expression pattern for validation (e.g. URL format). Applied when value is non-empty. */
+  pattern?: string
+  /** Error message when pattern does not match. */
+  patternMessage?: string
 }
 
 export type RowsNode = {
@@ -375,6 +381,8 @@ export type ResourceMenu = {
 
 export type ResourceListConfig = {
   columns?: ColumnDef[]
+  /** Key for row identity (default "id"). Use "slug" for slug-based resources like plugins. */
+  rowIdKey?: string
   rowActions?: {
     view?: boolean
     edit?: boolean

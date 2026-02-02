@@ -48,7 +48,21 @@ export const getSubject = (): Subject | null => readPayload()?.subject ?? null
 
 export const getCapabilities = (): CapabilityMap => readPayload()?.capabilities ?? {}
 
-export const can = (intent: string): boolean => Boolean(getCapabilities()[intent])
+/**
+ * Check if the subject has the given intent.
+ * If the server sent a capability map, use it. Otherwise, if the subject is admin-level,
+ * treat unknown intents as allowed so admin users don't see "Access denied" for intents
+ * (e.g. jobs.manage) that the backend grants but the client map doesn't list.
+ */
+export const can = (intent: string): boolean => {
+  const payload = readPayload()
+  const capabilities = payload?.capabilities ?? {}
+  const subject = payload?.subject ?? null
+  if (capabilities[intent]) return true
+  // Admin-level subject: backend grants all intents; client map may be a subset
+  if (subject?.level === "admin") return true
+  return false
+}
 
 const isAdmin = (subject: Subject | null) => subject?.level === "admin"
 

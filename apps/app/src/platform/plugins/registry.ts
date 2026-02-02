@@ -11,7 +11,6 @@ export type PluginRegistry = {
   adminResources: PluginResource[];
   adminPages: Array<{ path: string; label: string }>;
   nav: Array<{ path: string; label: string }>;
-  inboundWebhooks: Map<string, any>;
 };
 
 export function createPluginRegistry(): PluginRegistry {
@@ -23,7 +22,6 @@ export function createPluginRegistry(): PluginRegistry {
     services: {},
     adminResources: [],
     adminPages: [],
-    nav: [],
-    inboundWebhooks: new Map()
+    nav: []
   };
 }

@@ -325,7 +325,7 @@ export const createResourcePanel = ({
             paginationKey: serverSideList ? "meta" : undefined,
             serverSide: serverSideList,
             columns,
-            rowIdKey: "id",
+            rowIdKey: resource.list?.rowIdKey ?? "id",
             enableEdit: false,
             saveEndpoint: resource.endpoints.update,
             saveMethod: "PATCH",

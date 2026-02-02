@@ -35,7 +35,6 @@ import { EventBus } from "./events/bus";
 import { createHookRegistry } from "./events/hooks";
 import { createJobsStore } from "./jobs/store";
 import { createJobsRuntime, type JobsRuntime } from "./jobs/runtime";
-import { WebhookRuntime } from "./webhooks/outbound";
 import { LocalStorageProvider } from "./storage/local";
 import { getSession } from "./auth/sessions";
 import { verifyJwt } from "./auth/jwt";
@@ -157,7 +156,6 @@ export async function createApp(config: ResolvedNomosConfig) {
   const adminLog = createDomainLogger(baseLogger, "admin", allowedDomains);
   const jobsLog = createDomainLogger(baseLogger, "jobs", allowedDomains);
   const eventsLog = createDomainLogger(baseLogger, "events", allowedDomains);
-  const webhooksLog = createDomainLogger(baseLogger, "webhooks", allowedDomains);
   const observabilityLog = createDomainLogger(baseLogger, "observability", allowedDomains);
   const openApiLog = createDomainLogger(baseLogger, "openapi", allowedDomains);
 
@@ -252,8 +250,6 @@ export async function createApp(config: ResolvedNomosConfig) {
     permissions: new Set<string>(),
     apiKeys: new Map<string, any>(),
     sessions: new Map<string, any>(),
-    webhookDestinations: new Map<string, any>(),
-    webhookDeliveries: [],
     jobs: new Map<string, any>(),
     jobRuns: []
   };
@@ -310,7 +306,6 @@ export async function createApp(config: ResolvedNomosConfig) {
     corePlugins.push(path.join(platformDir, "observability", "plugin.ts"));
   }
   corePlugins.push(path.join(platformDir, "jobs", "plugin.ts"));
-  corePlugins.push(path.join(platformDir, "webhooks", "plugin.ts"));
   corePlugins.push(path.join(platformDir, "router", "plugin.ts"));
 
   const plugins = await loadPlugins(baseDir, corePlugins, enabledPluginSlugs);
@@ -393,28 +388,8 @@ export async function createApp(config: ResolvedNomosConfig) {
     },
   });
 
-  let webhooksRuntime: WebhookRuntime;
-  // WebhookRuntime uses the jobs system to enqueue webhook deliveries
-  // The actual delivery job is discovered from platform/webhooks/jobs/deliver-webhook.ts
-  webhooksRuntime = new WebhookRuntime(
-    jobsRuntime, // Pass jobsRuntime so webhooks can be enqueued
-    events,
-    {
-      destinations: db.webhookDestinations,
-      deliveries: db.webhookDeliveries
-    },
-    webhooksLog
-  );
-
-  const originalEmit = events.emit.bind(events);
-  events.emit = async (event: string, payload: any) => {
-    await originalEmit(event, payload);
-    webhooksRuntime.enqueue(event, payload);
-  };
-
   services.jobsRuntime = jobsRuntime;
   services.jobsStore = jobsStore;
-  services.webhooksRuntime = webhooksRuntime;
 
   // Discover and register jobs from filesystem
   // This allows the API to know about available jobs without starting the worker
@@ -468,7 +443,7 @@ export async function createApp(config: ResolvedNomosConfig) {
   const routeRegistry = await loadRoutes(baseDir, plugins.pluginRoutes);
   services.routeRegistry = routeRegistry;
 
-  const coreRouteOwners = new Set(["core", "admin", "auth", "pluginManager", "observability", "jobs", "webhooks", "router"]);
+  const coreRouteOwners = new Set(["core", "admin", "auth", "pluginManager", "observability", "jobs", "router"]);
   const filterRoutes = () =>
     enabledPluginSlugs
       ? routeRegistry.routes.filter(
@@ -696,7 +671,6 @@ export async function createApp(config: ResolvedNomosConfig) {
           services,
           events,
           jobs: jobsRuntime,
-          webhooks: webhooksRuntime,
           observer,
           req,
           reply,
@@ -888,54 +862,6 @@ export async function createApp(config: ResolvedNomosConfig) {
       }
     });
   }
-
-  app.post("/webhooks/:provider", async (req, reply) => {
-    const provider = (req.params as { provider?: string }).provider;
-    const handler = provider ? plugins.registry.inboundWebhooks.get(provider) : undefined;
-    if (!handler) return reply.code(404).send({ error: "not_found" });
-
-    const ctxBase = {
-      reqId: nanoid(),
-      method: req.method,
-      path: req.url,
-      params: req.params as any,
-      query: req.query as any,
-      body: req.body,
-      headers: req.headers as any,
-      user: null,
-      apiClient: null,
-      subject: null,
-      db,
-      prisma,
-      pluginDb: null as PluginDbClient | null,
-      services,
-      events,
-      jobs: jobsRuntime,
-      webhooks: webhooksRuntime,
-      observer,
-      req,
-      reply,
-      log: req.log.child({
-        domain: "webhooks",
-        reqId: req.id,
-        method: req.method,
-        path: req.url
-      }),
-      json: async (payload: any, statusCode = 200) => jsonResponse(reply, payload, statusCode),
-      error: errorResponse
-    };
-
-    const ctx = { ...ctxBase, auth: createAuthHelpers(ctxBase) };
-
-    try {
-      const result = await handler(ctx);
-      if (!reply.sent && result !== undefined) {
-        reply.send(result);
-      }
-    } catch (_error) {
-      reply.code(500).send({ error: "internal_error" });
-    }
-  });
 
   const astroDevPort = config.adminUi.devPort;
   const adminEnabled = config.modules.admin.enabled;

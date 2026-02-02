@@ -30,10 +30,20 @@ function createConfirmDialogStore() {
 
   const show = (options: ConfirmDialogOptions): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
+      const timeout = setTimeout(() => {
+        update((state) => {
+          if (state.resolve) state.resolve(false)
+          return { ...state, open: false, resolve: undefined }
+        })
+      }, 30000)
+      const wrappedResolve = (value: boolean) => {
+        clearTimeout(timeout)
+        resolve(value)
+      }
       set({
         ...options,
         open: true,
-        resolve,
+        resolve: wrappedResolve,
       })
     })
   }

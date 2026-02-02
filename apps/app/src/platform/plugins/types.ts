@@ -133,7 +133,6 @@ export type PluginManifest = {
     handler: Handler;
     mode?: "bestEffort" | "failFast";
   }>;
-  inboundWebhooks?: Record<string, Handler>;
   database?: PluginDatabaseDefinition;
 };
 

@@ -52,5 +52,13 @@ export const del = async (ctx: Ctx) => {
   }
 
   await ctx.prisma.session.delete({ where: { id: ctx.params.id } });
-  return ctx.json({ deleted: true });
+  
+  // If deleting the current user's session, clear the cookie to log them out
+  const currentSessionId = ctx.req.cookies?.session_id;
+  const isOwnSession = currentSessionId === ctx.params.id;
+  if (isOwnSession) {
+    ctx.reply.clearCookie("session_id", { path: "/" });
+  }
+  
+  return ctx.json({ deleted: true, isOwnSession });
 };
