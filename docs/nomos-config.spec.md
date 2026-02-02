@@ -2,7 +2,7 @@
 
 **Status:** Active Draft
 
-**Version:** 0.1.2
+**Version:** 0.1.3
 
 **Audience:** Framework users, platform contributors, operators
 

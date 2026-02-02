@@ -360,7 +360,7 @@ export function buildOpenApi(registry: RouteRegistry) {
     openapi: "3.0.0",
     info: {
       title: "Nomos Platform",
-      version: "0.1.0",
+      version: "0.1.3",
     },
     components,
     paths,

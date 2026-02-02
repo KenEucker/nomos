@@ -1,7 +1,7 @@
 # Nomos Jobs Specification
 
 **Status:** Draft
-**Version:** 0.1.0
+**Version:** 0.1.3
 **Audience:** Platform contributors, plugin authors, operators
 **Scope:** Defines background job execution, scheduling, durability, observability, and administrative control in Nomos
 **Applies to:** nomos-core, nomos-worker, nomos-ui, all Nomos plugins

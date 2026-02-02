@@ -67,7 +67,7 @@ export const get = async (ctx: Ctx) => {
 
   const openApi = getEffectiveOpenApi(ctx);
   const apiVersion = openApi.info?.version ?? "unknown";
-  const platformVersion = "0.1.0";
+  const platformVersion = "0.1.3";
   const status = await sdkService.getStatus(openApi);
 
   const payload = {

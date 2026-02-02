@@ -11,7 +11,7 @@ export default defineRoute(systemContract, {
       const openApi = getOpenApiSpec();
       const apiVersion = openApi.info?.version ?? "unknown";
       const apiRevision = createApiRevision(openApi);
-      const platformVersion = "0.1.0";
+      const platformVersion = "0.1.3";
       return ctx.json({
         name: "nomos-platform",
         version: platformVersion,

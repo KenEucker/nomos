@@ -2,7 +2,7 @@
 
 **Status:** Draft
 
-**Version:** 0.1.2
+**Version:** 0.1.3
 
 **Audience:** Platform contributors, plugin authors, operators, compliance reviewers
 
