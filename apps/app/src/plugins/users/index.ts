@@ -7,7 +7,7 @@ import { registerUserHooks } from "./events/users.events";
 export default {
   slug: "users",
   name: "users",
-  version: "1.0.0",
+  version: "1.!.0",
   description: "Core user management plugin with routes, admin UI, and jobs.",
   intents: [
     "users.read",
