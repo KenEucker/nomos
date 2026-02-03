@@ -5,12 +5,13 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import fastify, { type FastifyRequest } from "fastify";
 import cookie from "@fastify/cookie";
+import cors from "@fastify/cors";
 import formbody from "@fastify/formbody";
 import middie from "@fastify/middie";
 import { nanoid } from "nanoid";
 import type { ResolvedNomosConfig } from "./config/nomos-config";
 import { createAuthHelpers, errorResponse, jsonResponse } from "./ctx";
-import type { ApiClient, InMemoryStore } from "./ctx";
+import type { ApiClient, Ctx, InMemoryStore } from "./ctx";
 import {
   HttpError,
   ErrorResponses,
@@ -195,6 +196,12 @@ export async function createApp(config: ResolvedNomosConfig) {
 
   await app.register(cookie);
   await app.register(formbody);
+  if (config.api.cors.enabled) {
+    await app.register(cors, {
+      origin: config.api.cors.origin.length > 0 ? config.api.cors.origin : true,
+      credentials: config.api.cors.credentials,
+    });
+  }
 
   serverLog.info(
     {
@@ -559,6 +566,14 @@ export async function createApp(config: ResolvedNomosConfig) {
           }
         }
 
+        // 1. Rate limit (before auth, per spec §13); key by IP when subject not yet resolved
+        if (config.api.rateLimit.enabled) {
+          const rateLimitConfig =
+            getRateLimitConfig(route.config) ?? config.api.rateLimit.default;
+          const rateLimitCtx = { req, reply } as Ctx;
+          await createRateLimitMiddleware(rateLimitConfig)(rateLimitCtx, async () => {});
+        }
+
         const reqId = (req.headers["x-request-id"] as string) ?? req.id ?? nanoid();
         let subject: Subject | null = authBypassSubject;
         let apiClient: ApiClient | null = null;
@@ -711,12 +726,6 @@ export async function createApp(config: ResolvedNomosConfig) {
             !enabledPluginSlugs.has(route.owner)
           ) {
             throw new HttpError(404, "not_found", "Plugin route is disabled");
-          }
-
-          // Per-route rate limit (before auth, per spec)
-          const rateLimitConfig = getRateLimitConfig(route.config);
-          if (rateLimitConfig) {
-            await createRateLimitMiddleware(rateLimitConfig)(ctx, async () => {});
           }
 
           // Authorization check using the new authz engine

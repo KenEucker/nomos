@@ -52,6 +52,19 @@ export type JobsConfig = {
   pollIntervalMs?: number;
 };
 
+export type ApiRateLimitConfig = {
+  enabled?: boolean;
+  default?: { windowMs: number; maxRequests: number };
+  authenticated?: { windowMs: number; maxRequests: number };
+  unauthenticated?: { windowMs: number; maxRequests: number };
+};
+
+export type ApiCorsConfig = {
+  enabled?: boolean;
+  origin?: string | string[];
+  credentials?: boolean;
+};
+
 export type NomosConfig = {
   app?: {
     name?: string;
@@ -64,7 +77,7 @@ export type NomosConfig = {
     trustProxy?: boolean;
   };
   database?: {
-    provider?: "sqlite" | "url";
+    provider?: "sqlite" | "url" | "postgresql" | "mysql";
     sqliteFile?: string;
     url?: string;
     dialect?: "postgres" | "mysql";
@@ -72,6 +85,10 @@ export type NomosConfig = {
   auth?: {
     jwtSecret?: string;
     devAuthSecret?: string;
+  };
+  api?: {
+    rateLimit?: ApiRateLimitConfig;
+    cors?: ApiCorsConfig;
   };
   logging?: {
     /**
@@ -94,7 +111,7 @@ export type NomosConfig = {
   };
   modules?: {
     auth?: boolean | { enabled?: boolean };
-    admin?: boolean | { enabled?: boolean };
+    admin?: boolean | { enabled?: boolean; ui?: { source?: "builtin" | "vendored" } };
     docs?: boolean | { enabled?: boolean };
     devtools?: boolean | { enabled?: boolean };
     pluginManager?: boolean | PluginManagerConfig;
@@ -195,9 +212,22 @@ export type ResolvedNomosConfig = {
   adminUi: {
     devPort?: number;
   };
+  api: {
+    rateLimit: {
+      enabled: boolean;
+      default: { windowMs: number; maxRequests: number };
+      authenticated?: { windowMs: number; maxRequests: number };
+      unauthenticated?: { windowMs: number; maxRequests: number };
+    };
+    cors: {
+      enabled: boolean;
+      origin: string[];
+      credentials: boolean;
+    };
+  };
   modules: {
     auth: { enabled: boolean };
-    admin: { enabled: boolean };
+    admin: { enabled: boolean; ui: { source: "builtin" | "vendored" } };
     docs: { enabled: boolean };
     devtools: { enabled: boolean };
     pluginManager: {
@@ -251,6 +281,31 @@ const toConfigError = (configPath: string | null, message: string) => {
   return new Error(`[nomos.config] ${label}: ${message}`);
 };
 
+const KNOWN_TOP_LEVEL_KEYS = new Set([
+  "app",
+  "server",
+  "database",
+  "auth",
+  "api",
+  "logging",
+  "observability",
+  "jobs",
+  "swagger",
+  "adminUi",
+  "modules",
+  "dev",
+]);
+
+function warnUnknownConfigKeys(raw: Record<string, unknown>, configPath: string | null): void {
+  for (const key of Object.keys(raw)) {
+    if (!KNOWN_TOP_LEVEL_KEYS.has(key)) {
+      console.warn(
+        `[nomos.config] ${configPath ?? "defaults"}: unknown top-level key "${key}" will be ignored; consider removing or check docs.`
+      );
+    }
+  }
+}
+
 const resolveModuleToggle = (
   value: boolean | { enabled?: boolean } | undefined,
   fallback: boolean
@@ -260,6 +315,21 @@ const resolveModuleToggle = (
     return { enabled: value.enabled ?? fallback };
   }
   return { enabled: fallback };
+};
+
+const resolveAdminModule = (
+  value: boolean | { enabled?: boolean; ui?: { source?: "builtin" | "vendored" } } | undefined,
+  fallback: boolean
+): { enabled: boolean; ui: { source: "builtin" | "vendored" } } => {
+  const base = resolveModuleToggle(
+    typeof value === "object" && value !== null ? { enabled: value.enabled } : value,
+    fallback
+  );
+  const source =
+    typeof value === "object" && value !== null && value.ui?.source != null
+      ? value.ui.source
+      : "builtin";
+  return { ...base, ui: { source: source === "vendored" ? "vendored" : "builtin" } };
 };
 
 const resolvePluginManager = (
@@ -319,6 +389,8 @@ export function resolveNomosConfig(
   options: { configPath?: string | null } = {}
 ): ResolvedNomosConfig {
   const configPath = options.configPath ?? null;
+  warnUnknownConfigKeys(raw as Record<string, unknown>, configPath);
+
   const nodeEnv = raw.app?.env ?? process.env.NODE_ENV ?? "development";
   const isProduction = nodeEnv === "production";
   const appName = raw.app?.name ?? "Nomos App";
@@ -340,9 +412,23 @@ export function resolveNomosConfig(
 
   const databaseRaw = raw.database ?? {};
   const databaseUrl = databaseRaw.url ?? process.env.DATABASE_URL;
-  const provider =
+  const envProvider = process.env.DATABASE_PROVIDER;
+  const providerFromConfig =
     databaseRaw.provider ??
-    (databaseUrl && databaseUrl.trim() !== "" ? "url" : "sqlite");
+    (envProvider && (envProvider === "sqlite" || envProvider === "postgresql" || envProvider === "mysql" || envProvider === "url")
+      ? envProvider
+      : databaseUrl && databaseUrl.trim() !== ""
+        ? "url"
+        : "sqlite");
+  const provider: "sqlite" | "url" =
+    providerFromConfig === "postgresql" || providerFromConfig === "mysql" ? "url" : (providerFromConfig as "sqlite" | "url");
+  const dialect: "postgres" | "mysql" | undefined =
+    databaseRaw.dialect ??
+    (providerFromConfig === "postgresql" || envProvider === "postgresql"
+      ? "postgres"
+      : providerFromConfig === "mysql" || envProvider === "mysql"
+        ? "mysql"
+        : undefined);
   if (provider === "url" && (!databaseUrl || databaseUrl.trim() === "")) {
     throw toConfigError(configPath, "database.provider=url requires database.url or DATABASE_URL");
   }
@@ -406,6 +492,28 @@ export function resolveNomosConfig(
     pollIntervalMs: jobsRaw.pollIntervalMs ?? 1000, // 1 second
   };
 
+  // API configuration
+  const apiRaw = raw.api ?? {};
+  const rateLimitRaw = apiRaw.rateLimit ?? {};
+  const apiRateLimit = {
+    enabled: rateLimitRaw.enabled ?? true,
+    default: rateLimitRaw.default ?? { windowMs: 60 * 1000, maxRequests: 100 },
+    authenticated: rateLimitRaw.authenticated,
+    unauthenticated: rateLimitRaw.unauthenticated,
+  };
+  const corsRaw = apiRaw.cors ?? {};
+  const originRaw = corsRaw.origin;
+  const corsOrigin = Array.isArray(originRaw)
+    ? originRaw
+    : typeof originRaw === "string"
+      ? originRaw.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+  const apiCors = {
+    enabled: corsRaw.enabled ?? false,
+    origin: corsOrigin,
+    credentials: corsRaw.credentials ?? false,
+  };
+
   return {
     app: {
       name: appName,
@@ -421,7 +529,7 @@ export function resolveNomosConfig(
       provider,
       sqliteFile: databaseRaw.sqliteFile ?? "prisma/dev.db",
       url: databaseUrl,
-      dialect: databaseRaw.dialect
+      dialect
     },
     auth: {
       jwtSecret,
@@ -441,9 +549,13 @@ export function resolveNomosConfig(
     adminUi: {
       devPort: astroDevPort
     },
+    api: {
+      rateLimit: apiRateLimit,
+      cors: apiCors,
+    },
     modules: {
       auth: resolveModuleToggle(raw.modules?.auth, true),
-      admin: resolveModuleToggle(raw.modules?.admin, true),
+      admin: resolveAdminModule(raw.modules?.admin, true),
       docs: resolveModuleToggle(raw.modules?.docs, true),
       devtools: resolveModuleToggle(raw.modules?.devtools, true),
       pluginManager: resolvePluginManager(raw.modules?.pluginManager, isProduction)
